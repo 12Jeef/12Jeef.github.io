@@ -1,0 +1,1267 @@
+import * as util from "./util.js";
+import { V } from "./util.js";
+
+import { Match, fieldSize, size, zone, clampPos } from "./data.js";
+
+
+function hashStr(s) {
+    s = String(s);
+    let hash = 0;
+    if (s.length <= 0) return hash;
+    for (let i = 0; i < s.length; i++) {
+        let chr = s.charCodeAt(i);
+        hash = ((hash << 5) - hash) + chr;
+        hash |= 0;
+    }
+    return hash;
+}
+window.hashStr = hashStr;
+
+
+export default class App extends util.Target {
+    #id;
+    #flipX;
+    #flipY;
+
+    #page;
+
+    #matches;
+    #match;
+
+    constructor() {
+        super();
+
+        window.app = this;
+
+        this.addHandler("start", () => {
+            let id = setInterval(async () => {
+                if (document.readyState != "complete") return;
+                this.setup();
+                clearInterval(id);
+                let t0 = null;
+                const update = async () => {
+                    window.requestAnimationFrame(update);
+                    let t1 = util.getTime();
+                    if (t0 == null) return t0 = t1;
+                    this.update(t1-t0);
+                    t0 = t1;
+                };
+                update();
+            }, 10);
+        });
+
+        this.addHandler("setup", () => {
+            window.addEventListener("beforeunload", e => {
+                if (window.navigator.onLine) return;
+                return e.returnValue = "Reloading the page when offline can crash the app! Are you sure?";
+            });
+            document.body.style.backgroundImage = "url(./field.png)";
+            document.body.style.backgroundSize = "0% auto";
+
+            let apiKey = null;
+            let eventKey = null;
+            let event = {};
+            let matches = [];
+
+            let lock = false;
+            const pull = async () => {
+                if (lock) return;
+                lock = true;
+                await Promise.all([
+                    async () => {
+                        try {
+                            console.log("🛜 api-key: PYAW");
+                            let resp = await fetch("https://ppatrol.pythonanywhere.com/data/apiKey", {
+                                method: "GET",
+                                mode: "cors",
+                                headers: {
+                                    "Password": "6036ftw",
+                                },
+                            });
+                            if (resp.status != 200) throw resp.status;
+                            resp = await resp.text();
+                            console.log("🛜 api-key: PYAW = "+resp);
+                            apiKey = JSON.parse(resp);
+                        } catch (e) {
+                            console.log("🛜 api-key: PYAW ERR", e);
+                            try {
+                                console.log("🛜 api-key: LS");
+                                apiKey = JSON.parse(localStorage.getItem("api-key"));
+                            } catch (e) {
+                                console.log("🛜 api-key: LS ERR", e);
+                                apiKey = null;
+                            }
+                        }
+                        apiKey = (apiKey == null) ? null : String(apiKey);
+                        localStorage.setItem("api-key", JSON.stringify(apiKey));
+                    },
+                    async () => {
+                        try {
+                            console.log("🛜 event-key: PYAW");
+                            let resp = await fetch("https://ppatrol.pythonanywhere.com/data/eventKey", {
+                                method: "GET",
+                                mode: "cors",
+                                headers: {
+                                    "Password": "6036ftw",
+                                },
+                            });
+                            if (resp.status != 200) throw resp.status;
+                            resp = await resp.text();
+                            console.log("🛜 event-key: PYAW = "+resp);
+                            eventKey = JSON.parse(resp);
+                        } catch (e) {
+                            console.log("🛜 event-key: PYAW ERR", e);
+                            try {
+                                console.log("🛜 event-key: LS");
+                                eventKey = JSON.parse(localStorage.getItem("event-key"));
+                            } catch (e) {
+                                console.log("🛜 event-key: LS ERR", e);
+                                eventKey = null;
+                            }
+                        }
+                        eventKey = (eventKey == null) ? null : String(eventKey);
+                        localStorage.setItem("event-key", JSON.stringify(eventKey));
+                    },
+                ].map(f => f()));
+                await Promise.all([
+                    async () => {
+                        try {
+                            console.log("🛜 event: TBA");
+                            if (apiKey == null) throw "api-key";
+                            if (eventKey == null) throw "event-key";
+                            let resp = await fetch("https://www.thebluealliance.com/api/v3/event/"+eventKey, {
+                                method: "GET",
+                                headers: {
+                                    "Accept": "application/json",
+                                    "X-TBA-Auth-Key": apiKey,
+                                },
+                            });
+                            if (resp.status != 200) throw resp.status;
+                            resp = await resp.text();
+                            // console.log("🛜 event: TBA = "+resp);
+                            event = JSON.parse(resp);
+                        } catch (e) {
+                            console.log("🛜 event: TBA ERR", e);
+                            try {
+                                console.log("🛜 event: LS");
+                                event = JSON.parse(localStorage.getItem("event"));
+                            } catch (e) {
+                                console.log("🛜 event: LS ERR", e);
+                                event = null;
+                            }
+                        }
+                        event = util.ensure(event, "obj");
+                        localStorage.setItem("event", JSON.stringify(event));
+                    },
+                    async () => {
+                        try {
+                            console.log("🛜 matches: TBA");
+                            if (apiKey == null) throw "api-key";
+                            if (eventKey == null) throw "event-key";
+                            let resp = await fetch("https://www.thebluealliance.com/api/v3/event/"+eventKey+"/matches", {
+                                method: "GET",
+                                headers: {
+                                    "Accept": "application/json",
+                                    "X-TBA-Auth-Key": apiKey,
+                                },
+                            });
+                            if (resp.status != 200) throw resp.status;
+                            resp = await resp.text();
+                            // console.log("🛜 matches: TBA = "+resp);
+                            matches = JSON.parse(resp);
+                        } catch (e) {
+                            console.log("🛜 matches: TBA ERR", e);
+                            try {
+                                console.log("🛜 matches: LS");
+                                matches = JSON.parse(localStorage.getItem("matches"));
+                            } catch (e) {
+                                console.log("🛜 matches: LS ERR", e);
+                                matches = null;
+                            }
+                        }
+                        matches = util.ensure(matches, "arr");
+                        localStorage.setItem("🛜 matches", JSON.stringify(matches));
+                    },
+                ].map(f => f()));
+                lock = false;
+                this.post("pull");
+            };
+
+            this.eBack = document.getElementById("back");
+            this.eForward = document.getElementById("forward");
+            this.eTime = document.getElementById("time");
+            this.eScreen = document.getElementById("screen");
+            let fullscreenWanted = true;
+            const isFullscreen = () => document.fullscreenElement == document.body;
+            const updateFullscreen = () => {
+                if (fullscreenWanted) {
+                    if (!isFullscreen()) document.body.requestFullscreen();
+                } else {
+                    if (isFullscreen()) document.exitFullscreen();
+                }
+                this.eScreen.children[0].style.display = fullscreenWanted ? "none" : "";
+                this.eScreen.children[1].style.display = fullscreenWanted ? "" : "none";
+                checkFullscreen();
+            };
+            this.eScreen.addEventListener("click", e => {
+                fullscreenWanted = !fullscreenWanted;
+                updateFullscreen();
+            });
+            document.body.addEventListener("click", updateFullscreen);
+            this.eReload = document.getElementById("reload");
+            this.eReload.addEventListener("click", e => {
+                location.reload();
+            });
+
+            this.eOverlay = document.getElementById("overlay");
+            const checkFullscreen = () => {
+                if (fullscreenWanted) {
+                    if (isFullscreen()) this.eOverlay.classList.remove("this");
+                    else this.eOverlay.classList.add("this");
+                } else this.eOverlay.classList.remove("this");
+            }
+            document.addEventListener("fullscreenchange", checkFullscreen);
+
+            updateFullscreen();
+
+            this.ePrompt = document.getElementById("prompt");
+            this.ePromptClose = document.getElementById("prompt-close");
+            this.eAdminPwd = document.getElementById("admin-pwd");
+
+            this.eSettingsPage = document.getElementById("settings");
+
+            this.eSettingEvent = document.getElementById("setting-event");
+            this.eSettingEventName = document.getElementById("setting-event-name");
+            this.eSettingEventId = document.getElementById("setting-event-id");
+            this.eSettingFlipX = document.getElementById("setting-flipx");
+            this.eSettingFlippedX = document.getElementById("setting-flippedx");
+            this.eSettingFlipY = document.getElementById("setting-flipy");
+            this.eSettingFlippedY = document.getElementById("setting-flippedy");
+            this.eSettingIds = Array.from(document.querySelectorAll(".setting-id"));
+
+            this.eNavigatorPage = document.getElementById("navigator");
+
+            this.eNavigatorList = document.getElementById("navigator-list");
+
+            this.ePreAutoPage = document.getElementById("preauto");
+
+            this.ePreAutoField = document.getElementById("preauto-field");
+            this.ePreAutoRobotPos = document.getElementById("preauto-robot-pos");
+            this.ePreAutoRobot = document.getElementById("preauto-robot");
+            this.ePreAutoRobotId = document.getElementById("preauto-robot-id");
+            this.ePreAutoRobotDropdown = document.getElementById("preauto-robot-dropdown");
+            this.ePreAutoPreload = document.getElementById("preauto-preload");
+            this.ePreAutoPreloaded = document.getElementById("preauto-preloaded");
+            this.ePreAutoTeam = document.getElementById("preauto-team");
+            this.ePreAutoStart = document.getElementById("preauto-start");
+
+            this.eAutoPage = document.getElementById("auto");
+
+            this.eAutoPickup = document.getElementById("auto-pickup");
+            this.eAutoPickupCount = document.getElementById("auto-pickup-count");
+            this.eAutoScoreSpeaker = document.getElementById("auto-score-speaker");
+            this.eAutoScoreSpeakerCount = document.getElementById("auto-score-speaker-count");
+            this.eAutoScoreAmp = document.getElementById("auto-score-amp");
+            this.eAutoScoreAmpCount = document.getElementById("auto-score-amp-count");
+            this.eAutoMobile = document.getElementById("auto-mobile");
+            this.eAutoMobility = document.getElementById("auto-mobility");
+            this.eAutoDisable = document.getElementById("auto-disable");
+            this.eAutoDisabled = document.getElementById("auto-disabled");
+            this.eAutoNext = document.getElementById("auto-next");
+            this.eAutoModal = document.getElementById("auto-modal");
+            this.eAutoType = document.getElementById("auto-type");
+            this.eAutoField = document.getElementById("auto-field");
+            this.eAutoNotes = Array.from(document.querySelectorAll(".auto-note"));
+            this.eAutoSuccess = document.getElementById("auto-success");
+            this.eAutoFail = document.getElementById("auto-fail");
+            this.eAutoCancel = document.getElementById("auto-cancel");
+
+            this.eTeleopPage = document.getElementById("teleop");
+
+            this.eTeleopPickupSource = document.getElementById("teleop-pickup-source");
+            this.eTeleopPickupSourceCount = document.getElementById("teleop-pickup-source-count");
+            this.eTeleopPickupGround = document.getElementById("teleop-pickup-ground");
+            this.eTeleopPickupGroundCount = document.getElementById("teleop-pickup-ground-count");
+            this.eTeleopScoreSpeaker = document.getElementById("teleop-score-speaker");
+            this.eTeleopScoreSpeakerCount = document.getElementById("teleop-score-speaker-count");
+            this.eTeleopScoreAmp = document.getElementById("teleop-score-amp");
+            this.eTeleopScoreAmpCount = document.getElementById("teleop-score-amp-count");
+            this.eTeleopDisable = document.getElementById("teleop-disable");
+            this.eTeleopDisabled = document.getElementById("teleop-disabled");
+            this.eTeleopNext = document.getElementById("teleop-next");
+            this.eTeleopModal = document.getElementById("teleop-modal");
+            this.eTeleopField = document.getElementById("teleop-field");
+            this.eTeleopRobot = document.getElementById("teleop-robot");
+            this.eTeleopType = document.getElementById("teleop-type");
+            this.eTeleopSuccess = document.getElementById("teleop-success");
+            this.eTeleopFail = document.getElementById("teleop-fail");
+            this.eTeleopCancel = document.getElementById("teleop-cancel");
+
+            this.eEndgamePage = document.getElementById("endgame");
+
+            this.eEndgamePos = document.getElementById("endgame-pos");
+            this.eEndgamePosSelectors = Array.from(document.querySelectorAll(".endgame-pos-selector"));
+            this.eEndgameTrap = document.getElementById("endgame-trap");
+            this.eEndgameTrapped = document.getElementById("endgame-trapped");
+            this.eEndgameHarmony = document.getElementById("endgame-harmony");
+            this.eEndgameHarmonied = document.getElementById("endgame-harmonied");
+            this.eEndgameNext = document.getElementById("endgame-next");
+
+            this.eNotesPage = document.getElementById("notes");
+            this.eNotesNotes = document.getElementById("notes-notes");
+            this.eNotesNext = document.getElementById("notes-next");
+
+            this.eFinishPage = document.getElementById("finish");
+
+            this.eFinishCodeBox = document.getElementById("finish-code-box");
+            this.eFinishCode = document.getElementById("finish-code");
+            this.eFinishNext = document.getElementById("finish-next");
+            this.eFinishReset = document.getElementById("finish-reset");
+
+            this.#id = null;
+            this.#flipY = false;
+
+            this.pages = {
+                settings: this.eSettingsPage,
+                navigator: this.eNavigatorPage,
+                preauto: this.ePreAutoPage,
+                auto: this.eAutoPage,
+                teleop: this.eTeleopPage,
+                endgame: this.eEndgamePage,
+                notes: this.eNotesPage,
+                finish: this.eFinishPage,
+            };
+            this.#page = null;
+
+            let startTime = null;
+
+            let states = {};
+            for (let id in this.pages) {
+                let state = states[id] = new util.Target();
+                let idfs = {
+                    settings: () => {
+                        this.eSettingFlippedX.addEventListener("change", e => {
+                            this.flipX = this.eSettingFlippedX.checked;
+                        });
+                        this.eSettingFlippedY.addEventListener("change", e => {
+                            this.flipY = this.eSettingFlippedY.checked;
+                        });
+
+                        this.eSettingIds.forEach((elem, id) => {
+                            id++;
+                            elem.querySelector("*").textContent = id;
+                            elem.addEventListener("click", e => {
+                                this.id = id;
+                            });
+                        });
+
+                        this.addHandler("change-id", () => {
+                            this.eSettingIds.forEach((elem, id) => {
+                                id++;
+                                if (this.id == id) elem.classList.add("this");
+                                else elem.classList.remove("this");
+                            });
+                        });
+
+                        this.addHandler("pull", () => {
+                            this.eSettingEventName.textContent = util.ensure(event.name, "str", "None");
+                            this.eSettingEventId.textContent = eventKey;
+                        });
+                    },
+                    navigator: () => {
+                        this.addHandler("pull", () => {
+                            let newMatches = [
+                                new App.Match(-1),
+                                ...matches.filter(match => match.comp_level == "qm").sort((a, b) => a.match_number-b.match_number).map(match => {
+                                    return new App.Match(
+                                        match.match_number,
+                                        match.alliances.red.team_keys.map(key => parseInt(key.substring(3))),
+                                        match.alliances.blue.team_keys.map(key => parseInt(key.substring(3))),
+                                        null,
+                                    );
+                                }),
+                            ];
+                            if (newMatches.length <= 1) newMatches.push(new App.Match(0, [1111, 2222, 3333], [4444, 5555, 6666]));
+                            let oldMatches = this.matches;
+                            let theMatches = [];
+                            newMatches.forEach(match => {
+                                let i = oldMatches.findIndex(match2 => match2.match.id == match.match.id);
+                                if (i < 0) theMatches.push(match);
+                                else theMatches.push(oldMatches[i]);
+                            });
+                            this.matches = theMatches;
+                        });
+                    },
+                    preauto: () => {
+                        this.ePreAutoField.addEventListener("touchstart", e => {
+                            const mouseup = () => {
+                                document.body.removeEventListener("touchmove", mousemove);
+                                document.body.removeEventListener("touchend", mouseup);
+                            };
+                            const mousemove = e => {
+                                const r = this.ePreAutoField.getBoundingClientRect();
+                                let scale = r.height / fieldSize.y;
+                                if (!this.hasMatch()) return;
+
+                                let x = e.changedTouches[0].pageX - r.left;
+                                if (this.flipX) x = r.width-x;
+                                if (this.match.robotTeam == "r") x = fieldSize.x - (r.width - x)/scale;
+                                else x /= scale;
+                                this.match.x = x;
+
+                                let y = e.changedTouches[0].pageY - r.top;
+                                if (this.flipY) y = r.height-y;
+                                y /= scale;
+                                this.match.y = y;
+                            };
+                            mousemove(e);
+                            document.body.addEventListener("touchmove", mousemove);
+                            document.body.addEventListener("touchend", mouseup);
+                        });
+
+                        this.ePreAutoPreloaded.addEventListener("change", e => {
+                            if (!this.hasMatch()) return;
+                            this.match.preloaded = this.ePreAutoPreloaded.checked;
+                        });
+
+                        this.ePreAutoTeam.addEventListener("click", e => {
+                            if (!this.hasMatch()) return;
+                            this.match.robotTeam = this.match.robotTeam == "b" ? "r" : "b";
+                        });
+
+                        this.ePreAutoStart.addEventListener("click", e => {
+                            this.page = "auto";
+                            if (!this.hasMatch()) return;
+                            if (startTime != null) return;
+                            startTime = util.getTime();
+                            this.change("match.startTime", null, startTime);
+                        });
+
+                        const updateField = () => {
+                            this.ePreAutoField.style.backgroundPosition = ((this.hasMatch() && this.match.robotTeam == "r") ? 100 : 0)+"% 0%";
+                            this.ePreAutoField.style.transform = "scale("+(this.flipX ? -1 : 1)+", "+(this.flipY ? -1 : 1)+")";
+                        };
+                        ["match", "match.robotTeam", "flipX", "flipY"].forEach(c => this.addHandler("change-"+c, updateField));
+                        const updateRobot = () => {
+                            const r = this.ePreAutoField.getBoundingClientRect();
+                            let scale = r.height / fieldSize.y;
+
+                            if (this.hasMatch())
+                                this.match.pos = clampPos(this.match.pos, this.match.robotTeam);
+
+                            let x = this.hasMatch() ? this.match.x : 0;
+                            if (this.hasMatch() && this.match.robotTeam == "r") x = r.width - (fieldSize.x - x)*scale;
+                            else x *= scale;
+                            this.ePreAutoRobotPos.style.left = x+"px";
+
+                            let y = this.hasMatch() ? this.match.y : 0;
+                            y *= scale;
+                            this.ePreAutoRobotPos.style.top = y+"px";
+
+                            this.ePreAutoRobotPos.style.width = this.ePreAutoRobotPos.style.height = (size*scale)+"px";
+                            this.ePreAutoRobotPos.style.outline = "5px solid "+((this.hasMatch() && this.match.hasRobotTeam()) ? "var(--"+this.match.robotTeam+"4" : "var(--a)");
+                        };
+                        ["match", "match.robotTeam", "match.pos.x", "match.pos.y"].forEach(c => this.addHandler("change-"+c, updateRobot));
+                        new ResizeObserver(updateRobot).observe(this.ePreAutoField);
+                        const updateMenu = () => {
+                            this.ePreAutoRobotId.textContent = (this.hasMatch() && this.match.hasRobot()) ? this.match.robot : "None";
+                            this.ePreAutoPreloaded.checked = this.hasMatch() && this.match.preloaded;
+                            if (this.hasMatch() && this.match.robotTeam == "r") this.ePreAutoTeam.classList.add("red");
+                            else this.ePreAutoTeam.classList.remove("red");
+                            if (this.hasMatch() && this.match.robotTeam == "b") this.ePreAutoTeam.classList.add("blue");
+                            else this.ePreAutoTeam.classList.remove("blue");
+                            this.ePreAutoTeam.disabled = !this.hasMatch() || !this.match.isPractice();
+                            this.ePreAutoStart.disabled = !this.hasMatch() || !this.match.hasRobot() || !this.match.hasRobotTeam();
+                        };
+                        ["match", "match.id", "match.robot", "match.robotTeam", "match.preloaded"].forEach(c => this.addHandler("change-"+c, updateMenu));
+                    },
+                    auto: () => {
+                        let type = null;
+                        Object.defineProperty(state, "type", {
+                            get: () => type,
+                            set: v => state.change("type", type, type=v),
+                        });
+
+                        state.updateCount = () => {
+                            let pickup = [0, 0], speaker = [0, 0], amp = [0, 0];
+                            if (this.hasMatch())
+                                this.match.autoFrames.frames.forEach(frame => {
+                                    if (frame.type == "pickup") pickup[+frame.state.value]++;
+                                    if (frame.type == "speaker") speaker[+frame.state]++;
+                                    if (frame.type == "amp") amp[+frame.state]++;
+                                });
+                            this.eAutoPickupCount.innerHTML = pickup.map(v => "<span>"+v+"</span>").join("");
+                            this.eAutoScoreSpeakerCount.innerHTML = speaker.map(v => "<span>"+v+"</span>").join("");
+                            this.eAutoScoreAmpCount.innerHTML = amp.map(v => "<span>"+v+"</span>").join("");
+                        };
+                        ["match", "match.autoFrames.add", "match.autoFrames.rem"].forEach(c => this.addHandler("change-"+c, state.updateCount));
+
+                        this.eAutoPickup.addEventListener("click", e => {
+                            state.type = "pickup";
+                            this.eAutoNotes.forEach(elem => elem.classList.remove("this"));
+                            this.eAutoSuccess.disabled = this.eAutoFail.disabled = true;
+                        });
+                        this.eAutoScoreSpeaker.addEventListener("click", e => {
+                            state.type = "speaker";
+                            this.eAutoSuccess.disabled = this.eAutoFail.disabled = false;
+                        });
+                        this.eAutoScoreAmp.addEventListener("click", e => {
+                            state.type = "amp";
+                            this.eAutoSuccess.disabled = this.eAutoFail.disabled = false;
+                        });
+
+                        this.eAutoMobility.addEventListener("change", e => {
+                            if (!this.hasMatch()) return;
+                            this.match.autoMobility = this.eAutoMobility.checked;
+                        });
+                        this.eAutoDisabled.addEventListener("change", e => {
+                            if (!this.hasMatch()) return;
+                            this.match.globalFrames.add(new Match.Frame(util.getTime()-startTime, "disable", this.eAutoDisabled.checked));
+                        });
+
+                        this.eAutoNotes.forEach(elem => {
+                            elem.addEventListener("click", e => {
+                                this.eAutoNotes.forEach(elem => elem.classList.remove("this"));
+                                elem.classList.add("this");
+                                this.eAutoSuccess.disabled = this.eAutoFail.disabled = false;
+                            });
+                        });
+                        this.eAutoSuccess.addEventListener("click", e => {
+                            if (this.hasMatch()) {
+                                let value = true;
+                                if (state.type == "pickup")
+                                    value = { at: this.eAutoNotes.findIndex(elem => elem.classList.contains("this")), value: value };
+                                this.match.autoFrames.add(new Match.Frame(util.getTime()-startTime, state.type, value));
+                            }
+                            state.type = null;
+                        });
+                        this.eAutoFail.addEventListener("click", e => {
+                            if (this.hasMatch()) {
+                                let value = false;
+                                if (state.type == "pickup")
+                                    value = { at: this.eAutoNotes.findIndex(elem => elem.classList.contains("this")), value: value };
+                                this.match.autoFrames.add(new Match.Frame(util.getTime()-startTime, state.type, value));
+                            }
+                            state.type = null;
+                        });
+                        this.eAutoCancel.addEventListener("click", e => {
+                            state.type = null;
+                        });
+
+                        this.eAutoNext.addEventListener("click", e => {
+                            this.page = "teleop";
+                            if (!this.hasMatch()) return;
+                            if (this.match.hasTeleopTime()) return;
+                            this.match.teleopTime = util.getTime()-startTime;
+                        });
+
+                        const updateField = () => {
+                            this.eAutoField.style.transform = "scale("+(this.flipX ? 1 : -1)+", "+(this.flipY ? -1 : 1)+")";
+                        };
+                        ["flipX", "flipY"].forEach(c => this.addHandler("change-"+c, updateField));
+                        const updateMenu = () => {
+                            this.eAutoMobility.checked = this.hasMatch() && this.match.autoMobility;
+                        };
+                        ["match", "match.autoMobility"].forEach(c => this.addHandler("change-"+c, updateMenu));
+                        state.addHandler("change-type", () => {
+                            let type = state.type;
+                            if (type) this.eAutoModal.classList.add("this");
+                            else this.eAutoModal.classList.remove("this");
+                            if (type) {
+                                if (type == "pickup") this.eAutoModal.classList.add("field");
+                                else this.eAutoModal.classList.remove("field");
+                                this.eAutoType.textContent = { pickup: "Pickup", speaker: "Score: Speaker", amp: "Score: Amp" }[type];
+                            }
+                        });
+                    },
+                    teleop: () => {
+                        let type = null;
+                        Object.defineProperty(state, "type", {
+                            get: () => type,
+                            set: v => state.change("type", type, type=v),
+                        });
+                        let pos = new V();
+                        Object.defineProperty(state, "pos", {
+                            get: () => pos,
+                            set: v => pos.set(v),
+                        });
+                        pos.addHandler("change", (c, f, t) => state.change("pos."+c, f, t));
+
+                        state.updateCount = () => {
+                            let source = [0, 0], ground = [0, 0], speaker = [0, 0], amp = [0, 0];
+                            if (this.hasMatch())
+                                this.match.teleopFrames.frames.forEach(frame => {
+                                    if (frame.type == "source") source[+frame.state]++;
+                                    if (frame.type == "ground") ground[+frame.state]++;
+                                    if (frame.type == "speaker") speaker[+frame.state.value]++;
+                                    if (frame.type == "amp") amp[+frame.state]++;
+                                });
+                            this.eTeleopPickupSourceCount.innerHTML = source.map(v => "<span>"+v+"</span>").join("");
+                            this.eTeleopPickupGroundCount.innerHTML = ground.map(v => "<span>"+v+"</span>").join("");
+                            this.eTeleopScoreSpeakerCount.innerHTML = speaker.map(v => "<span>"+v+"</span>").join("");
+                            this.eTeleopScoreAmpCount.innerHTML = amp.map(v => "<span>"+v+"</span>").join("");
+                        };
+                        ["match", "match.teleopFrames.add", "match.teleopFrames.rem"].forEach(c => this.addHandler("change-"+c, state.updateCount));
+
+                        this.eTeleopPickupSource.addEventListener("click", e => {
+                            state.type = "source";
+                        });
+                        this.eTeleopPickupGround.addEventListener("click", e => {
+                            state.type = "ground";
+                        });
+                        this.eTeleopScoreSpeaker.addEventListener("click", e => {
+                            state.type = "speaker";
+                        });
+                        this.eTeleopScoreAmp.addEventListener("click", e => {
+                            state.type = "amp";
+                        });
+
+                        this.eTeleopDisabled.addEventListener("change", e => {
+                            if (!this.hasMatch()) return;
+                            this.match.globalFrames.add(new Match.Frame(util.getTime()-startTime, "disable", this.eTeleopDisabled.checked));
+                        });
+
+                        this.eTeleopField.addEventListener("touchstart", e => {
+                            const mouseup = () => {
+                                document.body.removeEventListener("touchmove", mousemove);
+                                document.body.removeEventListener("touchend", mouseup);
+                            };
+                            const mousemove = e => {
+                                const r = this.eTeleopField.getBoundingClientRect();
+                                let scale = r.height / fieldSize.y;
+                                if (!this.hasMatch()) return;
+
+                                let x = e.changedTouches[0].pageX - r.left;
+                                if (this.flipX) x = r.width-x;
+                                if (this.match.robotTeam == "r") x = fieldSize.x - (r.width - x)/scale;
+                                else x /= scale;
+                                state.pos.x = x;
+
+                                let y = e.changedTouches[0].pageY - r.top;
+                                if (this.flipY) y = r.height-y;
+                                y /= scale;
+                                state.pos.y = y;
+                            };
+                            mousemove(e);
+                            document.body.addEventListener("touchmove", mousemove);
+                            document.body.addEventListener("touchend", mouseup);
+                        });
+
+                        this.eTeleopSuccess.addEventListener("click", e => {
+                            if (this.hasMatch()) {
+                                let value = true;
+                                if (state.type == "speaker")
+                                    value = { at: state.pos.xy, value: value };
+                                this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, state.type, value));
+                            }
+                            state.type = null;
+                        });
+                        this.eTeleopFail.addEventListener("click", e => {
+                            if (this.hasMatch()) {
+                                let value = false;
+                                if (state.type == "speaker")
+                                    value = { at: state.pos.xy, value: value };
+                                this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, state.type, value));
+                            }
+                            state.type = null;
+                        });
+                        this.eTeleopCancel.addEventListener("click", e => {
+                            state.type = null;
+                        });
+
+                        this.eTeleopNext.addEventListener("click", e => {
+                            this.page = "endgame";
+                        });
+
+                        const updateField = () => {
+                            this.eTeleopField.style.backgroundPosition = ((this.hasMatch() && this.match.robotTeam == "r") ? 100 : 0)+"% 0%";
+                            this.eTeleopField.style.transform = "scale("+(this.flipX ? -1 : 1)+", "+(this.flipY ? -1 : 1)+")";
+                        };
+                        ["match", "match.robotTeam", "flipX", "flipY"].forEach(c => this.addHandler("change-"+c, updateField));
+                        const updateRobot = () => {
+                            const r = this.eTeleopField.getBoundingClientRect();
+                            let scale = r.height / fieldSize.y;
+                            
+                            if (this.hasMatch()) {
+                                let x = state.pos.x;
+                                if (this.match.robotTeam == "r") x = fieldSize.x-x;
+                                x = Math.min(r.width/scale-size/2, Math.max(size/2, x));
+                                if (this.match.robotTeam == "r") x = fieldSize.x-x;
+                                state.pos.x = x;
+                                state.pos.y = Math.min(fieldSize.y-size/2, Math.max(size/2, state.pos.y));
+                            }
+
+                            let x = state.pos.x;
+                            if (this.hasMatch() && this.match.robotTeam == "r") x = r.width - (fieldSize.x - x)*scale;
+                            else x *= scale;
+                            this.eTeleopRobot.style.left = x+"px";
+
+                            let y = state.pos.y;
+                            y *= scale;
+                            this.eTeleopRobot.style.top = y+"px";
+
+                            this.eTeleopRobot.style.width = this.eTeleopRobot.style.height = (size*scale)+"px";
+                            this.eTeleopRobot.style.outline = "5px solid "+((this.hasMatch() && this.match.hasRobotTeam()) ? "var(--"+this.match.robotTeam+"4" : "var(--a)");
+                        };
+                        ["match", "match.robotTeam"].forEach(c => this.addHandler("change-"+c, updateRobot));
+                        ["pos.x", "pos.y"].forEach(c => state.addHandler("change-"+c, updateRobot));
+                        new ResizeObserver(updateRobot).observe(this.eTeleopField);
+                        state.addHandler("change-type", () => {
+                            let type = state.type;
+                            if (type) this.eTeleopModal.classList.add("this");
+                            else this.eTeleopModal.classList.remove("this");
+                            if (type) {
+                                if (type == "speaker") this.eTeleopModal.classList.add("field");
+                                else this.eTeleopModal.classList.remove("field");
+                                this.eTeleopType.textContent = { source: "Pickup: Source", ground: "Pickup: Ground", speaker: "Score: Speaker", amp: "Score: Amp" }[type];
+                            }
+                        });
+                    },
+                    endgame: () => {
+                        this.eEndgamePos.addEventListener("input", e => {
+                            if (!this.hasMatch()) return;
+                            this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, "climb", parseInt(this.eEndgamePos.value)));
+                            updateMenu();
+                        });
+
+                        this.eEndgameTrapped.addEventListener("change", e => {
+                            if (!this.hasMatch()) return;
+                            this.match.endgameTrap = this.eEndgameTrapped.checked;
+                        });
+                        this.eEndgameHarmonied.addEventListener("change", e => {
+                            if (!this.hasMatch()) return;
+                            this.match.endgameHarmony = this.eEndgameHarmonied.checked;
+                        });
+
+                        this.eEndgameNext.addEventListener("click", e => {
+                            this.page = "notes";
+                            if (!this.hasMatch()) return;
+                            if (this.match.hasFinishTime()) return;
+                            this.match.finishTime = util.getTime()-startTime;
+                        });
+
+                        const updateMenu = () => {
+                            let pos = 0;
+                            if (this.hasMatch())
+                                this.match.teleopFrames.frames.forEach(frame => {
+                                    if (frame.type != "climb") return;
+                                    pos = frame.state;
+                                });
+                            this.eEndgamePos.value = pos;
+                            this.eEndgamePosSelectors.forEach((elem, i) => {
+                                if (i == pos) elem.classList.add("this");
+                                else elem.classList.remove("this");
+                            });
+                            this.eEndgameHarmonied.disabled = pos < 2;
+                            this.eEndgameTrapped.checked = this.hasMatch() && this.match.endgameTrap;
+                            this.eEndgameHarmonied.checked = this.hasMatch() && this.match.endgameHarmony;
+                        };
+                        ["match", "match.teleopFrames.add", "match.teleopFrames.rem", "match.endgameTrap", "match.endgameHarmony"].forEach(c => this.addHandler("change-"+c, updateMenu));
+                    },
+                    notes: () => {
+                        this.eNotesNotes.addEventListener("input", e => {
+                            if (!this.hasMatch()) return;
+                            this.match.notes = this.eNotesNotes.value;
+                        });
+                        let n = 0;
+                        this.eNotesNotes.addEventListener("blur", e => (n = 0));
+                        this.eNotesNotes.addEventListener("click", e => {
+                            if (document.activeElement != this.eNotesNotes) return;
+                            n++;
+                            if (n < 2) return;
+                            document.activeElement.blur();
+                        });
+                        this.eNotesNext.addEventListener("click", e => {
+                            this.page = "finish";
+                        });
+                    },
+                    finish: () => {
+                        this.eFinishNext.addEventListener("click", e => {
+                            this.page = "navigator";
+                            this.match = null;
+                        });
+                        this.eFinishReset.addEventListener("click", e => {
+                            this.page = "navigator";
+                            if (this.hasMatch())
+                                this.match.reset();
+                            this.match = null;
+                        });
+
+                        new ResizeObserver(() => {
+                            const r = this.eFinishCodeBox.getBoundingClientRect();
+                            this.eFinishCode.style.width = this.eFinishCode.style.height = Math.min(r.width-40, r.height-40)+"px";
+                        }).observe(this.eFinishCodeBox);
+                    },
+                };
+                if (id in idfs) idfs[id]();
+            }
+
+            const updateMenu = () => {
+                if (this.hasMatch() && (startTime == null)) this.eTime.classList.add("time");
+                else this.eTime.classList.remove("time");
+            };
+            ["match", "match.startTime"].forEach(c => this.addHandler("change-"+c, updateMenu));
+
+            this.addHandler("update", delta => {
+                this.eTime.textContent = this.hasMatch() ?
+                    (startTime != null) ?
+                        util.formatTime(
+                            this.match.hasFinishTime() ?
+                                this.match.finishTime :
+                                (util.getTime()-startTime)
+                            ) :
+                            "Pre-Match" :
+                        "";
+                let able = [true, true];
+                let pagefs = {
+                    settings: () => [false, true],
+                    navigator: () => [true, this.hasMatch()],
+                    preauto: () => [true, !this.ePreAutoStart.disabled],
+                    auto: () => [true, true],
+                    teleop: () => [true, true],
+                    endgame: () => [true, true],
+                    notes: () => [true, true],
+                    finish: () => [true, false],
+                };
+                if (this.page in pagefs) able = pagefs[this.page]();
+                if (this.eBack.disabled == able[0]) this.eBack.disabled = !able[0];
+                if (this.eForward.disabled == able[1]) this.eForward.disabled = !able[1];
+            });
+
+            this.addHandler("change-page", (f, t) => {
+                
+                pull();
+
+                this.eScreen.style.display = this.eReload.style.display = this.page == "settings" ? "" : "none";
+
+                let state = states[this.page];
+
+                let pagefs = {
+                    settings: () => {
+                        if (util.is(state.userPwd, "str")) {
+                            const userPwd = hashStr(state.userPwd);
+                            delete state.userPwd;
+                            const correctPwd = 750852430;
+                            if (userPwd != correctPwd) return this.page = "navigator";
+                        } else {
+                            this.eAdminPwd.value = "";
+                            this.ePrompt.classList.add("this");
+                            const onFinish = () => {
+                                this.ePrompt.classList.remove("this");
+                                this.ePromptClose.removeEventListener("click", onClose);
+                                this.eAdminPwd.removeEventListener("change", onSubmit);
+                            };
+                            const onClose = () => {
+                                onFinish();
+                            };
+                            const onSubmit = () => {
+                                onFinish();
+                                state.userPwd = this.eAdminPwd.value;
+                                this.page = "settings";
+                            };
+                            this.ePromptClose.addEventListener("click", onClose);
+                            this.eAdminPwd.addEventListener("change", onSubmit);
+                            return this.page = "navigator";
+                        }
+
+                        this.eSettingFlippedX.checked = this.flipX;
+                        this.eSettingFlippedY.checked = this.flipY;
+                    },
+                    navigator: () => {
+                        this.match = null;
+                    },
+                    preauto: () => {
+                        this.ePreAutoRobot.disabled = this.hasMatch() && !this.match.isPractice();
+                        this.ePreAutoRobotDropdown.innerHTML = "";
+                        let robots = [];
+                        if (this.hasMatch()) {
+                            if (this.match.isPractice()) {
+                                this.matches.forEach(match => robots.push(...match.red, ...match.blue));
+                                robots = [...new Set(robots)].sort((a, b) => a-b);
+                            } else robots = [];
+                        }
+                        robots.forEach(id => {
+                            let btn = document.createElement("button");
+                            this.ePreAutoRobotDropdown.appendChild(btn);
+                            let elem = document.createElement("h1");
+                            btn.appendChild(elem);
+                            elem.textContent = id;
+                            btn.addEventListener("click", e => {
+                                if (!this.hasMatch()) return;
+                                if (!this.match.isPractice()) return;
+                                this.match.robot = id;
+                            });
+                        });
+                    },
+                    auto: () => {
+                        state.updateCount();
+                        this.eAutoDisabled.checked = false;
+                        if (this.hasMatch())
+                            this.match.globalFrames.frames.forEach(frame => {
+                                if (frame.type != "disable") return;
+                                this.eAutoDisabled.checked = frame.state;
+                            });
+                    },
+                    teleop: () => {
+                        state.updateCount();
+                        this.eTeleopDisabled.checked = false;
+                        if (this.hasMatch())
+                            this.match.globalFrames.frames.forEach(frame => {
+                                if (frame.type != "disable") return;
+                                this.eTeleopDisabled.checked = frame.state;
+                            });
+                    },
+                    endgame: () => {
+                    },
+                    notes: () => {
+                        this.eNotesNotes.value = this.hasMatch() ? this.match.notes : "";
+                    },
+                    finish: () => {
+                        let data = this.hasMatch() ? this.match.toBufferStr() : "NO_MATCH_ERR";
+                        console.log(data);
+                        new QRious({
+                            element: this.eFinishCode,
+                            value: data,
+                            size: 1000,
+                        });
+                    },
+                };
+                if (this.page in pagefs) pagefs[this.page]();
+            });
+
+            this.#matches = [];
+            this.#match = null;
+
+            this.eBack.addEventListener("click", e => {
+                let pagefs = {
+                    navigator: () => { this.page = "settings"; },
+                    preauto: () => { this.page = "navigator"; },
+                    auto: () => {
+                        if (states.auto.type == null) return this.page = "preauto";
+                        states.auto.type = null;
+                    },
+                    teleop: () => { this.page = "auto"; },
+                    endgame: () => { this.page = "teleop"; },
+                    notes: () => { this.page = "endgame"; },
+                    finish: () => { this.page = "notes"; },
+                };
+                if (this.page in pagefs) pagefs[this.page]();
+            });
+            this.eForward.addEventListener("click", e => {
+                let pagefs = {
+                    settings: () => { this.page = "navigator"; },
+                    navigator: () => { this.page = "preauto"; },
+                    preauto: () => { this.page = "auto"; },
+                    auto: () => { this.page = "teleop"; },
+                    teleop: () => { this.page = "endgame"; },
+                    endgame: () => { this.page = "notes"; },
+                    notes: () => { this.page = "finish"; },
+                };
+                if (this.page in pagefs) pagefs[this.page]();
+            });
+
+            this.loadId();
+            this.loadFlip();
+
+            this.page = "navigator";
+
+            pull();
+        });
+    }
+
+    start() { this.post("start"); }
+
+    setup() { this.post("setup"); }
+
+    update(delta) { this.post("update", delta); }
+
+    get page() { return this.#page; }
+    set page(v) {
+        v = String(v);
+        if (!(v in this.pages)) return;
+        this.change("page", this.page, this.#page=v);
+        for (let id in this.pages) {
+            if (id == this.page) this.pages[id].classList.add("this");
+            else this.pages[id].classList.remove("this");
+        }
+    }
+
+    get id() { return this.#id; }
+    set id(v) {
+        v = util.ensure(v, "int");
+        if (this.id == v) return;
+        this.change("id", this.id, this.#id=v);
+        this.saveId();
+        this.updateMatches();
+    }
+    loadId() {
+        let id = null;
+        try {
+            id = JSON.parse(localStorage.getItem("id"));
+        } catch (e) {}
+        console.log("load id", id);
+        this.id = id || 1;
+    }
+    saveId() {
+        console.log("save id", this.id);
+        localStorage.setItem("id", JSON.stringify(this.id));
+    }
+
+    get flipX() { return this.#flipX; }
+    set flipX(v) {
+        v = !!v;
+        if (this.flipX == v) return;
+        this.change("flipX", this.flipX, this.#flipX=v);
+        this.saveFlip();
+    }
+    get flipY() { return this.#flipY; }
+    set flipY(v) {
+        v = !!v;
+        if (this.flipY == v) return;
+        this.change("flipY", this.flipY, this.#flipY=v);
+        this.saveFlip();
+    }
+    loadFlip() {
+        let flipX = null;
+        try {
+            flipX = JSON.parse(localStorage.getItem("flipX"));
+        } catch (e) {}
+        let flipY = null;
+        try {
+            flipY = JSON.parse(localStorage.getItem("flipY"));
+        } catch (e) {}
+        console.log("load flip", flipX, flipY);
+        this.flipX = flipX;
+        this.flipY = flipY;
+    }
+    saveFlip() {
+        console.log("save flip", this.flipX, this.flipY);
+        localStorage.setItem("flipX", JSON.stringify(this.flipX));
+        localStorage.setItem("flipY", JSON.stringify(this.flipY));
+    }
+
+    get matches() { return this.#matches; }
+    set matches(v) {
+        v = util.ensure(v, "arr");
+        this.clearMatches();
+        this.addMatch(v);
+    }
+    clearMatches() {
+        let matches = this.matches;
+        this.remMatch(matches);
+        return matches;
+    }
+    hasMatch(match) {
+        if (arguments.length == 0) return !!this.match;
+        if (!(match instanceof App.Match)) return false;
+        return this.#matches.includes(match);
+    }
+    addMatch(...matches) {
+        let r = util.Target.resultingForEach(matches, match => {
+            if (!(match instanceof App.Match)) return false;
+            if (this.hasMatch(match)) return false;
+            this.#matches.push(match);
+            this.eNavigatorList.appendChild(match.eListItem);
+            match.addLinkedHandler(this, "trigger", e => {
+                if (match.match.isPractice()) {
+                    this.match = new Match(-1);
+                    this.page = "preauto";
+                } else {
+                    this.match = match.match;
+                    if (this.match.hasFinishTime()) this.page = "finish";
+                    else this.page = "preauto";
+                }
+            });
+            this.change("addMatch", null, match);
+            return match;
+        });
+        this.updateMatches();
+        return r;
+    }
+    remMatch(...matches) {
+        let r = util.Target.resultingForEach(matches, match => {
+            if (!(match instanceof App.Match)) return false;
+            if (!this.hasMatch(match)) return false;
+            this.#matches.splice(this.#matches.indexOf(match), 1);
+            this.eNavigatorList.removeChild(match.eListItem);
+            match.clearLinkedHandlers(this, "trigger");
+            this.change("remMatch", match, null);
+            return match;
+        });
+        this.updateMatches();
+        return r;
+    }
+    updateMatches() {
+        this.matches.forEach(match => {
+            if (match.match.isPractice()) return;
+            match.match.robot = (this.id > 0 && this.id <= 3) ? match.red[this.id-1] : (this.id > 3 && this.id <= 6) ? match.blue[this.id-4] : null;
+        });
+    }
+    
+    get match() { return this.#match; }
+    set match(v) {
+        v = (v instanceof Match) ? v : null;
+        if (this.match == v) return;
+        if (this.hasMatch()) this.match.clearLinkedHandlers(this, "change");
+        this.change("match", this.match, this.#match=v);
+        if (this.hasMatch()) this.match.addLinkedHandler(this, "change", (c, f, t) => this.change("match."+c, f, t));
+    }
+}
+App.Match = class AppMatch extends util.Target {
+    #red;
+    #blue;
+
+    #match;
+
+    constructor(id, red, blue, robot) {
+        super();
+
+        this.eListItem = document.createElement("button");
+        this.eListItem.addEventListener("click", e => this.post("trigger", e));
+
+        this.eItemId = document.createElement("h1");
+        this.eListItem.appendChild(this.eItemId);
+        this.eItemId.classList.add("id");
+
+        this.eItemTeams = document.createElement("div");
+        this.eListItem.appendChild(this.eItemTeams);
+        this.eItemTeams.classList.add("teams");
+
+        this.eItemRed = document.createElement("div");
+        this.eItemTeams.appendChild(this.eItemRed);
+        this.eItemRed.classList.add("red");
+
+        this.eItemBlue = document.createElement("div");
+        this.eItemTeams.appendChild(this.eItemBlue);
+        this.eItemBlue.classList.add("blue");
+
+        this.#red = [];
+        this.#blue = [];
+
+        this.#match = new Match(id, robot);
+        this.match.addHandler("change", (c, f, t) => this.change("match."+c, f, t));
+
+        this.red = red;
+        this.blue = blue;
+
+        let ignore = false;
+        const apply = () => {
+            if (ignore) return;
+
+            this.eItemId.textContent = this.match.isPractice() ? "Practice Match" : this.match.id+1;
+            this.eItemId.style.textAlign = this.match.isPractice() ? "center" : "";
+            this.eItemTeams.style.display = this.match.isPractice() ? "none" : "";
+
+            this.formatRed();
+            this.formatBlue();
+
+            if (this.match.isPractice()) return;
+
+            ignore = true;
+
+            if (!this.hasRed(this.match.robot) && !this.hasBlue(this.match.robot)) this.match.robot = null;
+            this.match.robotTeam = this.hasRed(this.match.robot) ? "r" : this.hasBlue(this.match.robot) ? "b" : null;
+
+            ignore = false;
+        };
+        this.addHandler("change", apply);
+        apply();
+    }
+
+    get red() { return [...this.#red]; }
+    set red(v) {
+        v = util.ensure(v, "arr");
+        this.clearRed();
+        this.addRed(v);
+    }
+    clearRed() {
+        let red = this.red;
+        this.remRed(red);
+        return red;
+    }
+    hasRed(v) {
+        v = Math.max(1, util.ensure(v, "int"));
+        return this.#red.includes(v);
+    }
+    formatRed() {
+        this.eItemRed.innerHTML = "";
+        this.red.forEach(v => {
+            let elem = document.createElement("h1");
+            this.eItemRed.appendChild(elem);
+            elem.textContent = v;
+            if (v == this.robot) elem.classList.add("this");
+        });
+    }
+    addRed(...v) {
+        let r = util.Target.resultingForEach(v, v => {
+            if (this.match.isPractice()) return false;
+            v = Math.max(1, util.ensure(v, "int"));
+            if (this.hasRed(v)) return false;
+            this.#red.push(v);
+            this.change("addRed", null, v);
+            return v;
+        });
+        this.formatRed();
+        return r;
+    }
+    remRed(...v) {
+        let r = util.Target.resultingForEach(v, v => {
+            v = Math.max(1, util.ensure(v, "int"));
+            if (!this.hasRed(v)) return false;
+            this.#red.splice(this.#red.indexOf(v), 1);
+            this.change("remRed", v, null);
+            return v;
+        });
+        this.formatRed();
+        return r;
+    }
+    get blue() { return [...this.#blue]; }
+    set blue(v) {
+        v = util.ensure(v, "arr");
+        this.clearBlue();
+        this.addBlue(v);
+    }
+    clearBlue() {
+        let blue = this.blue;
+        this.remBlue(blue);
+        return blue;
+    }
+    hasBlue(v) {
+        v = Math.max(1, util.ensure(v, "int"));
+        return this.#blue.includes(v);
+    }
+    formatBlue() {
+        this.eItemBlue.innerHTML = "";
+        this.blue.forEach(v => {
+            let elem = document.createElement("h1");
+            this.eItemBlue.appendChild(elem);
+            elem.textContent = v;
+            if (v == this.robot) elem.classList.add("this");
+        });
+    }
+    addBlue(...v) {
+        let r = util.Target.resultingForEach(v, v => {
+            if (this.match.isPractice()) return false;
+            v = Math.max(1, util.ensure(v, "int"));
+            if (this.hasBlue(v)) return false;
+            this.#blue.push(v);
+            this.change("addBlue", null, v);
+            return v;
+        });
+        this.formatBlue();
+        return r;
+    }
+    remBlue(...v) {
+        let r = util.Target.resultingForEach(v, v => {
+            v = Math.max(1, util.ensure(v, "int"));
+            if (!this.hasBlue(v)) return false;
+            this.#blue.splice(this.#blue.indexOf(v), 1);
+            this.change("remBlue", v, null);
+            return v;
+        });
+        this.formatBlue();
+        return r;
+    }
+
+    get match() { return this.#match; }
+};

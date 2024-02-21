@@ -1,0 +1,1242 @@
+:root {
+    --TOP: 50px;
+}
+
+.header {
+    position: absolute;
+    top: 0%;
+    left: 0%;
+
+    width: 100%;
+    height: var(--TOP);
+    padding: 1em;
+    overflow: hidden;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    align-content: center;
+    gap: 20px;
+
+    background-color: var(--a);
+    color: #fff;
+
+    font-weight: 700;
+}
+.header > button {
+    aspect-ratio: 1 / 1;
+
+    background-color: transparent;
+    color: #fff;
+    border-radius: 100%;
+
+    font-size: 2em;
+}
+.header > button:not(:disabled):active {
+    background-color: #fff;
+    color: #000;
+}
+.header > button:disabled {
+    color: #fff8;
+}
+.header > h1 {
+    flex-basis: 100%;
+}
+.header > h1 > span {
+    color: var(--fga);
+}
+.header > h2.time {
+    font-family: monospace;
+}
+.header > * {
+    min-width: max-content;
+}
+
+.page {
+    position: absolute;
+    top: var(--TOP);
+    left: 0%;
+
+    width: 100%;
+    height: calc(100% - var(--TOP));
+    padding: 20px;
+    overflow: hidden;
+
+    display: none;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+    gap: 20px;
+
+    background-color: var(--bg);
+}
+.page.this {
+    display: flex;
+}
+
+#settings {
+    gap: 0px;
+}
+#settings > #setting-event {
+    width: 100%;
+    padding: 20px;
+
+    background-color: var(--a);
+    color: #fff;
+    border-radius: 10px;
+}
+#settings > #setting-event > span:nth-child(2) {
+    margin-left: 10px;
+
+    opacity: 50%;
+
+    font-weight: 500;
+}
+#settings > .field {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: stretch;
+    align-content: center;
+    gap: 20px;
+}
+#settings > .field > div {
+    position: relative;
+
+    width: 100%;
+    padding: 20px;
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+
+    background-color: var(--v4);
+    border-radius: 10px;
+
+    text-align: center;
+}
+#settings > .field > div:has(> input:disabled) {
+    background-color: var(--v2);
+    color: var(--v8);
+}
+#settings > .field > div:has(> input:checked) {
+    background-color: var(--g4);
+    color: #fff;
+}
+#settings > .field > div:has(> input:disabled:checked) {
+    background-color: var(--g2);
+    color: #fff8;
+}
+#settings > .field > div:has(> input:not(:disabled):active) {
+    background-color: var(--fg) !important;
+    color: var(--bg) !important;
+}
+#settings > .field > div > input {
+    position: absolute;
+    top: 0%;
+    left: 0%;
+
+    width: 100%;
+    height: 100%;
+
+    opacity: 0%;
+}
+#settings > .field > div > h1::before {
+    text-decoration: line-through;
+}
+#settings > .field > #setting-flipx > h1::before {
+    content: "Flip Horizontally";
+}
+#settings > .field > #setting-flipy > h1::before {
+    content: "Flip Vertically";
+}
+#settings > .field > div:has(> input:checked) > h1::before {
+    text-decoration: none;
+}
+#settings > .match .setting-id {
+    align-self: stretch;
+
+    background-color: transparent;
+    color: var(--fg);
+}
+/* #settings > #setting-reset {
+    padding: 20px;
+    margin-top: 20px;
+
+    background-color: var(--a);
+    color: #fff;
+    border-radius: 10px;
+}
+#settings > #setting-reset:active {
+    background-color: var(--fg);
+    color: var(--bg);
+} */
+
+#navigator {
+    padding: 0px;
+}
+#navigator > .content {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    padding: 20px;
+    overflow: auto;
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+    gap: 20px;
+}
+#navigator > .content > button,
+.match {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: stretch;
+    align-content: center;
+    
+    background-color: var(--v4);
+    border-radius: 10px;
+
+    font-size: 1.25em;
+    font-weight: 500;
+}
+#navigator > .content > button > :first-child,
+.match > :first-child {
+    overflow: hidden;
+
+    border-radius: 10px 0px 0px 10px;
+}
+#navigator > .content > button > :last-child,
+.match > :last-child {
+    overflow: hidden;
+
+    border-radius: 0px 10px 10px 0px;
+}
+#navigator > .content > button:not(:disabled):active,
+.match:not(:disabled):active {
+    background-color: var(--v6);
+}
+#navigator > .content > button > .id,
+.match > .id {
+    padding: 10px 20px;
+
+    min-width: 2.5em;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    align-content: center;
+}
+#navigator > .content > button > .teams,
+.match > .teams {
+    flex-basis: 100%;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+}
+@media screen and (orientation:portrait) {
+    #navigator > .content > button > .teams,
+    .match > .teams {
+        flex-direction: column;
+    }
+}
+#navigator > .content > button > .teams > .red,
+#navigator > .content > button > .teams > .blue,
+.match > .teams > .red,
+.match > .teams > .blue {
+    flex-basis: 100%;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: stretch;
+    align-content: center;
+
+    color: #fff;
+}
+#navigator > .content > button > .teams > .red > *,
+#navigator > .content > button > .teams > .blue > *,
+.match > .teams > .red > *,
+.match > .teams > .blue > * {
+    margin: 0px;
+    padding: 10px 20px;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+}
+#navigator > .content > button > .teams > .red > *.this,
+#navigator > .content > button > .teams > .blue > *.this,
+.match > .teams > .red > *.this,
+.match > .teams > .blue > *.this {
+    background-color: var(--fg) !important;
+    color: var(--bg) !important;
+}
+#navigator > .content > button > .teams > .red,
+.match > .teams > .red {
+    background-color: var(--r3);
+}
+#navigator > .content > button:not(:disabled):active > .teams > .red,
+.match:not(:disabled):active > .teams > .red {
+    background-color: var(--r4);
+}
+#navigator > .content > button > .teams > .blue,
+.match > .teams > .blue {
+    background-color: var(--b3);
+}
+#navigator > .content > button:not(:disabled):active > .teams > .blue,
+.match:not(:disabled):active > .teams > .blue {
+    background-color: var(--b4);
+}
+
+#preauto {
+    flex-direction: row;
+}
+#preauto > .field {
+    flex-basis: 100%;
+
+    padding: 20px;
+
+    background-color: var(--v4);
+    border-radius: 10px;
+}
+@media screen and (orientation:portrait) {
+    #preauto {
+        flex-direction: column;
+    }
+    #preauto > .field {
+        flex-basis: 51.5%;
+    }
+}
+#preauto > .field > #preauto-field {
+    position: relative;
+
+    height: 100%;
+
+    background-image: url(./field.png);
+    background-repeat: no-repeat;
+    background-size: auto 100%;
+}
+#preauto > .field > #preauto-field > #preauto-robot-pos {
+    position: absolute;
+    transform: translate(-50%, -50%);
+
+    background-color: var(--fga);
+    border: 5px solid var(--fg);
+}
+#preauto > .content {
+    flex-basis: 100%;
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+}
+#preauto > .content > div {
+    position: relative;
+}
+#preauto > .content > div > #preauto-robot {
+    position: relative;
+
+    width: 100%;
+    padding: 20px;
+
+    background-color: var(--a);
+    color: #fff;
+    border-radius: 10px;
+}
+#preauto > .content > div > #preauto-robot::before {
+    content: "▼";
+
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+
+    font-size: 2em;
+}
+#preauto > .content > div > #preauto-robot:not(:disabled):active {
+    background-color: var(--fg);
+    color: var(--bg);
+}
+#preauto > .content > div > #preauto-robot:focus::before {
+    content: "▲";
+}
+#preauto > .content > div > #preauto-robot:disabled:before {
+    content: "";
+}
+#preauto > .content > div > #preauto-robot-dropdown {
+    z-index: 1;
+
+    position: absolute;
+    top: 100%;
+    left: 0%;
+
+    width: 100%;
+    max-height: 50vh;
+    overflow: auto;
+
+    display: none;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+
+    border-radius: 10px;
+}
+#preauto > .content > div > #preauto-robot:focus + #preauto-robot-dropdown,
+#preauto > .content > div > #preauto-robot-dropdown:has(> button:active) {
+    display: flex;
+}
+#preauto > .content > div > #preauto-robot-dropdown > button {
+    padding: 20px;
+
+    background-color: var(--v4);
+    border-top: 5px solid var(--v6);
+}
+#preauto > .content > div > #preauto-robot-dropdown > button:active {
+    background-color: var(--v6);
+}
+#preauto > .content > div > #preauto-robot-dropdown > button:first-of-type {
+    border-top: none;
+}
+#preauto > .content > #preauto-preload {
+    position: relative;
+
+    width: 100%;
+    padding: 20px;
+
+    background-color: var(--v4);
+    border-radius: 10px;
+
+    text-align: center;
+}
+#preauto > .content > #preauto-preload:has(> input:checked) {
+    background-color: var(--a2);
+    color: #fff;
+}
+#preauto > .content > #preauto-preload:has(> input:active) {
+    background-color: var(--fg) !important;
+    color: var(--bg);
+}
+#preauto > .content > #preauto-preload > input {
+    position: absolute;
+    top: 0%;
+    left: 0%;
+
+    width: 100%;
+    height: 100%;
+
+    opacity: 0%;
+}
+#preauto > .content > #preauto-preload > h1 {
+    margin: 0px;
+}
+#preauto > .content > #preauto-preload > h1::before {
+    content: "NOTHING";
+}
+#preauto > .content > #preauto-preload:has(> input:checked) > h1::before {
+    content: "NOTE";
+}
+#preauto > .content > #preauto-team {
+    padding: 20px;
+
+    background-color: var(--v4);
+    border-radius: 10px;
+}
+#preauto > .content > #preauto-team > h1::before {
+    content: "NONE";
+}
+#preauto > .content > #preauto-team.red {
+    background-color: var(--r3);
+    color: #fff;
+}
+#preauto > .content > #preauto-team.red > h1::before {
+    content: "RED";
+}
+#preauto > .content > #preauto-team.blue {
+    background-color: var(--b3);
+    color: #fff;
+}
+#preauto > .content > #preauto-team.blue > h1::before {
+    content: "BLUE";
+}
+#preauto > .content > #preauto-team:not(:disabled):active {
+    background-color: var(--fg);
+    color: var(--bg);
+}
+#preauto > .content > #preauto-start {
+    padding: 20px;
+
+    background-color: var(--a);
+    color: #fff;
+    border-radius: 10px;
+}
+#preauto > .content > #preauto-start:active {
+    background-color: var(--fg);
+    color: var(--bg);
+}
+#preauto > .content > #preauto-start:disabled {
+    background: linear-gradient(var(--bga), var(--bga)), linear-gradient(var(--a), var(--a));
+    color: #fff8;
+}
+
+#auto > .content,
+#teleop > .content {
+    flex-basis: 100%;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+    gap: 20px;
+
+    font-size: 1.5em;
+}
+#auto > .content > *,
+#teleop > .content > * {
+    flex-basis: 100%;
+}
+#auto > .content .row,
+#auto > .content .col,
+#teleop > .content .row,
+#teleop > .content .col {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+    gap: 20px;
+}
+#auto > .content .row > *,
+#auto > .content .col > *,
+#teleop > .content .row > *,
+#teleop > .content .col > * {
+    flex-basis: 100%;
+}
+#auto > .content .row,
+#teleop > .content .row {
+    flex-direction: row;
+}
+#auto > .content .col,
+#teleop > .content .col {
+    flex-direction: column;
+}
+#auto > .content button,
+#teleop > .content button {
+    position: relative;
+
+    flex-direction: column;
+
+    border-radius: 10px;
+
+    background-color: var(--v4);
+}
+#auto > .content button > ion-icon,
+#teleop > .content button > ion-icon {
+    font-size: 2em;
+}
+#auto > .content button > .count,
+#teleop > .content button > .count {
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+}
+#auto > .content button > .count > span:first-child,
+#teleop > .content button > .count > span:first-child {
+    color: var(--r4);
+}
+#auto > .content button > .count > span:last-child,
+#teleop > .content button > .count > span:last-child {
+    color: var(--g4);
+}
+#auto > .content button:active,
+#teleop > .content button:active {
+    background-color: var(--v6);
+}
+#auto > .content button:disabled,
+#teleop > .content button:disabled {
+    background-color: var(--v2);
+    color: var(--v8);
+}
+#auto > .content #auto-pickup,
+#teleop > .content #teleop-pickup-source,
+#teleop > .content #teleop-pickup-ground {
+    border: 5px solid var(--fg);
+}
+#auto > .content #auto-score-speaker,
+#auto > .content #auto-score-amp,
+#teleop > .content #teleop-score-speaker,
+#teleop > .content #teleop-score-amp {
+    border: 5px solid var(--a2);
+}
+#auto > .content #auto-mobile,
+#auto > .content #auto-disable,
+#teleop > .content #teleop-disable {
+    position: relative;
+
+    width: 100%;
+    padding: 10px;
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+
+    background-color: var(--v4);
+    border-radius: 10px;
+
+    text-align: center;
+}
+#auto > .content #auto-mobile:has(> input:checked) {
+    background-color: var(--g4);
+    color: #fff;
+}
+#auto > .content #auto-disable:has(> input:checked),
+#teleop > .content #teleop-disable:has(> input:checked) {
+    background-color: var(--r4);
+    color: #fff;
+}
+#auto > .content #auto-mobile:has(> input:active),
+#auto > .content #auto-disable:has(> input:active),
+#teleop > .content #teleop-disable:has(> input:active) {
+    background-color: var(--fg) !important;
+    color: var(--bg) !important;
+}
+#auto > .content #auto-mobile > input,
+#auto > .content #auto-disable > input,
+#teleop > .content #teleop-disable > input {
+    position: absolute;
+    top: 0%;
+    left: 0%;
+
+    width: 100%;
+    height: 100%;
+
+    opacity: 0%;
+}
+#auto > .content #auto-mobile > h1::before,
+#auto > .content #auto-disable > h1::before,
+#teleop > .content #teleop-disable > h1::before {
+    text-decoration: line-through;
+}
+#auto > .content #auto-mobile > h1::before {
+    content: "Mobility";
+}
+#auto > .content #auto-disable > h1::before,
+#teleop > .content #teleop-disable > h1::before {
+    content: "Disabled";
+}
+#auto > .content #auto-mobile:has(> input:checked) > h1::before,
+#auto > .content #auto-disable:has(> input:checked) > h1::before,
+#teleop > .content #teleop-disable:has(> input:checked) > h1::before {
+    text-decoration: none;
+}
+#auto > .content #auto-next,
+#teleop > .content #teleop-next {
+    padding: 10px;
+
+    background-color: var(--a);
+    color: #fff;
+    border-radius: 10px;
+    border: none;
+}
+@media screen and (orientation:portrait) {
+    #teleop > .content #teleop-next {
+        font-size: 0.75em;
+    }
+}
+#auto > .content #auto-next:active,
+#teleop > .content #teleop-next:active {
+    background-color: var(--fg);
+    color: var(--bg);
+}
+#auto > #auto-modal,
+#teleop > #teleop-modal {
+    position: absolute;
+    top: 0%;
+    left: 0%;
+
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+
+    display: none;
+}
+#auto > #auto-modal.this,
+#teleop > #teleop-modal.this,
+#auto > #auto-modal:has(button:active),
+#teleop > #teleop-modal:has(button:active) {
+    display: block;
+}
+#auto > #auto-modal *,
+#teleop > #teleop-modal * {
+    text-align: center;
+}
+#auto > #auto-modal > div,
+#teleop > #teleop-modal > div {
+    position: relative;
+    top: 0%;
+
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+    gap: 20px;
+
+    background-color: var(--v4);
+    border-radius: 10px;
+}
+#auto > #auto-modal > div > h2,
+#teleop > #teleop-modal > div > h2 {
+    margin: 0px;
+}
+#auto > #auto-modal > div > .content,
+#teleop > #teleop-modal > div > .content {
+    flex-basis: 100%;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+    gap: 20px;
+}
+@media screen and (orientation:portrait) {
+    #teleop > #teleop-modal > div > .content {
+        flex-direction: column;
+    }
+}
+#auto > #auto-modal > div > .content > .field,
+#teleop > #teleop-modal > div > .content > .field {
+    flex-basis: 100%;
+
+    position: relative;
+
+    padding: 20px;
+
+    display: none;
+
+    background-color: var(--bga);
+    border-radius: 10px;
+}
+#auto > #auto-modal.field > div > .content > .field,
+#teleop > #teleop-modal.field > div > .content > .field {
+    display: block;
+}
+#auto > #auto-modal > div > .content > .field {
+    flex-basis: 30%;
+}
+@media screen and (orientation:portrait) {
+    #auto > #auto-modal > div > .content > .field {
+        flex-basis: 60%;
+    }
+}
+#auto > #auto-modal > div > .content > .field > .auto-note {
+    --x: 0;
+    --y: 0;
+
+    position: absolute;
+    left: calc(33% * (var(--x) + 1));
+    top: calc(20px + ((100% - 40px) / 5) * (var(--y) + 0.5));
+    transform: translate(-50%, -50%);
+
+    width: 60px;
+    aspect-ratio: 1 / 1;
+
+    border-radius: 100%;
+    background-color: #0000;
+    border: 10px solid var(--a2);
+    opacity: 50%;
+}
+@media screen and (orientation:portrait) {
+    #auto > #auto-modal > div > .content > .field > .auto-note {
+        left: calc(20px + ((100% - 40px) / 2) * (var(--x) + 0.5));
+    }
+}
+#auto > #auto-modal > div > .content > .field > .auto-note.this {
+    opacity: 100%;
+}
+#teleop > #teleop-modal > div > .content > .field > #teleop-field {
+    position: relative;
+
+    width: 100%;
+    height: 100%;
+
+    background-image: url(./field.png);
+    background-repeat: no-repeat;
+    background-size: auto 100%;
+}
+#teleop > #teleop-modal > div > .content > .field > #teleop-field > #teleop-robot {
+    position: absolute;
+    transform: translate(-50%, -50%);
+
+    background-color: var(--fga);
+    border: 5px solid var(--fg);
+}
+#auto > #auto-modal > div > .content > .nav,
+#teleop > #teleop-modal > div > .content > .nav {
+    flex-basis: 100%;
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+    gap: 20px;
+}
+#auto > #auto-modal > div > .content > .nav > .content,
+#teleop > #teleop-modal > div > .content > .nav > .content {
+    flex-basis: 66%;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: stretch;
+    align-content: center;
+    gap: 20px;
+}
+@media screen and (orientation:portrait) {
+    #auto > #auto-modal > div > .content > .nav > .content,
+    #teleop > #teleop-modal > div > .content > .nav > .content {
+        flex-direction: column;
+    }
+}
+#auto > #auto-modal.field > div > .content > .nav > .content,
+#teleop > #teleop-modal.field > div > .content > .nav > .content {
+    flex-direction: column;
+}
+#auto > #auto-modal > div > .content > .nav > .content > button,
+#auto > #auto-modal > div > .content > .nav > button,
+#teleop > #teleop-modal > div > .content > .nav > .content > button,
+#teleop > #teleop-modal > div > .content > .nav > button {
+    border-radius: 10px;
+
+    font-size: 1.5em;
+}
+#auto > #auto-modal > div > .content > .nav > .content > button,
+#teleop > #teleop-modal > div > .content > .nav > .content > button {
+    flex-basis: 100%;
+}
+#auto > #auto-modal > div > .content > .nav > .content > #auto-success,
+#teleop > #teleop-modal > div > .content > .nav > .content > #teleop-success {
+    background-color: var(--g3);
+    color: #fff;
+}
+#auto > #auto-modal > div > .content > .nav > .content > #auto-success:active,
+#teleop > #teleop-modal > div > .content > .nav > .content > #teleop-success:active {
+    background-color: var(--g4);
+}
+#auto > #auto-modal > div > .content > .nav > .content > #auto-success:disabled,
+#teleop > #teleop-modal > div > .content > .nav > .content > #teleop-success:disabled {
+    background-color: var(--g2);
+    color: #fff8;
+}
+#auto > #auto-modal > div > .content > .nav > .content > #auto-fail,
+#teleop > #teleop-modal > div > .content > .nav > .content > #teleop-fail {
+    background-color: var(--r3);
+    color: #fff;
+}
+#auto > #auto-modal > div > .content > .nav > .content > #auto-fail:active,
+#teleop > #teleop-modal > div > .content > .nav > .content > #teleop-fail:active {
+    background-color: var(--r4);
+}
+#auto > #auto-modal > div > .content > .nav > .content > #auto-fail:disabled,
+#teleop > #teleop-modal > div > .content > .nav > .content > #teleop-fail:disabled {
+    background-color: var(--r2);
+    color: #fff8;
+}
+#auto > #auto-modal > div > .content > .nav > #auto-cancel,
+#teleop > #teleop-modal > div > .content > .nav > #teleop-cancel {
+    flex-basis: 33%;
+
+    background-color: var(--v6);
+}
+#auto > #auto-modal > div > .content > .nav > #auto-cancel:active,
+#teleop > #teleop-modal > div > .content > .nav > #teleop-cancel:active {
+    background-color: var(--v8);
+}
+
+#endgame > #endgame-pos {
+    -webkit-appearance: none;
+
+    align-self: center;
+
+    width: calc(75% - 20px);
+    height: 40px;
+
+    background-color: var(--a);
+}
+#endgame > #endgame-pos::-webkit-slider-thumb {
+    -webkit-appearance: none;
+
+    height: 60px;
+    aspect-ratio: 1 / 1;
+
+    background-color: #fff;
+    border-radius: 100%;
+    border: 5px solid var(--a);
+
+    cursor: pointer;
+}
+#endgame > .selector {
+    align-self: stretch;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    gap: 0px;
+}
+#endgame > .selector > h1 {
+    flex-basis: 100%;
+
+    margin: 0px;
+
+    color: var(--fga);
+
+    text-align: center;
+}
+#endgame > .selector > h1.this {
+    color: var(--fg);
+}
+#endgame > .content {
+    flex-basis: 100%;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+    gap: 20px;
+}
+@media screen and (orientation:portrait) {
+    #endgame > .content {
+        flex-direction: column;
+    }
+}
+#endgame > .content > #endgame-trap,
+#endgame > .content > #endgame-harmony {
+    flex-basis: 100%;
+
+    position: relative;
+
+    padding: 20px;
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+
+    background-color: var(--v4);
+    border-radius: 10px;
+
+    text-align: center;
+    font-size: 1.5em;
+}
+#endgame > .content > #endgame-trap:has(> input:disabled),
+#endgame > .content > #endgame-harmony:has(> input:disabled) {
+    background-color: var(--v2);
+    color: var(--v8);
+}
+#endgame > .content > #endgame-trap:has(> input:checked),
+#endgame > .content > #endgame-harmony:has(> input:checked) {
+    color: #fff;
+}
+#endgame > .content > #endgame-trap:has(> input:disabled:checked),
+#endgame > .content > #endgame-harmony:has(> input:disabled:checked) {
+    color: #fff8;
+}
+#endgame > .content > #endgame-trap:has(> input:checked) {
+    background: var(--a2);
+}
+#endgame > .content > #endgame-trap:has(> input:disabled:checked) {
+    background: linear-gradient(var(--bga), var(--bga)), linear-gradient(var(--a2), var(--a2));
+}
+#endgame > .content > #endgame-harmony:has(> input:checked) {
+    background-color: var(--g4);
+}
+#endgame > .content > #endgame-harmony:has(> input:disabled:checked) {
+    background-color: var(--g2);
+}
+#endgame > .content > #endgame-trap:has(> input:not(:disabled):active),
+#endgame > .content > #endgame-harmony:has(> input:not(:disabled):active) {
+    background-color: var(--fg) !important;
+    color: var(--bg) !important;
+}
+#endgame > .content > #endgame-trap > input,
+#endgame > .content > #endgame-harmony > input {
+    position: absolute;
+    top: 0%;
+    left: 0%;
+
+    width: 100%;
+    height: 100%;
+
+    opacity: 0%;
+}
+#endgame > .content > #endgame-trap > h1::before,
+#endgame > .content > #endgame-harmony > h1::before {
+    text-decoration: line-through;
+}
+#endgame > .content > #endgame-trap > h1::before {
+    content: "Scored Trap";
+}
+#endgame > .content > #endgame-harmony > h1::before {
+    content: "Harmonized";
+}
+#endgame > .content > #endgame-trap:has(> input:checked) > h1::before,
+#endgame > .content > #endgame-harmony:has(> input:checked) > h1::before {
+    text-decoration: none;
+}
+#endgame > #endgame-next {
+    padding: 20px;
+
+    background-color: var(--a);
+    color: #fff;
+    border-radius: 10px;
+}
+#endgame > #endgame-next:active {
+    background-color: var(--fg);
+    color: var(--bg);
+}
+#endgame > #endgame-next > ion-icon {
+    font-size: 2em;
+}
+
+#notes > #notes-notes {
+    flex-basis: 100%;
+
+    padding: 20px;
+
+    background-color: var(--v4);
+    color: var(--fg);
+    border-radius: 10px;
+
+    font-size: 1.5em;
+}
+#notes > #notes-notes::placeholder {
+    color: var(--v6);
+}
+#notes > #notes-next {
+    padding: 20px;
+
+    background-color: var(--a);
+    color: #fff;
+    border-radius: 10px;
+}
+#notes > #notes-next:active {
+    background-color: var(--fg);
+    color: var(--bg);
+}
+#notes > #notes-next > ion-icon {
+    font-size: 2em;
+}
+
+#finish > .content {
+    flex-basis: 100%;
+
+    padding: 20px;
+    overflow: hidden;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+
+    background-color: var(--v4);
+    border-radius: 10px;
+}
+#finish > .content > #finish-code > img {
+    width: 100%;
+    height: auto;
+}
+#finish > .nav {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    gap: 20px;
+}
+#finish > .nav > button {
+    flex-basis: 100%;
+
+    padding: 20px;
+
+    border-radius: 10px;
+}
+#finish > .nav > #finish-next {
+    background-color: var(--a);
+    color: #fff;
+}
+#finish > .nav > #finish-next:active {
+    background-color: var(--fg);
+    color: var(--bg);
+}
+#finish > .nav > #finish-reset {
+    background-color: var(--v4);
+}
+#finish > .nav > #finish-reset:active {
+    background-color: var(--v6);
+}
+
+#prompt {
+    position: absolute;
+    top: 0%;
+    left: 0%;
+
+    width: 100%;
+    height: 75%;
+
+    display: none;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+
+    background-color: var(--bga);
+    color: var(--fg);
+}
+#prompt.this {
+    display: flex;
+}
+#prompt > div {
+    margin-top: -20px;
+    padding: 20px;
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: stretch;
+    align-content: center;
+    gap: 10px;
+
+    background-color: var(--v4);
+    border-radius: 10px;
+}
+#prompt > div > h1 {
+    margin: 0px;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    align-content: center;
+}
+#prompt > div > h1 > span {
+    flex-basis: 100%;
+}
+#prompt > div > h1 > button {
+    height: 100%;
+    aspect-ratio: 1 / 1;
+
+    background-color: transparent;
+    border-radius: 100%;
+}
+#prompt > div > h1 > button:active {
+    background-color: var(--fg);
+    color: var(--bg);
+}
+#prompt > div > input {
+    width: 50vw;
+    padding: 10px;
+
+    background-color: var(--v2);
+    color: var(--fg);
+
+    font-size: 1.5em;
+}
+#prompt > div > input::placeholder {
+    color: var(--v4);
+
+    font-style: italic;
+}
+
+#overlay {
+    position: absolute;
+    top: 0%;
+    left: 0%;
+
+    width: 100%;
+    height: 100%;
+
+    display: none;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+
+    background-color: var(--bga);
+    color: var(--fg);
+
+    font-size: 2em;
+}
+#overlay.this {
+    display: flex;
+}
+#overlay > .hidden {
+    margin-top: 100px;
+
+    opacity: 25%;
+}
