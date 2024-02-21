@@ -408,6 +408,7 @@ export default class App extends util.Target {
 
         let apiKey = null;
         let eventKey = null;
+        let scouters = [];
         let event = {};
         let eventRatings = {};
         let matches = {};
@@ -1732,6 +1733,7 @@ export default class App extends util.Target {
 
             this.eAPIMatches = document.getElementById("api-matches");
             this.eAPITeams = document.getElementById("api-teams");
+            this.eAPIScouters = document.getElementById("api-scouters");
             this.eAPIScanners = document.getElementById("api-scanners");
             this.eAPIListing = document.getElementById("api-listing");
 
@@ -1741,6 +1743,7 @@ export default class App extends util.Target {
                 this.eAPIListing.innerHTML = "";
                 this.eAPIMatches.classList.remove("this");
                 this.eAPITeams.classList.remove("this");
+                this.eAPIScouters.classList.remove("this");
                 this.eAPIScanners.classList.remove("this");
                 if (apiListing == "matches") {
                     this.eAPIMatches.classList.add("this");
@@ -1857,6 +1860,10 @@ export default class App extends util.Target {
                     });
                     return;
                 }
+                if (apiListing == "scouters") {
+                    this.eAPIScouters.classList.add("this");
+                    return;
+                }
                 if (apiListing == "scanners") {
                     this.eAPIScanners.classList.add("this");
                     this.eAPIListing.innerHTML = "<div><canvas></canvas></div><p><span>Scanners!</span><br>Scan here to open the scanner app on your phone! Remember, you must have internet connection (either through wifi or through service or hotspot) to access the scanner app</p>";
@@ -1878,6 +1885,10 @@ export default class App extends util.Target {
             });
             this.eAPITeams.addEventListener("click", e => {
                 apiListing = "teams";
+                updateAPIListing();
+            });
+            this.eAPIScouters.addEventListener("click", e => {
+                apiListing = "scouters";
                 updateAPIListing();
             });
             this.eAPIScanners.addEventListener("click", e => {
@@ -3020,6 +3031,33 @@ export default class App extends util.Target {
                     }
                     eventKey = (eventKey == null) ? null : String(eventKey);
                     localStorage.setItem("event-key", JSON.stringify(eventKey));
+                },
+                async () => {
+                    try {
+                        console.log("🛜 scouters: PYAW");
+                        let resp = await fetch("https://ppatrol.pythonanywhere.com/data/scouters", {
+                            method: "GET",
+                            mode: "cors",
+                            headers: {
+                                "Password": "6036ftw",
+                            },
+                        });
+                        if (resp.status != 200) throw resp.status;
+                        resp = await resp.text();
+                        // console.log("🛜 scouters: PYAW = "+resp);
+                        scouters = JSON.parse(resp);
+                    } catch (e) {
+                        console.log("🛜 scouters: PYAW ERR", e);
+                        try {
+                            console.log("🛜 scouters: LS");
+                            scouters = JSON.parse(localStorage.getItem("scouters"));
+                        } catch (e) {
+                            console.log("🛜 scouters: LS ERR", e);
+                            scouters = null;
+                        }
+                    }
+                    scouters = util.ensure(scouters, "arr").map(name => String(name));
+                    localStorage.setItem("scouters", JSON.stringify(scouters));
                 },
                 async () => {
                     try {

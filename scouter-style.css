@@ -182,6 +182,36 @@
 
 #navigator {
     padding: 0px;
+
+    gap: 0em;
+}
+#navigator > header {
+    padding: 20px;
+    padding-bottom: 0.25em;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    align-content: center;
+    gap: 1em;
+}
+#navigator > header button {
+    min-width: 10em;
+    padding: 0.25em 0.5em;
+
+    background-color: var(--v4);
+    border-radius: 0.25rem;
+}
+#navigator > header button:active {
+    background-color: var(--fg);
+    color: var(--bg);
+}
+#navigator > header > h1 {
+    flex-basis: 100%;
+
+    margin: 0em;
 }
 #navigator > .content {
     width: 100%;
@@ -279,13 +309,14 @@
 #navigator > .content > button > .teams > .blue > *,
 .match > .teams > .red > *,
 .match > .teams > .blue > * {
+    min-width: 3.5em;
     margin: 0px;
     padding: 10px 20px;
 
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     align-content: center;
 }
@@ -1143,7 +1174,7 @@
     left: 0%;
 
     width: 100%;
-    height: 75%;
+    height: 100%;
 
     display: none;
     flex-direction: column;
@@ -1159,7 +1190,8 @@
     display: flex;
 }
 #prompt > div {
-    margin-top: -20px;
+    transform: translateY(-25vh);
+
     padding: 20px;
 
     display: flex;
@@ -1174,6 +1206,7 @@
     border-radius: 10px;
 }
 #prompt > div > h1 {
+    min-width: 30vw;
     margin: 0px;
 
     display: flex;
@@ -1210,6 +1243,33 @@
     color: var(--v4);
 
     font-style: italic;
+}
+#prompt > div > h2 {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: stretch;
+    align-content: center;
+    gap: 0.5em;
+}
+#prompt > div > h2 > button {
+    flex-basis: 100%;
+
+    padding: 0.5em 0.75em;
+
+    background-color: var(--v6);
+    border-radius: 0.25rem;
+
+    font-size: inherit;
+    font-weight: inherit;
+}
+#prompt > div > h2 > button[yes] {
+    background-color: var(--a);
+}
+#prompt > div > h2 > button:active {
+    background-color: var(--fg);
+    color: var(--bg);
 }
 
 #overlay {

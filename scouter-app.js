@@ -20,6 +20,7 @@ window.hashStr = hashStr;
 
 export default class App extends util.Target {
     #id;
+    #scouter;
     #flipX;
     #flipY;
 
@@ -60,6 +61,7 @@ export default class App extends util.Target {
 
             let apiKey = null;
             let eventKey = null;
+            let scouters = [];
             let event = {};
             let matches = [];
 
@@ -121,6 +123,33 @@ export default class App extends util.Target {
                         }
                         eventKey = (eventKey == null) ? null : String(eventKey);
                         localStorage.setItem("event-key", JSON.stringify(eventKey));
+                    },
+                    async () => {
+                        try {
+                            console.log("🛜 scouters: PYAW");
+                            let resp = await fetch("https://ppatrol.pythonanywhere.com/data/scouters", {
+                                method: "GET",
+                                mode: "cors",
+                                headers: {
+                                    "Password": "6036ftw",
+                                },
+                            });
+                            if (resp.status != 200) throw resp.status;
+                            resp = await resp.text();
+                            // console.log("🛜 scouters: PYAW = "+resp);
+                            scouters = JSON.parse(resp);
+                        } catch (e) {
+                            console.log("🛜 scouters: PYAW ERR", e);
+                            try {
+                                console.log("🛜 scouters: LS");
+                                scouters = JSON.parse(localStorage.getItem("scouters"));
+                            } catch (e) {
+                                console.log("🛜 scouters: LS ERR", e);
+                                scouters = null;
+                            }
+                        }
+                        scouters = util.ensure(scouters, "arr").map(name => String(name));
+                        localStorage.setItem("scouters", JSON.stringify(scouters));
                     },
                 ].map(f => f()));
                 await Promise.all([
@@ -189,9 +218,11 @@ export default class App extends util.Target {
 
             this.eBack = document.getElementById("back");
             this.eForward = document.getElementById("forward");
+            this.eMatch = document.getElementById("match");
+            this.eId = document.getElementById("id");
             this.eTime = document.getElementById("time");
             this.eScreen = document.getElementById("screen");
-            let fullscreenWanted = true;
+            let fullscreenWanted = false;
             const isFullscreen = () => document.fullscreenElement == document.body;
             const updateFullscreen = () => {
                 if (fullscreenWanted) {
@@ -225,8 +256,12 @@ export default class App extends util.Target {
             updateFullscreen();
 
             this.ePrompt = document.getElementById("prompt");
+            this.ePromptTitle = document.getElementById("prompt-title");
             this.ePromptClose = document.getElementById("prompt-close");
-            this.eAdminPwd = document.getElementById("admin-pwd");
+            this.ePromptInput = document.getElementById("prompt-input");
+            this.ePromptButtons = document.getElementById("prompt-btns");
+            this.ePromptYes = document.getElementById("prompt-yes");
+            this.ePromptNo = document.getElementById("prompt-no");
 
             this.eSettingsPage = document.getElementById("settings");
 
@@ -241,6 +276,7 @@ export default class App extends util.Target {
 
             this.eNavigatorPage = document.getElementById("navigator");
 
+            this.ePracticeMatch = document.getElementById("practice-match");
             this.eNavigatorList = document.getElementById("navigator-list");
 
             this.ePreAutoPage = document.getElementById("preauto");
@@ -319,6 +355,8 @@ export default class App extends util.Target {
             this.eFinishReset = document.getElementById("finish-reset");
 
             this.#id = null;
+            this.#scouter = "";
+            this.#flipX = false;
             this.#flipY = false;
 
             this.pages = {
@@ -369,12 +407,20 @@ export default class App extends util.Target {
                         });
                     },
                     navigator: () => {
+                        this.ePracticeMatch.addEventListener("click", e => {
+                            let matches = this.matches;
+                            for (let match of matches) {
+                                if (!match.match.isPractice()) continue;
+                                match.post("trigger", null);
+                                break;
+                            }
+                        });
                         this.addHandler("pull", () => {
                             let newMatches = [
                                 new App.Match(-1),
                                 ...matches.filter(match => match.comp_level == "qm").sort((a, b) => a.match_number-b.match_number).map(match => {
                                     return new App.Match(
-                                        match.match_number,
+                                        match.match_number-1,
                                         match.alliances.red.team_keys.map(key => parseInt(key.substring(3))),
                                         match.alliances.blue.team_keys.map(key => parseInt(key.substring(3))),
                                         null,
@@ -777,14 +823,41 @@ export default class App extends util.Target {
                     },
                     finish: () => {
                         this.eFinishNext.addEventListener("click", e => {
-                            this.page = "navigator";
                             this.match = null;
-                        });
-                        this.eFinishReset.addEventListener("click", e => {
                             this.page = "navigator";
+                        });
+                        this.eFinishReset.addEventListener("click", async e => {
+                            this.ePrompt.classList.add("this");
+                            let clear = await new Promise((res, rej) => {
+                                this.ePromptTitle.textContent = "Are you sure?";
+                                this.ePromptInput.style.display = "none";
+                                this.ePromptButtons.style.display = "";
+                                const onFinish = () => {
+                                    this.ePrompt.classList.remove("this");
+                                    this.ePromptClose.removeEventListener("click", onClose);
+                                    this.ePromptYes.removeEventListener("click", onYes);
+                                    this.ePromptNo.removeEventListener("click", onNo);
+                                };
+                                const onClose = () => {
+                                    onFinish();
+                                };
+                                const onYes = () => {
+                                    res(true);
+                                    onFinish();
+                                };
+                                const onNo = () => {
+                                    res(false);
+                                    onFinish();
+                                };
+                                this.ePromptClose.addEventListener("click", onClose);
+                                this.ePromptYes.addEventListener("click", onYes);
+                                this.ePromptNo.addEventListener("click", onNo);
+                            });
+                            if (!clear) return;
                             if (this.hasMatch())
                                 this.match.reset();
                             this.match = null;
+                            this.page = "navigator";
                         });
 
                         new ResizeObserver(() => {
@@ -844,23 +917,28 @@ export default class App extends util.Target {
                             const correctPwd = 750852430;
                             if (userPwd != correctPwd) return this.page = "navigator";
                         } else {
-                            this.eAdminPwd.value = "";
                             this.ePrompt.classList.add("this");
+                            this.ePromptTitle.textContent = "Admin Password";
+                            this.ePromptInput.style.display = "";
+                            this.ePromptInput.value = "";
+                            this.ePromptInput.type = "password";
+                            this.ePromptInput.placeholder = "...";
+                            this.ePromptButtons.style.display = "none";
                             const onFinish = () => {
                                 this.ePrompt.classList.remove("this");
                                 this.ePromptClose.removeEventListener("click", onClose);
-                                this.eAdminPwd.removeEventListener("change", onSubmit);
+                                this.ePromptInput.removeEventListener("change", onSubmit);
                             };
                             const onClose = () => {
                                 onFinish();
                             };
                             const onSubmit = () => {
                                 onFinish();
-                                state.userPwd = this.eAdminPwd.value;
+                                state.userPwd = this.ePromptInput.value;
                                 this.page = "settings";
                             };
                             this.ePromptClose.addEventListener("click", onClose);
-                            this.eAdminPwd.addEventListener("change", onSubmit);
+                            this.ePromptInput.addEventListener("change", onSubmit);
                             return this.page = "navigator";
                         }
 
@@ -917,7 +995,7 @@ export default class App extends util.Target {
                         this.eNotesNotes.value = this.hasMatch() ? this.match.notes : "";
                     },
                     finish: () => {
-                        let data = this.hasMatch() ? this.match.toBufferStr() : "NO_MATCH_ERR";
+                        let data = this.hasMatch() ? this.match.toBufferStr(this.scouter) : "NO_MATCH_ERR";
                         console.log(data);
                         new QRious({
                             element: this.eFinishCode,
@@ -961,6 +1039,7 @@ export default class App extends util.Target {
             });
 
             this.loadId();
+            this.loadScouter();
             this.loadFlip();
 
             this.page = "navigator";
@@ -991,6 +1070,7 @@ export default class App extends util.Target {
         v = util.ensure(v, "int");
         if (this.id == v) return;
         this.change("id", this.id, this.#id=v);
+        this.eId.textContent = this.id;
         this.saveId();
         this.updateMatches();
     }
@@ -1005,6 +1085,26 @@ export default class App extends util.Target {
     saveId() {
         console.log("save id", this.id);
         localStorage.setItem("id", JSON.stringify(this.id));
+    }
+
+    get scouter() { return this.#scouter; }
+    set scouter(v) {
+        v = util.ensure(v, "str");
+        if (this.scouter == v) return;
+        this.change("scouter", this.scouter, this.#scouter=v);
+        this.saveScouter();
+    }
+    loadScouter() {
+        let scouter = null;
+        try {
+            scouter = JSON.parse(localStorage.getItem("scouter"));
+        } catch (e) {}
+        console.log("load scouter", scouter);
+        this.scouter = util.ensure(scouter, "str");
+    }
+    saveScouter() {
+        console.log("save scouter", this.scouter);
+        localStorage.setItem("scouter", JSON.stringify(this.scouter));
     }
 
     get flipX() { return this.#flipX; }
@@ -1061,7 +1161,7 @@ export default class App extends util.Target {
             if (!(match instanceof App.Match)) return false;
             if (this.hasMatch(match)) return false;
             this.#matches.push(match);
-            this.eNavigatorList.appendChild(match.eListItem);
+            if (!match.match.isPractice()) this.eNavigatorList.appendChild(match.eListItem);
             match.addLinkedHandler(this, "trigger", e => {
                 if (match.match.isPractice()) {
                     this.match = new Match(-1);
@@ -1083,7 +1183,7 @@ export default class App extends util.Target {
             if (!(match instanceof App.Match)) return false;
             if (!this.hasMatch(match)) return false;
             this.#matches.splice(this.#matches.indexOf(match), 1);
-            this.eNavigatorList.removeChild(match.eListItem);
+            if (!match.match.isPractice()) this.eNavigatorList.removeChild(match.eListItem);
             match.clearLinkedHandlers(this, "trigger");
             this.change("remMatch", match, null);
             return match;
@@ -1105,6 +1205,7 @@ export default class App extends util.Target {
         if (this.hasMatch()) this.match.clearLinkedHandlers(this, "change");
         this.change("match", this.match, this.#match=v);
         if (this.hasMatch()) this.match.addLinkedHandler(this, "change", (c, f, t) => this.change("match."+c, f, t));
+        this.eMatch.textContent = this.hasMatch() ? this.match.isPractice() ? "Practice" : "Q"+(this.match.id+1) : "";
     }
 }
 App.Match = class AppMatch extends util.Target {

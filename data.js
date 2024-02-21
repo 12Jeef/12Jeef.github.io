@@ -308,9 +308,10 @@ export class Match extends util.Target {
         console.log("notes = "+JSON.stringify(this.notes));
     }
 
-    toBufferStr() {
+    toBufferStr(scouter) {
         return Match.toBufferStr({
             id: this.id,
+            scouter: String(scouter),
             robot: this.robot,
             robotTeam: this.robotTeam,
 
@@ -368,6 +369,31 @@ export class Match extends util.Target {
             let id = util.ensure(data.id, "int")+1;
             // no max required
             id = Math.min(2**7-1, Math.max(0, id));
+            // writing
+            buff.write(i, 7, id);
+            i += 7;
+        }
+        {
+            // n_scouter: 8
+            let scouter = String(data.scouter);
+            let n = 0;
+            for (let _ of scouter) n++;
+            // no max required
+            n = Math.min(2**8-1, Math.max(0, n));
+            // writing
+            buff.write(i, 8, n);
+            i += 16;
+            for (let c of scouter) {
+                // char: 8
+                let char = allowedChars.indexOf(c);
+                if (char < 0) char = 0;
+                if (char >= 2**8) char = 0;
+                // writing
+                buff.write(i, 8, char);
+                i += 8;
+            }
+        }
+        {
             // robot: 14
             let robot = data.robot;
             if (!util.is(robot, "int")) return "NO_ROBOT_ERR";
@@ -380,11 +406,10 @@ export class Match extends util.Target {
             robotTeam = +(robotTeam=="r");
             // writing
             buff
-                .write(i, 7, id)
-                .write(i+7, 14, robot)
-                .write(i+7+14, 1, robotTeam)
+                .write(i, 14, robot)
+                .write(i+14, 1, robotTeam)
             ;
-            i += 7+14+1;
+            i += 14+1;
         }
         {
             // clamping
@@ -626,10 +651,8 @@ export class Match extends util.Target {
             i += 12;
         }
         {
-            // 🔥🔥🔥🔥🔥🔥🔥🤡🤡🤡💣💣💣😅😅😅😅🤯🤯🤯🫦🫦🫦💙💙💙💙💙👀👀👀👀👀👎👎👎👎👎👎👎👎👎👎👎👎👎👎👎👎👎👎👎😅
             // n_notes: 16
             let notes = String(data.notes);
-            // let n = notes.length;
             let n = 0;
             for (let _ of notes) n++;
             // no max required
@@ -654,10 +677,23 @@ export class Match extends util.Target {
         let data = {};
         let i = 0, buff = Buffer.fromStr(s);
         {
-            data.id = buff.read(i+0, 7)-1;
-            data.robot = buff.read(i+7, 14);
-            data.robotTeam = buff.read(i+7+14, 1) ? "r" : "b";
-            i += 7+14+1;
+            data.id = buff.read(i, 7)-1;
+            i += 7;
+        }
+        {
+            let n = buff.read(i, 8), scouter = "";
+            i += 8;
+            while (n-- > 0) {
+                let char = buff.read(i, 8);
+                i += 8;
+                scouter += allowedChars[char];
+            }
+            data.scouter = scouter;
+        }
+        {
+            data.robot = buff.read(i, 14);
+            data.robotTeam = buff.read(i+14, 1) ? "r" : "b";
+            i += 14+1;
         }
         {
             data.pos = new V(

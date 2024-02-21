@@ -16,6 +16,8 @@
             <button id="back"><ion-icon name="arrow-back"></ion-icon></button>
             <button id="forward"><ion-icon name="arrow-forward"></ion-icon></button>
             <h1><span>Peninsula</span>Patrol</h1>
+            <h3 id="match"></h3>
+            <h3 id="id">0</h3>
             <h2 id="time">0:00.000</h2>
             <button id="screen">
                 <ion-icon name="expand"></ion-icon>
@@ -49,6 +51,13 @@
             </div>
         </div>
         <div id="navigator" class="page">
+            <header>
+                <div>
+                    <button><h3>Scouter</h3></button>
+                </div>
+                <h1>Qualification matches</h1>
+                <button id="practice-match"><h3>Practice Match</h3></button>
+            </header>
             <div id="navigator-list" class="content"></div>
         </div>
         <div id="preauto" class="page">
@@ -65,7 +74,7 @@
                 </div>
                 <h1>Preload:</h1>
                 <div id="preauto-preload"><input type="checkbox" id="preauto-preloaded"><h1></h1></div>
-                <h1>Team:</h1>
+                <h1>Alliance:</h1>
                 <button id="preauto-team"><h1></h1></button>
                 <div style="flex-basis:100%;"></div>
                 <button id="preauto-start"><h1>START MATCH</h1></button>
@@ -170,8 +179,12 @@
         </div>
         <div id="prompt">
             <div>
-                <h1><span>Admin Password</span><button id="prompt-close"><ion-icon name="close"></ion-icon></button></h1>
-                <input id="admin-pwd" type="password" placeholder="Its not 6036FTW...">
+                <h1><span id="prompt-title"></span><button id="prompt-close"><ion-icon name="close"></ion-icon></button></h1>
+                <input id="prompt-input">
+                <h2 id="prompt-btns">
+                    <button id="prompt-yes" yes>Yes</button>
+                    <button id="prompt-no">No</button>
+                </h2>
             </div>
         </div>
         <div id="overlay">
