@@ -662,6 +662,14 @@ export default class App extends util.Target {
                             state.type = "amp";
                         });
 
+                        const updateButtons = () => {
+                            this.eTeleopPickupSource.disabled = this.eTeleopDisabled.checked;
+                            this.eTeleopPickupGround.disabled = this.eTeleopDisabled.checked;
+                            this.eTeleopScoreSpeaker.disabled = this.eTeleopDisabled.checked;
+                            this.eTeleopScoreAmp.disabled = this.eTeleopDisabled.checked;
+                        };
+                        ["match.globalFrames.add", "match.globalFrames.rem"].forEach(c => this.addHandler("change-"+c, updateButtons));
+
                         this.eTeleopDisabled.addEventListener("change", e => {
                             if (!this.hasMatch()) return;
                             this.match.globalFrames.add(new Match.Frame(util.getTime()-startTime, "disable", this.eTeleopDisabled.checked));
