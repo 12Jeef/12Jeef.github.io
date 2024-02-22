@@ -569,7 +569,7 @@ export default class App extends util.Target {
         };
         const computeAutoMobility = match => {
             let mobility = getAutoMobility(match);
-            let data = { state: mobility, score: mobility.state*2 };
+            let data = { state: mobility, score: (!!mobility)*2 };
             return data;
         };
         const computeAuto = match => {
@@ -949,6 +949,7 @@ export default class App extends util.Target {
         const makeMatchListing = match => {
             const k = getBufferStr(match);
             const comp = computeFullMatch(match);
+            console.log(comp);
             let elem = document.createElement("table");
             elem.classList.add("match-listing");
             if (match.robotTeam == "r") elem.setAttribute("red", "");
