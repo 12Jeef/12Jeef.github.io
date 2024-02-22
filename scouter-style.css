@@ -255,6 +255,8 @@ button[fail]:disabled {
 }
 #navigator > header > h3 > button {
     min-width: 15em;
+
+    justify-content: flex-start;
 }
 #navigator > header > h3 > div {
     position: absolute;
@@ -279,6 +281,8 @@ button[fail]:disabled {
     display: flex;
 }
 #navigator > header > h3 > div > button {
+    justify-content: flex-start;
+
     border-radius: 0em;
 }
 #navigator > header > h3 button.other {

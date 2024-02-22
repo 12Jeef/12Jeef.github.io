@@ -413,8 +413,8 @@ export default class App extends util.Target {
                         this.eScouterName.addEventListener("focus", e => {
                             this.eScouterDropdown.innerHTML = "";
                             scouters.sort((a, b) => {
-                                let roleA = ["scouter", "other", "dev"].indexOf(a.role);
-                                let roleB = ["scouter", "other", "dev"].indexOf(b.role);
+                                let roleA = ["scouter", "other", "dev"].indexOf(String(a.role).split("-")[0]);
+                                let roleB = ["scouter", "other", "dev"].indexOf(String(b.role).split("-")[0]);
                                 if (roleA < roleB) return -1;
                                 if (roleB < roleA) return +1;
                                 let nameA = String(a.name);
@@ -425,7 +425,7 @@ export default class App extends util.Target {
                             }).forEach(scouter => {
                                 let elem = document.createElement("button");
                                 this.eScouterDropdown.appendChild(elem);
-                                elem.classList.add(scouter.role);
+                                String(scouter.role).split("-").forEach(subrole => elem.classList.add(subrole));
                                 elem.textContent = scouter.name;
                                 elem.addEventListener("click", e => {
                                     this.scouter = scouter.name;

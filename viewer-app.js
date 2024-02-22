@@ -5,8 +5,8 @@ import { Match, fieldSize } from "./data.js";
 
 
 function sortScouter(a, b) {
-    let roleA = ["scouter", "other", "dev"].indexOf(a.role);
-    let roleB = ["scouter", "other", "dev"].indexOf(b.role);
+    let roleA = ["scouter", "other", "dev"].indexOf(String(a.role).split("-")[0]);
+    let roleB = ["scouter", "other", "dev"].indexOf(String(b.role).split("-")[0]);
     if (roleA < roleB) return -1;
     if (roleB < roleA) return +1;
     let nameA = String(a.name);
@@ -1936,7 +1936,7 @@ export default class App extends util.Target {
                     scouters.sort(sortScouter).forEach(scouter => {
                         let elem = document.createElement("div");
                         this.eAPIListing.appendChild(elem);
-                        elem.classList.add(scouter.role);
+                        String(scouter.role).split("-").forEach(subrole => elem.classList.add(subrole));
                         elem.innerHTML = "<span></span><button><ion-icon name='ellipsis-vertical'></ion-icon></button><button><ion-icon name='close'></ion-icon></button>";
                         elem.children[0].textContent = scouter.name;
                         elem.children[1].addEventListener("click", e => {
