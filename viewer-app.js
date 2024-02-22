@@ -435,7 +435,7 @@ export default class App extends util.Target {
         };
         const getAutoMobility = match => {
             let tbamatch = getTBAMatch(match);
-            if (tbamatch == null) return { state: !!match.autoMobility, safe: false };
+            if (tbamatch == null) return false;
             let teams = [
                 ...tbamatch.alliances.red.team_keys.map(key => parseInt(key.substring(3))),
                 ...tbamatch.alliances.blue.team_keys.map(key => parseInt(key.substring(3))),
@@ -444,10 +444,10 @@ export default class App extends util.Target {
                 ...Array.from(new Array(3).keys()).map(i => ["No", "Yes"].indexOf(tbamatch.score_breakdown.red["autoLineRobot"+(i+1)])),
                 ...Array.from(new Array(3).keys()).map(i => ["No", "Yes"].indexOf(tbamatch.score_breakdown.blue["autoLineRobot"+(i+1)])),
             ];
-            if (!teams.includes(match.robot)) return { state: !!match.autoMobility, safe: false };
+            if (!teams.includes(match.robot)) return false;
             let state = values[teams.indexOf(match.robot)];
-            if (state < 0) return { state: !!match.autoMobility, safe: false };
-            return { state: [false, true][state], safe: true };
+            if (state < 0) return false;
+            return [false, true][state];
         };
         const getEndgameClimb = match => {
             let safe = false;
@@ -759,7 +759,7 @@ export default class App extends util.Target {
                     },
                 },
                 mobility: {
-                    states: comps.map(comp => comp.auto.mobility.state.state),
+                    states: comps.map(comp => comp.auto.mobility.state),
                     scores: comps.map(comp => comp.auto.mobility.score),
                 },
             };
@@ -915,7 +915,7 @@ export default class App extends util.Target {
                 scores: scores,
                 endgame: endgame,
                 score: auto.score+teleop.score+endgame.score,
-                notes: matches.map(match => { return { from: "Scouter", note: match.notes }; }).filter(note => note.note.length > 0),
+                notes: matches.map(match => { return { from: match.scouter, note: match.notes }; }).filter(note => note.note.length > 0),
             };
         };
         const computeFullTeam = team => {
@@ -1151,7 +1151,7 @@ export default class App extends util.Target {
                             dat.textContent = match.robot;
                         } else if (j == 3) {
                             dat.innerHTML = "<span>@</span>";
-                            dat.appendChild(document.createTextNode("Scouter"));
+                            dat.appendChild(document.createTextNode(match.scouter));
                         } else if (j == 9) {
                             let v = null;
                             let id = setInterval(() => {
@@ -1187,7 +1187,7 @@ export default class App extends util.Target {
                             dat.textContent = match.robot;
                         } else if (j == 3) {
                             dat.innerHTML = "<span>@</span>";
-                            dat.appendChild(document.createTextNode("Scouter"));
+                            dat.appendChild(document.createTextNode(match.scouter));
                         } else if (j == 12) {
                             if (match.preloaded) dat.setAttribute("yes", "");
                         }
@@ -1203,9 +1203,7 @@ export default class App extends util.Target {
                                 this.team = match.robot;
                             });
                         } else if (j == 12) {
-                            if (!comp.auto.mobility.state.safe)
-                                dat.setAttribute("no", "");
-                            if (comp.auto.mobility.state.state)
+                            if (comp.auto.mobility.state)
                                 dat.setAttribute("yes", "");
                         }
                         continue;
@@ -1737,6 +1735,48 @@ export default class App extends util.Target {
             this.eAPIScanners = document.getElementById("api-scanners");
             this.eAPIListing = document.getElementById("api-listing");
 
+            let scouters2 = [];
+            this.addHandler("post-refresh", () => (scouters2 = [...scouters]));
+            setInterval(() => {
+                if (this.locked) return;
+                if (scouters.length == scouters2.length) {
+                    let diff = false;
+                    for (let i = 0; i < scouters.length; i++) {
+                        if (scouters[i] == scouters2[i]) continue;
+                        diff = true;
+                        break;
+                    }
+                    if (!diff) return;
+                }
+                postScouters();
+            }, 5*1000);
+            const postScouters = async () => {
+                await this.whenUnlocked();
+                this.lock();
+
+                try {
+                    console.log("📝:🔑 scouters: PYAW");
+                    let resp = await fetch("https://ppatrol.pythonanywhere.com/data/scouters", {
+                        method: "POST",
+                        mode: "cors",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Password": "6036ftw",
+                        },
+                        body: JSON.stringify({
+                            v: scouters,
+                        }),
+                    });
+                    if (resp.status != 200) throw resp.status;
+                } catch (e) {
+                    console.log("📝:🔑 scouters: PYAW ERR", e);
+                }
+
+                this.unlock();
+
+                this.refresh();
+            };
+
             let apiListing = null;
             const updateAPIListing = () => {
                 localStorage.setItem("api-listing", apiListing);
@@ -1862,6 +1902,24 @@ export default class App extends util.Target {
                 }
                 if (apiListing == "scouters") {
                     this.eAPIScouters.classList.add("this");
+                    this.eAPIListing.innerHTML = "<button><ion-icon name='add'></ion-icon></button>";
+                    this.eAPIListing.children[0].addEventListener("click", e => {
+                        let names = prompt("Add scouter(s):");
+                        if (names == null) return;
+                        names = names.split(",").map(name => name.trim());
+                        scouters.push(...names);
+                        updateAPIListing();
+                    });
+                    scouters.forEach(name => {
+                        let elem = document.createElement("div");
+                        this.eAPIListing.appendChild(elem);
+                        elem.innerHTML = "<span></span><button><ion-icon name='close'></ion-icon></button>";
+                        elem.children[0].textContent = name;
+                        elem.children[1].addEventListener("click", e => {
+                            scouters.splice(scouters.indexOf(name), 1);
+                            updateAPIListing();
+                        });
+                    });
                     return;
                 }
                 if (apiListing == "scanners") {
@@ -2197,7 +2255,6 @@ export default class App extends util.Target {
                             ...tbamatch.alliances.red.team_keys.map(key => parseInt(key.substring(3))),
                             ...tbamatch.alliances.blue.team_keys.map(key => parseInt(key.substring(3))),
                         ];
-                        // for (let i = 0; i < 6; i++) this.setHotswap(i, this.teams[i]);
                     } else this.teams = new Array(6).fill(null);
                 } else {
                     this.qual = null;
@@ -3274,212 +3331,214 @@ export default class App extends util.Target {
 
             // pickList = teams.map(team => team.team_number);
 
-            matchesScouted = [];
-            let profiles = {};
-            Object.values(matches).forEach((match, i) => {
-                let teams = [
-                    ...match.alliances.red.team_keys.map(key => parseInt(key.substring(3))),
-                    ...match.alliances.blue.team_keys.map(key => parseInt(key.substring(3))),
-                ];
-                teams.forEach((team, j) => {
-                    if (!(team in profiles))
-                        profiles[team] = {
-                            source: Math.random(),
-                            ground: Math.random(),
-                            speaker: Math.random(),
-                            amp: Math.random(),
-                            climb: Math.random(),
-                            trap: Math.random(),
-                            auto: Math.random(),
-                            teleop: Math.random(),
-                            cycle: Math.random(),
-                        };
-                    const profile = profiles[team];
-                    // 60% chance of able to source
-                    const canSource = profile.source < 0.6;
-                    const sourceFailChance = canSource ? util.lerp(0, 0.25, profile.source/0.6) : 1;
-                    // 90% chance of able to ground
-                    const canGround = profile.ground < 0.9;
-                    const groundFailChance = canGround ? util.lerp(0, 0.25, profile.ground/0.9) : 1;
-                    // 80% chance of able to speaker
-                    const canSpeaker = profile.speaker < 0.8;
-                    const speakerFailChance = canSpeaker ? util.lerp(0, 0.25, profile.speaker/0.8) : 1;
-                    // 60% chance of able to amp
-                    const canAmp = profile.amp < 0.6;
-                    const ampFailChance = canAmp ? util.lerp(0, 0.25, profile.amp/0.6) : 1;
-                    // 30% chance of able to climb
-                    const canClimb = profile.climb < 0.3;
-                    const climbState = Math.max(0, canClimb ? Math.ceil(2*(1-profile.climb/0.3))-(+(Math.random()<0.3)) : 0);
-                    // 30% chance of able to trap
-                    const canTrap = profile.trap < 0.3;
-                    const trapFailChance = canTrap ? (profile.trap/0.3) : 1;
-                    // 90% chance of able to move during auto
-                    const autoMobility = profile.auto < 0.9;
-                    // 70% chance of able to pickup during auto
-                    const autoPickups = autoMobility && profile.auto < 0.7;
-                    // auto cycle time 5-7.5s
-                    const autoCycleTime = autoPickups ? util.lerp(5, 7.5, profile.auto/0.7) : 0;
-                    // teleop cycle time 9-12s
-                    const teleopCycleTime = util.lerp(9, 12, Math.random());
-                    // 15s auto
-                    const l_auto = 15+util.lerp(-2,2,Math.random());
-                    // 2min auto
-                    const l_teleop = 2*60+util.lerp(-2,2,Math.random());
-                    // 3-5s climb
-                    const l_climb = util.lerp(3, 15, Math.random());
-                    // generation
-                    let t = util.lerp(0.25, 1, Math.random()), trying = "score";
-                    let autoFrames = [];
-                    while (t < l_auto) {
-                        // trying to pickup
-                        if (trying == "pickup") {
-                            if (!autoMobility) break;
-                            if (!autoPickups) break;
-                            // cant pickup from ground
-                            if (!canGround) break;
-                            // deciding fail
-                            let x = Math.random();
-                            autoFrames.push({
-                                ts: t*1000,
-                                type: "pickup",
-                                state: {
-                                    at: -1,
-                                    value: x >= groundFailChance,
-                                },
-                            });
-                            // fail = 0.5-1s delay until retry
-                            if (x < groundFailChance)
-                                t += util.lerp(0.5,1,Math.random());
-                            // success = cycle_time/2 delay until score
-                            else {
-                                trying = "score";
+            if (0) {
+                matchesScouted = [];
+                let profiles = {};
+                Object.values(matches).forEach((match, i) => {
+                    let teams = [
+                        ...match.alliances.red.team_keys.map(key => parseInt(key.substring(3))),
+                        ...match.alliances.blue.team_keys.map(key => parseInt(key.substring(3))),
+                    ];
+                    teams.forEach((team, j) => {
+                        if (!(team in profiles))
+                            profiles[team] = {
+                                source: Math.random(),
+                                ground: Math.random(),
+                                speaker: Math.random(),
+                                amp: Math.random(),
+                                climb: Math.random(),
+                                trap: Math.random(),
+                                auto: Math.random(),
+                                teleop: Math.random(),
+                                cycle: Math.random(),
+                            };
+                        const profile = profiles[team];
+                        // 60% chance of able to source
+                        const canSource = profile.source < 0.6;
+                        const sourceFailChance = canSource ? util.lerp(0, 0.25, profile.source/0.6) : 1;
+                        // 90% chance of able to ground
+                        const canGround = profile.ground < 0.9;
+                        const groundFailChance = canGround ? util.lerp(0, 0.25, profile.ground/0.9) : 1;
+                        // 80% chance of able to speaker
+                        const canSpeaker = profile.speaker < 0.8;
+                        const speakerFailChance = canSpeaker ? util.lerp(0, 0.25, profile.speaker/0.8) : 1;
+                        // 60% chance of able to amp
+                        const canAmp = profile.amp < 0.6;
+                        const ampFailChance = canAmp ? util.lerp(0, 0.25, profile.amp/0.6) : 1;
+                        // 30% chance of able to climb
+                        const canClimb = profile.climb < 0.3;
+                        const climbState = Math.max(0, canClimb ? Math.ceil(2*(1-profile.climb/0.3))-(+(Math.random()<0.3)) : 0);
+                        // 30% chance of able to trap
+                        const canTrap = profile.trap < 0.3;
+                        const trapFailChance = canTrap ? (profile.trap/0.3) : 1;
+                        // 90% chance of able to move during auto
+                        const autoMobility = profile.auto < 0.9;
+                        // 70% chance of able to pickup during auto
+                        const autoPickups = autoMobility && profile.auto < 0.7;
+                        // auto cycle time 5-7.5s
+                        const autoCycleTime = autoPickups ? util.lerp(5, 7.5, profile.auto/0.7) : 0;
+                        // teleop cycle time 9-12s
+                        const teleopCycleTime = util.lerp(9, 12, Math.random());
+                        // 15s auto
+                        const l_auto = 15+util.lerp(-2,2,Math.random());
+                        // 2min auto
+                        const l_teleop = 2*60+util.lerp(-2,2,Math.random());
+                        // 3-5s climb
+                        const l_climb = util.lerp(3, 15, Math.random());
+                        // generation
+                        let t = util.lerp(0.25, 1, Math.random()), trying = "score";
+                        let autoFrames = [];
+                        while (t < l_auto) {
+                            // trying to pickup
+                            if (trying == "pickup") {
+                                if (!autoMobility) break;
+                                if (!autoPickups) break;
+                                // cant pickup from ground
+                                if (!canGround) break;
+                                // deciding fail
+                                let x = Math.random();
+                                autoFrames.push({
+                                    ts: t*1000,
+                                    type: "pickup",
+                                    state: {
+                                        at: -1,
+                                        value: x >= groundFailChance,
+                                    },
+                                });
+                                // fail = 0.5-1s delay until retry
+                                if (x < groundFailChance)
+                                    t += util.lerp(0.5,1,Math.random());
+                                // success = cycle_time/2 delay until score
+                                else {
+                                    trying = "score";
+                                    t += autoCycleTime/2 + util.lerp(-1,1,Math.random());
+                                }
+                            }
+                            // trying to score
+                            if (trying == "score") {
+                                // cant score speaker nor amp
+                                if (!canSpeaker && !canAmp) break;
+                                // deciding action
+                                let action = null;
+                                if (canSpeaker && canAmp) {
+                                    // twice as likely to fail speaker than amp
+                                    action = (Math.abs(speakerFailChance-2*ampFailChance) < 0.1) ? "amp" : "speaker";
+                                    if (Math.random() < 0.25) action = { speaker: "amp", amp: "speaker" }[action];
+                                }
+                                else if (canSpeaker) action = "speaker";
+                                else if (canAmp) action = "amp";
+                                // deciding fail
+                                let y = { speaker: speakerFailChance, amp: ampFailChance }[action];
+                                let x = Math.random();
+                                autoFrames.push({
+                                    ts: t*1000,
+                                    type: action,
+                                    state: x >= y,
+                                });
+                                // fail = lost note, oh well, continue on
+                                // success = cool, continue on
+                                trying = "pickup";
                                 t += autoCycleTime/2 + util.lerp(-1,1,Math.random());
                             }
                         }
-                        // trying to score
-                        if (trying == "score") {
-                            // cant score speaker nor amp
-                            if (!canSpeaker && !canAmp) break;
-                            // deciding action
-                            let action = null;
-                            if (canSpeaker && canAmp) {
-                                // twice as likely to fail speaker than amp
-                                action = (Math.abs(speakerFailChance-2*ampFailChance) < 0.1) ? "amp" : "speaker";
-                                if (Math.random() < 0.25) action = { speaker: "amp", amp: "speaker" }[action];
+                        t = Math.max(t, l_auto);
+                        let teleopFrames = [];
+                        while (t < l_auto+l_teleop) {
+                            // trying to pickup
+                            if (trying == "pickup") {
+                                // cant pickup from ground nor source
+                                if (!canGround && !canSource) break;
+                                // deciding action
+                                let action = null;
+                                if (canSource && canGround) {
+                                    // twice as likely to fail ground than source
+                                    action = (Math.abs(groundFailChance-2*sourceFailChance) < 0.1) ? "source" : "ground";
+                                    if (Math.random() < 0.25) action = { source: "ground", ground: "source" }[action];
+                                }
+                                else if (canSource) action = "source";
+                                else if (canGround) action = "ground";
+                                // deciding fail
+                                let y = { source: sourceFailChance, ground: groundFailChance }[action];
+                                let x = Math.random();
+                                teleopFrames.push({
+                                    ts: t*1000,
+                                    type: action,
+                                    state: x >= y,
+                                });
+                                // fail = 0.5-1s delay until retry
+                                if (x < y)
+                                    t += util.lerp(0.5,1,Math.random());
+                                // success = cycle_time/2 delay until score
+                                else {
+                                    trying = "score";
+                                    t += teleopCycleTime/2 + util.lerp(-1,1,Math.random());
+                                }
                             }
-                            else if (canSpeaker) action = "speaker";
-                            else if (canAmp) action = "amp";
-                            // deciding fail
-                            let y = { speaker: speakerFailChance, amp: ampFailChance }[action];
-                            let x = Math.random();
-                            autoFrames.push({
-                                ts: t*1000,
-                                type: action,
-                                state: x >= y,
-                            });
-                            // fail = lost note, oh well, continue on
-                            // success = cool, continue on
-                            trying = "pickup";
-                            t += autoCycleTime/2 + util.lerp(-1,1,Math.random());
-                        }
-                    }
-                    t = Math.max(t, l_auto);
-                    let teleopFrames = [];
-                    while (t < l_auto+l_teleop) {
-                        // trying to pickup
-                        if (trying == "pickup") {
-                            // cant pickup from ground nor source
-                            if (!canGround && !canSource) break;
-                            // deciding action
-                            let action = null;
-                            if (canSource && canGround) {
-                                // twice as likely to fail ground than source
-                                action = (Math.abs(groundFailChance-2*sourceFailChance) < 0.1) ? "source" : "ground";
-                                if (Math.random() < 0.25) action = { source: "ground", ground: "source" }[action];
-                            }
-                            else if (canSource) action = "source";
-                            else if (canGround) action = "ground";
-                            // deciding fail
-                            let y = { source: sourceFailChance, ground: groundFailChance }[action];
-                            let x = Math.random();
-                            teleopFrames.push({
-                                ts: t*1000,
-                                type: action,
-                                state: x >= y,
-                            });
-                            // fail = 0.5-1s delay until retry
-                            if (x < y)
-                                t += util.lerp(0.5,1,Math.random());
-                            // success = cycle_time/2 delay until score
-                            else {
-                                trying = "score";
+                            // trying to score
+                            if (trying == "score") {
+                                // cant score speaker nor amp
+                                if (!canSpeaker && !canAmp) break;
+                                // deciding action
+                                let action = null;
+                                if (canSpeaker && canAmp) {
+                                    // twice as likely to fail speaker than amp
+                                    action = (Math.abs(speakerFailChance-2*ampFailChance) < 0.1) ? "amp" : "speaker";
+                                    if (Math.random() < 0.25) action = { speaker: "amp", amp: "speaker" }[action];
+                                }
+                                else if (canSpeaker) action = "speaker";
+                                else if (canAmp) action = "amp";
+                                // deciding fail
+                                let y = { speaker: speakerFailChance, amp: ampFailChance }[action];
+                                let x = Math.random();
+                                teleopFrames.push({
+                                    ts: t*1000,
+                                    type: action,
+                                    state: (action == "speaker") ? { pos: {}, value: (x >= y) } : (x >= y),
+                                });
+                                // fail = lost note, oh well, continue on
+                                // success = cool, continue on
+                                trying = "pickup";
                                 t += teleopCycleTime/2 + util.lerp(-1,1,Math.random());
                             }
                         }
-                        // trying to score
-                        if (trying == "score") {
-                            // cant score speaker nor amp
-                            if (!canSpeaker && !canAmp) break;
-                            // deciding action
-                            let action = null;
-                            if (canSpeaker && canAmp) {
-                                // twice as likely to fail speaker than amp
-                                action = (Math.abs(speakerFailChance-2*ampFailChance) < 0.1) ? "amp" : "speaker";
-                                if (Math.random() < 0.25) action = { speaker: "amp", amp: "speaker" }[action];
+                        t = Math.max(t, l_auto+l_teleop);
+                        if (canClimb) {
+                            for (let i = 0; i < climbState; i++) {
+                                let p = (climbState > 1) ? (i/(climbState-1)) : 0;
+                                teleopFrames.push({
+                                    ts: util.lerp(t, t+l_climb, p)*1000,
+                                    type: "climb",
+                                    state: 1+i,
+                                });
                             }
-                            else if (canSpeaker) action = "speaker";
-                            else if (canAmp) action = "amp";
-                            // deciding fail
-                            let y = { speaker: speakerFailChance, amp: ampFailChance }[action];
-                            let x = Math.random();
-                            teleopFrames.push({
-                                ts: t*1000,
-                                type: action,
-                                state: (action == "speaker") ? { pos: {}, value: (x >= y) } : (x >= y),
-                            });
-                            // fail = lost note, oh well, continue on
-                            // success = cool, continue on
-                            trying = "pickup";
-                            t += teleopCycleTime/2 + util.lerp(-1,1,Math.random());
                         }
-                    }
-                    t = Math.max(t, l_auto+l_teleop);
-                    if (canClimb) {
-                        for (let i = 0; i < climbState; i++) {
-                            let p = (climbState > 1) ? (i/(climbState-1)) : 0;
-                            teleopFrames.push({
-                                ts: util.lerp(t, t+l_climb, p)*1000,
-                                type: "climb",
-                                state: 1+i,
-                            });
-                        }
-                    }
-                    let match = {
-                        id: i,
-                        robot: team,
-                        robotTeam: (j < 3) ? "r" : "b",
+                        let match = {
+                            id: i,
+                            robot: team,
+                            robotTeam: (j < 3) ? "r" : "b",
 
-                        pos: [0, 0],
-                        preloaded: true,
+                            pos: [0, 0],
+                            preloaded: true,
 
-                        globalFrames: [{ ts: 0, type: "disable", state: false }],
+                            globalFrames: [{ ts: 0, type: "disable", state: false }],
 
-                        autoFrames: autoFrames,
-                        autoMobility: autoMobility,
+                            autoFrames: autoFrames,
+                            autoMobility: autoMobility,
 
-                        teleopTime: l_auto*1000,
-                        teleopFrames: teleopFrames,
+                            teleopTime: l_auto*1000,
+                            teleopFrames: teleopFrames,
 
-                        endgameTrap: canTrap && (Math.random() < trapFailChance),
-                        endgameHarmony: false,
+                            endgameTrap: canTrap && (Math.random() < trapFailChance),
+                            endgameHarmony: false,
 
-                        finishTime: (l_auto+l_teleop+l_climb)*1000,
+                            finishTime: (l_auto+l_teleop+l_climb)*1000,
 
-                        notes: new Array(Math.floor(util.lerp(10, 30, Math.random()))).fill(null).map(_ => (new Array(8).fill(" ").join("")+util.BASE64)[Math.floor((64+8)*Math.random())]).join(""),
-                    };
-                    matchesScouted.push(match);
+                            notes: new Array(Math.floor(util.lerp(10, 30, Math.random()))).fill(null).map(_ => (new Array(8).fill(" ").join("")+util.BASE64)[Math.floor((64+8)*Math.random())]).join(""),
+                        };
+                        matchesScouted.push(match);
+                    });
                 });
-            });
+            }
 
             this.post("post-refresh");
             this.unlock();

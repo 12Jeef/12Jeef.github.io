@@ -461,7 +461,7 @@
     align-items: center;
     gap: 1em;
 }
-#server-config-page > .content > #api-listing > div {
+#server-config-page > .content > #api-listing > div:has(> canvas) {
     height: min(50vw, 50vh);
     padding: 1em;
     aspect-ratio: 1 / 1;
@@ -480,6 +480,43 @@
 #server-config-page > .content > #api-listing > p > span {
     font-weight: 700;
     line-height: 2;
+}
+#server-config-page > .content > #api-listing:has(> button) {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0.5em;
+}
+#server-config-page > .content > #api-listing > button {
+    padding: 0.5em;
+
+    background-color: var(--a);
+    color: var(--fg);
+}
+#server-config-page > .content > #api-listing > button:active {
+    background-color: var(--fg);
+    color: var(--bg);
+}
+#server-config-page > .content > #api-listing > div:has(> button) {
+    padding: 0.3em 0.5em;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    align-content: center;
+    gap: 0.25em;
+
+    border: 0.1rem solid var(--v8);
+}
+#server-config-page > .content > #api-listing > div > button {
+    background-color: var(--v2);
+}
+#server-config-page > .content > #api-listing > div > button:hover {
+    background-color: var(--v4);
+}
+#server-config-page > .content > #api-listing > div > button:active {
+    background-color: var(--v6);
 }
 
 #master-list-page {

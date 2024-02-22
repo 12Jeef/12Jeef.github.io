@@ -222,7 +222,7 @@ export default class App extends util.Target {
             this.eId = document.getElementById("id");
             this.eTime = document.getElementById("time");
             this.eScreen = document.getElementById("screen");
-            let fullscreenWanted = false;
+            let fullscreenWanted = !new URLSearchParams(window.location.search).get("debug");
             const isFullscreen = () => document.fullscreenElement == document.body;
             const updateFullscreen = () => {
                 if (fullscreenWanted) {
@@ -276,6 +276,8 @@ export default class App extends util.Target {
 
             this.eNavigatorPage = document.getElementById("navigator");
 
+            this.eScouterName = document.getElementById("scouter-name");
+            this.eScouterDropdown = document.getElementById("scouter-dropdown");
             this.ePracticeMatch = document.getElementById("practice-match");
             this.eNavigatorList = document.getElementById("navigator-list");
 
@@ -293,24 +295,25 @@ export default class App extends util.Target {
 
             this.eAutoPage = document.getElementById("auto");
 
+            this.eAutoField = document.getElementById("auto-field");
+            this.eAutoPickups = Array.from(document.querySelectorAll(".auto-pickup"));
             this.eAutoPickup = document.getElementById("auto-pickup");
-            this.eAutoPickupCount = document.getElementById("auto-pickup-count");
-            this.eAutoScoreSpeaker = document.getElementById("auto-score-speaker");
-            this.eAutoScoreSpeakerCount = document.getElementById("auto-score-speaker-count");
-            this.eAutoScoreAmp = document.getElementById("auto-score-amp");
-            this.eAutoScoreAmpCount = document.getElementById("auto-score-amp-count");
-            this.eAutoMobile = document.getElementById("auto-mobile");
-            this.eAutoMobility = document.getElementById("auto-mobility");
+            this.eAutoPickupSuccess = document.getElementById("auto-pickup-success");
+            this.eAutoPickupSuccessCount = document.getElementById("auto-pickup-success-count");
+            this.eAutoPickupFail = document.getElementById("auto-pickup-fail");
+            this.eAutoPickupFailCount = document.getElementById("auto-pickup-fail-count");
+            this.eAutoPickupCancel = document.getElementById("auto-pickup-cancel");
+            this.eAutoSpeakerSuccess = document.getElementById("auto-speaker-success");
+            this.eAutoSpeakerSuccessCount = document.getElementById("auto-speaker-success-count");
+            this.eAutoSpeakerFail = document.getElementById("auto-speaker-fail");
+            this.eAutoSpeakerFailCount = document.getElementById("auto-speaker-fail-count");
+            this.eAutoAmpSuccess = document.getElementById("auto-amp-success");
+            this.eAutoAmpSuccessCount = document.getElementById("auto-amp-success-count");
+            this.eAutoAmpFail = document.getElementById("auto-amp-fail");
+            this.eAutoAmpFailCount = document.getElementById("auto-amp-fail-count");
             this.eAutoDisable = document.getElementById("auto-disable");
             this.eAutoDisabled = document.getElementById("auto-disabled");
             this.eAutoNext = document.getElementById("auto-next");
-            this.eAutoModal = document.getElementById("auto-modal");
-            this.eAutoType = document.getElementById("auto-type");
-            this.eAutoField = document.getElementById("auto-field");
-            this.eAutoNotes = Array.from(document.querySelectorAll(".auto-note"));
-            this.eAutoSuccess = document.getElementById("auto-success");
-            this.eAutoFail = document.getElementById("auto-fail");
-            this.eAutoCancel = document.getElementById("auto-cancel");
 
             this.eTeleopPage = document.getElementById("teleop");
 
@@ -407,6 +410,22 @@ export default class App extends util.Target {
                         });
                     },
                     navigator: () => {
+                        this.eScouterName.addEventListener("focus", e => {
+                            this.eScouterDropdown.innerHTML = "";
+                            scouters.sort().forEach(name => {
+                                let elem = document.createElement("button");
+                                this.eScouterDropdown.appendChild(elem);
+                                elem.textContent = name;
+                                elem.addEventListener("click", e => {
+                                    this.scouter = name;
+                                });
+                            });
+                        });
+                        const updateScouter = () => {
+                            this.eScouterName.textContent = this.scouter || "None";
+                        };
+                        this.addHandler("change", updateScouter);
+                        updateScouter();
                         this.ePracticeMatch.addEventListener("click", e => {
                             let matches = this.matches;
                             for (let match of matches) {
@@ -512,86 +531,107 @@ export default class App extends util.Target {
                         const updateMenu = () => {
                             this.ePreAutoRobotId.textContent = (this.hasMatch() && this.match.hasRobot()) ? this.match.robot : "None";
                             this.ePreAutoPreloaded.checked = this.hasMatch() && this.match.preloaded;
-                            if (this.hasMatch() && this.match.robotTeam == "r") this.ePreAutoTeam.classList.add("red");
-                            else this.ePreAutoTeam.classList.remove("red");
-                            if (this.hasMatch() && this.match.robotTeam == "b") this.ePreAutoTeam.classList.add("blue");
-                            else this.ePreAutoTeam.classList.remove("blue");
+                            if (this.hasMatch() && this.match.robotTeam == "r")
+                                this.ePreAutoTeam.setAttribute("red", "");
+                            else this.ePreAutoTeam.removeAttribute("red");
+                            if (this.hasMatch() && this.match.robotTeam == "b")
+                                this.ePreAutoTeam.setAttribute("blue", "");
+                            else this.ePreAutoTeam.removeAttribute("blue");
                             this.ePreAutoTeam.disabled = !this.hasMatch() || !this.match.isPractice();
                             this.ePreAutoStart.disabled = !this.hasMatch() || !this.match.hasRobot() || !this.match.hasRobotTeam();
                         };
                         ["match", "match.id", "match.robot", "match.robotTeam", "match.preloaded"].forEach(c => this.addHandler("change-"+c, updateMenu));
                     },
                     auto: () => {
-                        let type = null;
-                        Object.defineProperty(state, "type", {
-                            get: () => type,
-                            set: v => state.change("type", type, type=v),
+                        let pickup = -1;
+                        Object.defineProperty(state, "pickup", {
+                            get: () => pickup,
+                            set: v => state.change("pickup", pickup, pickup=Math.min(7, Math.max(-1, util.ensure(v, "int")))),
                         });
 
-                        state.updateCount = () => {
+                        this.eAutoPickups.forEach((elem, i) => {
+                            elem.addEventListener("click", e => {
+                                state.pickup = i;
+                            });
+                        });
+                        const updatePickups = () => {
+                            this.eAutoPickups.forEach((elem, i) => {
+                                if (i == state.pickup)
+                                    elem.classList.add("this");
+                                else elem.classList.remove("this");
+                            });
+                            this.eAutoPickupSuccess.disabled = state.pickup < 0;
+                            this.eAutoPickupFail.disabled = state.pickup < 0;
+                        };
+                        state.addHandler("change", updatePickups);
+                        updatePickups();
+                        this.eAutoPickupSuccess.addEventListener("click", e => {
+                            if (!this.hasMatch()) return;
+                            if (state.pickup < 0) return;
+                            this.match.autoFrames.add(new Match.Frame(util.getTime()-startTime, "pickup", { at: state.pickup, value: true }));
+                            state.pickup = -1;
+                        });
+                        this.eAutoPickupFail.addEventListener("click", e => {
+                            if (!this.hasMatch()) return;
+                            if (state.pickup < 0) return;
+                            this.match.autoFrames.add(new Match.Frame(util.getTime()-startTime, "pickup", { at: state.pickup, value: false }));
+                            state.pickup = -1;
+                        });
+                        this.eAutoPickupCancel.addEventListener("click", e => {
+                            state.pickup = -1;
+                        });
+                        this.eAutoSpeakerSuccess.addEventListener("click", e => {
+                            this.match.autoFrames.add(new Match.Frame(util.getTime()-startTime, "speaker", true));
+                        });
+                        this.eAutoSpeakerFail.addEventListener("click", e => {
+                            this.match.autoFrames.add(new Match.Frame(util.getTime()-startTime, "speaker", false));
+                        });
+                        this.eAutoAmpSuccess.addEventListener("click", e => {
+                            this.match.autoFrames.add(new Match.Frame(util.getTime()-startTime, "amp", true));
+                        });
+                        this.eAutoAmpFail.addEventListener("click", e => {
+                            this.match.autoFrames.add(new Match.Frame(util.getTime()-startTime, "amp", false));
+                        });
+
+                        const updateCount = () => {
                             let pickup = [0, 0], speaker = [0, 0], amp = [0, 0];
                             if (this.hasMatch())
                                 this.match.autoFrames.frames.forEach(frame => {
-                                    if (frame.type == "pickup") pickup[+frame.state.value]++;
-                                    if (frame.type == "speaker") speaker[+frame.state]++;
-                                    if (frame.type == "amp") amp[+frame.state]++;
+                                    if (frame.type == "pickup") pickup[+!frame.state.value]++;
+                                    if (frame.type == "speaker") speaker[+!frame.state]++;
+                                    if (frame.type == "amp") amp[+!frame.state]++;
                                 });
-                            this.eAutoPickupCount.innerHTML = pickup.map(v => "<span>"+v+"</span>").join("");
-                            this.eAutoScoreSpeakerCount.innerHTML = speaker.map(v => "<span>"+v+"</span>").join("");
-                            this.eAutoScoreAmpCount.innerHTML = amp.map(v => "<span>"+v+"</span>").join("");
+                            [this.eAutoPickupSuccessCount.textContent, this.eAutoPickupFailCount.textContent] = pickup;
+                            [this.eAutoSpeakerSuccessCount.textContent, this.eAutoSpeakerFailCount.textContent] = speaker;
+                            [this.eAutoAmpSuccessCount.textContent, this.eAutoAmpFailCount.textContent] = amp;
                         };
-                        ["match", "match.autoFrames.add", "match.autoFrames.rem"].forEach(c => this.addHandler("change-"+c, state.updateCount));
+                        ["match", "match.autoFrames.add", "match.autoFrames.rem"].forEach(c => this.addHandler("change-"+c, updateCount));
 
-                        this.eAutoPickup.addEventListener("click", e => {
-                            state.type = "pickup";
-                            this.eAutoNotes.forEach(elem => elem.classList.remove("this"));
-                            this.eAutoSuccess.disabled = this.eAutoFail.disabled = true;
-                        });
-                        this.eAutoScoreSpeaker.addEventListener("click", e => {
-                            state.type = "speaker";
-                            this.eAutoSuccess.disabled = this.eAutoFail.disabled = false;
-                        });
-                        this.eAutoScoreAmp.addEventListener("click", e => {
-                            state.type = "amp";
-                            this.eAutoSuccess.disabled = this.eAutoFail.disabled = false;
-                        });
+                        const updateField = () => {
+                            if (this.hasMatch() && this.match.robotTeam == "r")
+                                this.eAutoPage.style.flexDirection = "row-reverse";
+                            else this.eAutoPage.style.flexDirection = "row";
+                            this.eAutoField.style.backgroundPosition = ((this.hasMatch() && this.match.robotTeam == "r") ? 100 : 0)+"% 0%";
+                            this.eAutoField.style.transform = "scale("+(this.flipX ? -1 : 1)+", "+(this.flipY ? -1 : 1)+")";
+                            this.eAutoField.style.setProperty("--scale-x", this.flipX ? -1 : 1);
+                            this.eAutoField.style.setProperty("--scale-y", this.flipY ? -1 : 1);
+                            let h = this.eAutoField.getBoundingClientRect().height;
+                            let scale = h/fieldSize.y;
+                            this.eAutoPickups.forEach((elem, i) => {
+                                let x = [fieldSize.x/2-636.27+101.346, fieldSize.x/2][+(i >= 3)]*0.975;
+                                let y = [i=>(fieldSize.y/2-(2-i)*144.78*0.96), i=>(75.2856+(i-3)*167.64*0.975)][+(i >= 3)](i);
+                                elem.style.top = (y*scale)+"px";
+                                elem.style.right = (this.hasMatch() && this.match.robotTeam == "r") ? ((x*scale)+"px") : ("calc(100% - "+(x*scale+"px)"));
+                            });
+                            this.eAutoPickup.style.left = this.eAutoPickup.style.right = "";
+                            this.eAutoPickup.style[(this.hasMatch() && this.match.robotTeam == "r") ? "right" : "left"] = ((fieldSize.x/2-375)*scale)+"px";
+                        };
+                        ["match", "match.robotTeam", "flipX", "flipY"].forEach(c => this.addHandler("change-"+c, updateField));
+                        new ResizeObserver(updateField).observe(this.eAutoField);
 
-                        this.eAutoMobility.addEventListener("change", e => {
-                            if (!this.hasMatch()) return;
-                            this.match.autoMobility = this.eAutoMobility.checked;
-                        });
                         this.eAutoDisabled.addEventListener("change", e => {
                             if (!this.hasMatch()) return;
                             this.match.globalFrames.add(new Match.Frame(util.getTime()-startTime, "disable", this.eAutoDisabled.checked));
-                        });
-
-                        this.eAutoNotes.forEach(elem => {
-                            elem.addEventListener("click", e => {
-                                this.eAutoNotes.forEach(elem => elem.classList.remove("this"));
-                                elem.classList.add("this");
-                                this.eAutoSuccess.disabled = this.eAutoFail.disabled = false;
-                            });
-                        });
-                        this.eAutoSuccess.addEventListener("click", e => {
-                            if (this.hasMatch()) {
-                                let value = true;
-                                if (state.type == "pickup")
-                                    value = { at: this.eAutoNotes.findIndex(elem => elem.classList.contains("this")), value: value };
-                                this.match.autoFrames.add(new Match.Frame(util.getTime()-startTime, state.type, value));
-                            }
-                            state.type = null;
-                        });
-                        this.eAutoFail.addEventListener("click", e => {
-                            if (this.hasMatch()) {
-                                let value = false;
-                                if (state.type == "pickup")
-                                    value = { at: this.eAutoNotes.findIndex(elem => elem.classList.contains("this")), value: value };
-                                this.match.autoFrames.add(new Match.Frame(util.getTime()-startTime, state.type, value));
-                            }
-                            state.type = null;
-                        });
-                        this.eAutoCancel.addEventListener("click", e => {
-                            state.type = null;
                         });
 
                         this.eAutoNext.addEventListener("click", e => {
@@ -599,25 +639,6 @@ export default class App extends util.Target {
                             if (!this.hasMatch()) return;
                             if (this.match.hasTeleopTime()) return;
                             this.match.teleopTime = util.getTime()-startTime;
-                        });
-
-                        const updateField = () => {
-                            this.eAutoField.style.transform = "scale("+(this.flipX ? 1 : -1)+", "+(this.flipY ? -1 : 1)+")";
-                        };
-                        ["flipX", "flipY"].forEach(c => this.addHandler("change-"+c, updateField));
-                        const updateMenu = () => {
-                            this.eAutoMobility.checked = this.hasMatch() && this.match.autoMobility;
-                        };
-                        ["match", "match.autoMobility"].forEach(c => this.addHandler("change-"+c, updateMenu));
-                        state.addHandler("change-type", () => {
-                            let type = state.type;
-                            if (type) this.eAutoModal.classList.add("this");
-                            else this.eAutoModal.classList.remove("this");
-                            if (type) {
-                                if (type == "pickup") this.eAutoModal.classList.add("field");
-                                else this.eAutoModal.classList.remove("field");
-                                this.eAutoType.textContent = { pickup: "Pickup", speaker: "Score: Speaker", amp: "Score: Amp" }[type];
-                            }
                         });
                     },
                     teleop: () => {
@@ -878,8 +899,9 @@ export default class App extends util.Target {
             }
 
             const updateMenu = () => {
-                if (this.hasMatch() && (startTime == null)) this.eTime.classList.add("time");
-                else this.eTime.classList.remove("time");
+                if (this.hasMatch() && (startTime == null))
+                    this.eTime.classList.remove("time");
+                else this.eTime.classList.add("time");
             };
             ["match", "match.startTime"].forEach(c => this.addHandler("change-"+c, updateMenu));
 
@@ -980,7 +1002,6 @@ export default class App extends util.Target {
                         });
                     },
                     auto: () => {
-                        state.updateCount();
                         this.eAutoDisabled.checked = false;
                         if (this.hasMatch())
                             this.match.globalFrames.frames.forEach(frame => {
@@ -1022,10 +1043,7 @@ export default class App extends util.Target {
                 let pagefs = {
                     navigator: () => { this.page = "settings"; },
                     preauto: () => { this.page = "navigator"; },
-                    auto: () => {
-                        if (states.auto.type == null) return this.page = "preauto";
-                        states.auto.type = null;
-                    },
+                    auto: () => { this.page = "preauto"; },
                     teleop: () => { this.page = "auto"; },
                     endgame: () => { this.page = "teleop"; },
                     notes: () => { this.page = "endgame"; },
@@ -1257,21 +1275,23 @@ App.Match = class AppMatch extends util.Target {
         const apply = () => {
             if (ignore) return;
 
+            this.eListItem.style.opacity = this.match.hasFinishTime() ? "50%" : "";
+
             this.eItemId.textContent = this.match.isPractice() ? "Practice Match" : this.match.id+1;
             this.eItemId.style.textAlign = this.match.isPractice() ? "center" : "";
             this.eItemTeams.style.display = this.match.isPractice() ? "none" : "";
 
+            if (!this.match.isPractice()) {
+                ignore = true;
+
+                if (!this.hasRed(this.match.robot) && !this.hasBlue(this.match.robot)) this.match.robot = null;
+                this.match.robotTeam = this.hasRed(this.match.robot) ? "r" : this.hasBlue(this.match.robot) ? "b" : null;
+
+                ignore = false;
+            }
+
             this.formatRed();
             this.formatBlue();
-
-            if (this.match.isPractice()) return;
-
-            ignore = true;
-
-            if (!this.hasRed(this.match.robot) && !this.hasBlue(this.match.robot)) this.match.robot = null;
-            this.match.robotTeam = this.hasRed(this.match.robot) ? "r" : this.hasBlue(this.match.robot) ? "b" : null;
-
-            ignore = false;
         };
         this.addHandler("change", apply);
         apply();
@@ -1298,7 +1318,7 @@ App.Match = class AppMatch extends util.Target {
             let elem = document.createElement("h1");
             this.eItemRed.appendChild(elem);
             elem.textContent = v;
-            if (v == this.robot) elem.classList.add("this");
+            if (v == this.match.robot) elem.classList.add("this");
         });
     }
     addRed(...v) {
@@ -1345,7 +1365,7 @@ App.Match = class AppMatch extends util.Target {
             let elem = document.createElement("h1");
             this.eItemBlue.appendChild(elem);
             elem.textContent = v;
-            if (v == this.robot) elem.classList.add("this");
+            if (v == this.match.robot) elem.classList.add("this");
         });
     }
     addBlue(...v) {

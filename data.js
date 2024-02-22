@@ -136,7 +136,6 @@ export class Match extends util.Target {
     #globalFrames;
 
     #autoFrames;
-    #autoMobility;
 
     #teleopTime;
     #teleopFrames;
@@ -163,7 +162,6 @@ export class Match extends util.Target {
         this.globalFrames.addLinkedHandler(this, "change", (c, f, t) => this.change("globalFrames."+c, f, t));
 
         this.#autoFrames = new Match.Frames("auto");
-        this.#autoMobility = null;
         this.autoFrames.addLinkedHandler(this, "change", (c, f, t) => this.change("autoFrames."+c, f, t));
 
         this.#teleopTime = null;
@@ -185,13 +183,15 @@ export class Match extends util.Target {
     }
 
     reset() {
+        let log = () => {};
+        [log, console.log] = [console.log, log];
+
         this.pos = 0;
         this.preloaded = false;
 
         this.globalFrames = [new Match.Frame(0, "disable", false)];
 
         this.autoFrames = []
-        this.autoMobility = false;
 
         this.teleopTime = null;
         this.teleopFrames = [];
@@ -202,6 +202,10 @@ export class Match extends util.Target {
         this.finishTime = null;
 
         this.notes = "";
+
+        [log, console.log] = [console.log, log];
+
+        console.log("resetting");
     }
 
     get id() { return this.#id; }
@@ -253,13 +257,6 @@ export class Match extends util.Target {
     set autoFrames(v) {
         if (v instanceof Match.Frames) return this.autoFrames.frames = v.frames;
         this.autoFrames.frames = v;
-    }
-    get autoMobility() { return this.#autoMobility; }
-    set autoMobility(v) {
-        v = !!v;
-        if (this.autoMobility == v) return;
-        this.change("autoMobility", this.autoMobility, this.#autoMobility=v);
-        console.log("autoMobility = "+JSON.stringify(this.autoMobility));
     }
 
     get teleopTime() { return this.#teleopTime; }
@@ -321,7 +318,6 @@ export class Match extends util.Target {
             globalFrames: this.globalFrames.toObj(),
 
             autoFrames: this.autoFrames.toObj(),
-            autoMobility: this.autoMobility,
 
             teleopTime: this.teleopTime,
             teleopFrames: this.teleopFrames.toObj(),
@@ -347,7 +343,6 @@ export class Match extends util.Target {
         this.globalFrames = data.globalFrames;
 
         this.autoFrames = data.autoFrames;
-        this.autoMobility = data.autoMobility;
 
         this.teleopTime = data.teleopTime;
         this.teleopFrames = data.teleopFrames;
@@ -382,7 +377,7 @@ export class Match extends util.Target {
             n = Math.min(2**8-1, Math.max(0, n));
             // writing
             buff.write(i, 8, n);
-            i += 16;
+            i += 8;
             for (let c of scouter) {
                 // char: 8
                 let char = allowedChars.indexOf(c);
@@ -532,10 +527,6 @@ export class Match extends util.Target {
                     i += 1;
                 }
             }
-            // autoMobility: 1
-            let autoMobility = +!!data.autoMobility;
-            buff.write(i, 1, autoMobility);
-            i += 1;
         }
         {
             // teleopTime: 12
@@ -670,7 +661,7 @@ export class Match extends util.Target {
                 i += 8;
             }
         }
-        // console.log(Match.fromBufferStr(buff.toStr()));
+        console.log(Match.fromBufferStr(buff.toStr()));
         return buff.toStr();
     }
     static fromBufferStr(s) {
@@ -741,8 +732,6 @@ export class Match extends util.Target {
                 frames.push(frame);
             }
             data.autoFrames = frames;
-            data.autoMobility = !!buff.read(i, 1);
-            i += 1;
         }
         {
             data.teleopTime = buff.read(i, 12)*100;

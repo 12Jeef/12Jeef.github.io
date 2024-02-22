@@ -2,7 +2,67 @@
     --TOP: 50px;
 }
 
-.header {
+button {
+    background-color: var(--v4);
+    color: var(--fg);
+}
+button:not(:disabled):active {
+    background-color: var(--v6);
+}
+button:disabled {
+    background-color: var(--v2);
+    color: var(--v8);
+}
+
+button[light] {
+    background-color: var(--v6);
+}
+button[light]:not(:disabled):active {
+    background-color: var(--v8);
+}
+button[light]:disabled {
+    background-color: var(--v4);
+}
+
+button[special],
+button[success],
+button[fail] {
+    color: #fff;
+}
+button[special]:not(:disabled):active,
+button[success]:not(:disabled):active,
+button[fail]:not(:disabled):active {
+    background-color: var(--fg);
+    color: var(--bg);
+}
+button[special]:disabled,
+button[success]:disabled,
+button[fail]:disabled {
+    color: #fff8;
+}
+
+button[special] {
+    background-color: var(--a);
+}
+button[special]:disabled {
+    background-color: var(--aa);
+}
+
+button[success] {
+    background-color: var(--g3);
+}
+button[success]:disabled {
+    background-color: var(--g2);
+}
+
+button[fail] {
+    background-color: var(--r3);
+}
+button[fail]:disabled {
+    background-color: var(--r2);
+}
+
+#header {
     position: absolute;
     top: 0%;
     left: 0%;
@@ -25,32 +85,23 @@
 
     font-weight: 700;
 }
-.header > button {
+#header > button {
     aspect-ratio: 1 / 1;
 
-    background-color: transparent;
-    color: #fff;
     border-radius: 100%;
 
     font-size: 2em;
 }
-.header > button:not(:disabled):active {
-    background-color: #fff;
-    color: #000;
-}
-.header > button:disabled {
-    color: #fff8;
-}
-.header > h1 {
+#header > h1 {
     flex-basis: 100%;
 }
-.header > h1 > span {
+#header > h1 > span {
     color: var(--fga);
 }
-.header > h2.time {
+#header > h2.time {
     font-family: monospace;
 }
-.header > * {
+#header > * {
     min-width: max-content;
 }
 
@@ -167,18 +218,6 @@
     background-color: transparent;
     color: var(--fg);
 }
-/* #settings > #setting-reset {
-    padding: 20px;
-    margin-top: 20px;
-
-    background-color: var(--a);
-    color: #fff;
-    border-radius: 10px;
-}
-#settings > #setting-reset:active {
-    background-color: var(--fg);
-    color: var(--bg);
-} */
 
 #navigator {
     padding: 0px;
@@ -201,17 +240,42 @@
     min-width: 10em;
     padding: 0.25em 0.5em;
 
-    background-color: var(--v4);
     border-radius: 0.25rem;
-}
-#navigator > header button:active {
-    background-color: var(--fg);
-    color: var(--bg);
+
+    font-size: inherit;
+    font-weight: inherit;
 }
 #navigator > header > h1 {
     flex-basis: 100%;
 
     margin: 0em;
+}
+#navigator > header > h3 {
+    position: relative;
+}
+#navigator > header > h3 > div {
+    position: absolute;
+    top: 100%;
+    left: 0%;
+
+    max-height: 50vh;
+    overflow: auto;
+
+    display: none;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+
+    border-radius: 0.25rem;
+}
+#navigator > header > h3 > div:has(> button:active),
+#navigator > header > h3 > button:focus + div {
+    display: flex;
+}
+#navigator > header > h3 > div > button {
+    border-radius: 0em;
 }
 #navigator > .content {
     width: 100%;
@@ -241,7 +305,7 @@
     background-color: var(--v4);
     border-radius: 10px;
 
-    font-size: 1.25em;
+    font-size: 1.1em;
     font-weight: 500;
 }
 #navigator > .content > button > :first-child,
@@ -309,7 +373,7 @@
 #navigator > .content > button > .teams > .blue > *,
 .match > .teams > .red > *,
 .match > .teams > .blue > * {
-    min-width: 3.5em;
+    min-width: 3.75em;
     margin: 0px;
     padding: 10px 20px;
 
@@ -398,8 +462,6 @@
     width: 100%;
     padding: 20px;
 
-    background-color: var(--a);
-    color: #fff;
     border-radius: 10px;
 }
 #preauto > .content > div > #preauto-robot::before {
@@ -411,10 +473,6 @@
     transform: translateY(-50%);
 
     font-size: 2em;
-}
-#preauto > .content > div > #preauto-robot:not(:disabled):active {
-    background-color: var(--fg);
-    color: var(--bg);
 }
 #preauto > .content > div > #preauto-robot:focus::before {
     content: "▲";
@@ -449,11 +507,7 @@
 #preauto > .content > div > #preauto-robot-dropdown > button {
     padding: 20px;
 
-    background-color: var(--v4);
     border-top: 5px solid var(--v6);
-}
-#preauto > .content > div > #preauto-robot-dropdown > button:active {
-    background-color: var(--v6);
 }
 #preauto > .content > div > #preauto-robot-dropdown > button:first-of-type {
     border-top: none;
@@ -505,41 +559,218 @@
 #preauto > .content > #preauto-team > h1::before {
     content: "NONE";
 }
-#preauto > .content > #preauto-team.red {
+#preauto > .content > #preauto-team[red] {
     background-color: var(--r3);
     color: #fff;
 }
-#preauto > .content > #preauto-team.red > h1::before {
+#preauto > .content > #preauto-team[red] > h1::before {
     content: "RED";
 }
-#preauto > .content > #preauto-team.blue {
+#preauto > .content > #preauto-team[blue] {
     background-color: var(--b3);
     color: #fff;
 }
-#preauto > .content > #preauto-team.blue > h1::before {
+#preauto > .content > #preauto-team[blue] > h1::before {
     content: "BLUE";
 }
 #preauto > .content > #preauto-team:not(:disabled):active {
-    background-color: var(--fg);
-    color: var(--bg);
+    background-color: var(--fg) !important;
+    color: var(--bg) !important;
 }
 #preauto > .content > #preauto-start {
     padding: 20px;
 
-    background-color: var(--a);
-    color: #fff;
     border-radius: 10px;
 }
-#preauto > .content > #preauto-start:active {
-    background-color: var(--fg);
-    color: var(--bg);
+
+#auto {
+    flex-direction: row;
 }
-#preauto > .content > #preauto-start:disabled {
-    background: linear-gradient(var(--bga), var(--bga)), linear-gradient(var(--a), var(--a));
-    color: #fff8;
+#auto > .section {
+    width: 40vw;
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+    gap: 1em;
+}
+#auto > .section button {
+    padding: 0.5em;
+
+    border-radius: 0.5rem;
+}
+#auto > .section > button > ion-icon {
+    font-size: 2em;
+}
+#auto > .section > .nav {
+    flex-basis: 100%;
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+    gap: 0.5em;
+}
+#auto > .section > .nav > h1 {
+    margin: 0em;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    align-content: center;
+    gap: 0.25em;
+}
+#auto > .section > .nav > h1 > span:first-child {
+    flex-basis: 100%;
+}
+#auto > .section > .nav > h1 > span:nth-last-child(2) {
+    color: var(--g4);
+
+    font-weight: 500;
+}
+#auto > .section > .nav > h1 > span:nth-last-child(1) {
+    color: var(--r4);
+
+    font-weight: 500;
+}
+#auto > .section > .nav > .nav {
+    flex-basis: 100%;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: stretch;
+    align-content: center;
+    gap: 0.5em;
+}
+#auto > .section > .nav > .nav > button {
+    flex-basis: 100%;
+
+    padding: 0em;
+
+    font-size: 5em;
+}
+#auto > .section #auto-disable {
+    position: relative;
+
+    width: 100%;
+    padding: 0.5em;
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+
+    background-color: var(--v4);
+    border-radius: 0.5rem;
+
+    text-align: center;
+}
+#auto > .section #auto-disable:has(> input:checked) {
+    background-color: var(--r4);
+    color: #fff;
+}
+#auto > .section #auto-disable:has(> input:active) {
+    background-color: var(--fg) !important;
+    color: var(--bg) !important;
+}
+#auto > .section #auto-disable > input {
+    position: absolute;
+    top: 0%;
+    left: 0%;
+
+    width: 100%;
+    height: 100%;
+
+    opacity: 0%;
+}
+#auto > .section #auto-disable > h1 {
+    margin: 0em;
+}
+#auto > .section #auto-disable > h1::before {
+    content: "Disabled";
+
+    text-decoration: line-through;
+}
+#auto > .section #auto-disable:has(> input:checked) > h1::before {
+    text-decoration: none;
+}
+#auto > #auto-field {
+    --scale-x: 1;
+    --scale-y: 1;
+
+    position: relative;
+
+    width: 60vw;
+
+    background-image: url(./field.png);
+    background-repeat: no-repeat;
+    background-size: auto 100%;
+}
+#auto > #auto-field > #auto-pickup {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%) scale(var(--scale-x), var(--scale-y));
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    align-content: center;
+    gap: 0.5em;
+}
+#auto > #auto-field > #auto-pickup > h2 {
+    margin: 0em;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    gap: 0.25em;
+}
+#auto > #auto-field > #auto-pickup > h2 > span:first-child {
+    color: var(--g4);
+}
+#auto > #auto-field > #auto-pickup > h2 > span:last-child {
+    color: var(--r4);
+}
+#auto > #auto-field > #auto-pickup > button {
+    padding: 0.25em;
+
+    border-radius: 0.5rem;
+    
+    font-size: 5em;
+}
+#auto > #auto-field > .auto-pickup {
+    position: absolute;
+    transform: translate(50%, -50%);
+
+    width: 7.5em;
+    aspect-ratio: 1 / 1;
+
+    background-color: var(--a2a);
+    border-radius: 100%;
+}
+#auto > #auto-field > .auto-pickup:active {
+    background-color: var(--a2);
+}
+#auto > #auto-field > .auto-pickup.this {
+    border: 0.25rem solid var(--fg);
 }
 
-#auto > .content,
 #teleop > .content {
     flex-basis: 100%;
 
@@ -553,12 +784,9 @@
 
     font-size: 1.5em;
 }
-#auto > .content > *,
 #teleop > .content > * {
     flex-basis: 100%;
 }
-#auto > .content .row,
-#auto > .content .col,
 #teleop > .content .row,
 #teleop > .content .col {
     display: flex;
@@ -568,35 +796,26 @@
     align-content: center;
     gap: 20px;
 }
-#auto > .content .row > *,
-#auto > .content .col > *,
 #teleop > .content .row > *,
 #teleop > .content .col > * {
     flex-basis: 100%;
 }
-#auto > .content .row,
 #teleop > .content .row {
     flex-direction: row;
 }
-#auto > .content .col,
 #teleop > .content .col {
     flex-direction: column;
 }
-#auto > .content button,
 #teleop > .content button {
     position: relative;
 
     flex-direction: column;
 
     border-radius: 10px;
-
-    background-color: var(--v4);
 }
-#auto > .content button > ion-icon,
 #teleop > .content button > ion-icon {
     font-size: 2em;
 }
-#auto > .content button > .count,
 #teleop > .content button > .count {
     position: absolute;
     top: 50%;
@@ -610,36 +829,20 @@
     align-items: center;
     align-content: center;
 }
-#auto > .content button > .count > span:first-child,
 #teleop > .content button > .count > span:first-child {
     color: var(--r4);
 }
-#auto > .content button > .count > span:last-child,
 #teleop > .content button > .count > span:last-child {
     color: var(--g4);
 }
-#auto > .content button:active,
-#teleop > .content button:active {
-    background-color: var(--v6);
-}
-#auto > .content button:disabled,
-#teleop > .content button:disabled {
-    background-color: var(--v2);
-    color: var(--v8);
-}
-#auto > .content #auto-pickup,
 #teleop > .content #teleop-pickup-source,
 #teleop > .content #teleop-pickup-ground {
     border: 5px solid var(--fg);
 }
-#auto > .content #auto-score-speaker,
-#auto > .content #auto-score-amp,
 #teleop > .content #teleop-score-speaker,
 #teleop > .content #teleop-score-amp {
     border: 5px solid var(--a2);
 }
-#auto > .content #auto-mobile,
-#auto > .content #auto-disable,
 #teleop > .content #teleop-disable {
     position: relative;
 
@@ -658,23 +861,14 @@
 
     text-align: center;
 }
-#auto > .content #auto-mobile:has(> input:checked) {
-    background-color: var(--g4);
-    color: #fff;
-}
-#auto > .content #auto-disable:has(> input:checked),
 #teleop > .content #teleop-disable:has(> input:checked) {
     background-color: var(--r4);
     color: #fff;
 }
-#auto > .content #auto-mobile:has(> input:active),
-#auto > .content #auto-disable:has(> input:active),
 #teleop > .content #teleop-disable:has(> input:active) {
     background-color: var(--fg) !important;
     color: var(--bg) !important;
 }
-#auto > .content #auto-mobile > input,
-#auto > .content #auto-disable > input,
 #teleop > .content #teleop-disable > input {
     position: absolute;
     top: 0%;
@@ -685,29 +879,17 @@
 
     opacity: 0%;
 }
-#auto > .content #auto-mobile > h1::before,
-#auto > .content #auto-disable > h1::before,
-#teleop > .content #teleop-disable > h1::before {
-    text-decoration: line-through;
-}
-#auto > .content #auto-mobile > h1::before {
-    content: "Mobility";
-}
-#auto > .content #auto-disable > h1::before,
 #teleop > .content #teleop-disable > h1::before {
     content: "Disabled";
+
+    text-decoration: line-through;
 }
-#auto > .content #auto-mobile:has(> input:checked) > h1::before,
-#auto > .content #auto-disable:has(> input:checked) > h1::before,
 #teleop > .content #teleop-disable:has(> input:checked) > h1::before {
     text-decoration: none;
 }
-#auto > .content #auto-next,
 #teleop > .content #teleop-next {
     padding: 10px;
 
-    background-color: var(--a);
-    color: #fff;
     border-radius: 10px;
     border: none;
 }
@@ -716,12 +898,6 @@
         font-size: 0.75em;
     }
 }
-#auto > .content #auto-next:active,
-#teleop > .content #teleop-next:active {
-    background-color: var(--fg);
-    color: var(--bg);
-}
-#auto > #auto-modal,
 #teleop > #teleop-modal {
     position: absolute;
     top: 0%;
@@ -733,17 +909,13 @@
 
     display: none;
 }
-#auto > #auto-modal.this,
 #teleop > #teleop-modal.this,
-#auto > #auto-modal:has(button:active),
 #teleop > #teleop-modal:has(button:active) {
     display: block;
 }
-#auto > #auto-modal *,
 #teleop > #teleop-modal * {
     text-align: center;
 }
-#auto > #auto-modal > div,
 #teleop > #teleop-modal > div {
     position: relative;
     top: 0%;
@@ -763,11 +935,9 @@
     background-color: var(--v4);
     border-radius: 10px;
 }
-#auto > #auto-modal > div > h2,
 #teleop > #teleop-modal > div > h2 {
     margin: 0px;
 }
-#auto > #auto-modal > div > .content,
 #teleop > #teleop-modal > div > .content {
     flex-basis: 100%;
 
@@ -784,7 +954,6 @@
         flex-direction: column;
     }
 }
-#auto > #auto-modal > div > .content > .field,
 #teleop > #teleop-modal > div > .content > .field {
     flex-basis: 100%;
 
@@ -797,42 +966,8 @@
     background-color: var(--bga);
     border-radius: 10px;
 }
-#auto > #auto-modal.field > div > .content > .field,
 #teleop > #teleop-modal.field > div > .content > .field {
     display: block;
-}
-#auto > #auto-modal > div > .content > .field {
-    flex-basis: 30%;
-}
-@media screen and (orientation:portrait) {
-    #auto > #auto-modal > div > .content > .field {
-        flex-basis: 60%;
-    }
-}
-#auto > #auto-modal > div > .content > .field > .auto-note {
-    --x: 0;
-    --y: 0;
-
-    position: absolute;
-    left: calc(33% * (var(--x) + 1));
-    top: calc(20px + ((100% - 40px) / 5) * (var(--y) + 0.5));
-    transform: translate(-50%, -50%);
-
-    width: 60px;
-    aspect-ratio: 1 / 1;
-
-    border-radius: 100%;
-    background-color: #0000;
-    border: 10px solid var(--a2);
-    opacity: 50%;
-}
-@media screen and (orientation:portrait) {
-    #auto > #auto-modal > div > .content > .field > .auto-note {
-        left: calc(20px + ((100% - 40px) / 2) * (var(--x) + 0.5));
-    }
-}
-#auto > #auto-modal > div > .content > .field > .auto-note.this {
-    opacity: 100%;
 }
 #teleop > #teleop-modal > div > .content > .field > #teleop-field {
     position: relative;
@@ -851,7 +986,6 @@
     background-color: var(--fga);
     border: 5px solid var(--fg);
 }
-#auto > #auto-modal > div > .content > .nav,
 #teleop > #teleop-modal > div > .content > .nav {
     flex-basis: 100%;
 
@@ -863,7 +997,6 @@
     align-content: center;
     gap: 20px;
 }
-#auto > #auto-modal > div > .content > .nav > .content,
 #teleop > #teleop-modal > div > .content > .nav > .content {
     flex-basis: 66%;
 
@@ -876,64 +1009,24 @@
     gap: 20px;
 }
 @media screen and (orientation:portrait) {
-    #auto > #auto-modal > div > .content > .nav > .content,
     #teleop > #teleop-modal > div > .content > .nav > .content {
         flex-direction: column;
     }
 }
-#auto > #auto-modal.field > div > .content > .nav > .content,
 #teleop > #teleop-modal.field > div > .content > .nav > .content {
     flex-direction: column;
 }
-#auto > #auto-modal > div > .content > .nav > .content > button,
-#auto > #auto-modal > div > .content > .nav > button,
 #teleop > #teleop-modal > div > .content > .nav > .content > button,
 #teleop > #teleop-modal > div > .content > .nav > button {
     border-radius: 10px;
 
     font-size: 1.5em;
 }
-#auto > #auto-modal > div > .content > .nav > .content > button,
 #teleop > #teleop-modal > div > .content > .nav > .content > button {
     flex-basis: 100%;
 }
-#auto > #auto-modal > div > .content > .nav > .content > #auto-success,
-#teleop > #teleop-modal > div > .content > .nav > .content > #teleop-success {
-    background-color: var(--g3);
-    color: #fff;
-}
-#auto > #auto-modal > div > .content > .nav > .content > #auto-success:active,
-#teleop > #teleop-modal > div > .content > .nav > .content > #teleop-success:active {
-    background-color: var(--g4);
-}
-#auto > #auto-modal > div > .content > .nav > .content > #auto-success:disabled,
-#teleop > #teleop-modal > div > .content > .nav > .content > #teleop-success:disabled {
-    background-color: var(--g2);
-    color: #fff8;
-}
-#auto > #auto-modal > div > .content > .nav > .content > #auto-fail,
-#teleop > #teleop-modal > div > .content > .nav > .content > #teleop-fail {
-    background-color: var(--r3);
-    color: #fff;
-}
-#auto > #auto-modal > div > .content > .nav > .content > #auto-fail:active,
-#teleop > #teleop-modal > div > .content > .nav > .content > #teleop-fail:active {
-    background-color: var(--r4);
-}
-#auto > #auto-modal > div > .content > .nav > .content > #auto-fail:disabled,
-#teleop > #teleop-modal > div > .content > .nav > .content > #teleop-fail:disabled {
-    background-color: var(--r2);
-    color: #fff8;
-}
-#auto > #auto-modal > div > .content > .nav > #auto-cancel,
-#teleop > #teleop-modal > div > .content > .nav > #teleop-cancel {
+#teleop > #teleop-modal > div > .content > .nav > button {
     flex-basis: 33%;
-
-    background-color: var(--v6);
-}
-#auto > #auto-modal > div > .content > .nav > #auto-cancel:active,
-#teleop > #teleop-modal > div > .content > .nav > #teleop-cancel:active {
-    background-color: var(--v8);
 }
 
 #endgame > #endgame-pos {
@@ -1076,13 +1169,7 @@
 #endgame > #endgame-next {
     padding: 20px;
 
-    background-color: var(--a);
-    color: #fff;
     border-radius: 10px;
-}
-#endgame > #endgame-next:active {
-    background-color: var(--fg);
-    color: var(--bg);
 }
 #endgame > #endgame-next > ion-icon {
     font-size: 2em;
@@ -1105,13 +1192,7 @@
 #notes > #notes-next {
     padding: 20px;
 
-    background-color: var(--a);
-    color: #fff;
     border-radius: 10px;
-}
-#notes > #notes-next:active {
-    background-color: var(--fg);
-    color: var(--bg);
 }
 #notes > #notes-next > ion-icon {
     font-size: 2em;
@@ -1152,20 +1233,6 @@
     padding: 20px;
 
     border-radius: 10px;
-}
-#finish > .nav > #finish-next {
-    background-color: var(--a);
-    color: #fff;
-}
-#finish > .nav > #finish-next:active {
-    background-color: var(--fg);
-    color: var(--bg);
-}
-#finish > .nav > #finish-reset {
-    background-color: var(--v4);
-}
-#finish > .nav > #finish-reset:active {
-    background-color: var(--v6);
 }
 
 #prompt {
@@ -1226,10 +1293,6 @@
     background-color: transparent;
     border-radius: 100%;
 }
-#prompt > div > h1 > button:active {
-    background-color: var(--fg);
-    color: var(--bg);
-}
 #prompt > div > input {
     width: 50vw;
     padding: 10px;
@@ -1258,18 +1321,10 @@
 
     padding: 0.5em 0.75em;
 
-    background-color: var(--v6);
     border-radius: 0.25rem;
 
     font-size: inherit;
     font-weight: inherit;
-}
-#prompt > div > h2 > button[yes] {
-    background-color: var(--a);
-}
-#prompt > div > h2 > button:active {
-    background-color: var(--fg);
-    color: var(--bg);
 }
 
 #overlay {
