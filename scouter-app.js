@@ -148,7 +148,7 @@ export default class App extends util.Target {
                                 scouters = null;
                             }
                         }
-                        scouters = util.ensure(scouters, "arr").map(name => String(name));
+                        scouters = util.ensure(scouters, "arr").map(scouter => util.ensure(scouter, "obj"));
                         localStorage.setItem("scouters", JSON.stringify(scouters));
                     },
                 ].map(f => f()));
@@ -412,17 +412,33 @@ export default class App extends util.Target {
                     navigator: () => {
                         this.eScouterName.addEventListener("focus", e => {
                             this.eScouterDropdown.innerHTML = "";
-                            scouters.sort().forEach(name => {
+                            scouters.sort((a, b) => {
+                                let roleA = ["scouter", "other", "dev"].indexOf(a.role);
+                                let roleB = ["scouter", "other", "dev"].indexOf(b.role);
+                                if (roleA < roleB) return -1;
+                                if (roleB < roleA) return +1;
+                                let nameA = String(a.name);
+                                let nameB = String(b.name);
+                                if (nameA < nameB) return -1;
+                                if (nameB < nameA) return +1;
+                                return 0;
+                            }).forEach(scouter => {
                                 let elem = document.createElement("button");
                                 this.eScouterDropdown.appendChild(elem);
-                                elem.textContent = name;
+                                elem.classList.add(scouter.role);
+                                elem.textContent = scouter.name;
                                 elem.addEventListener("click", e => {
-                                    this.scouter = name;
+                                    this.scouter = scouter.name;
                                 });
                             });
                         });
                         const updateScouter = () => {
                             this.eScouterName.textContent = this.scouter || "None";
+                            this.eScouterName.className = "";
+                            let scouter = scouters.findIndex(s => s.name == this.scouter);
+                            if (scouter < 0) return;
+                            scouter = scouters[scouter];
+                            this.eScouterName.classList.add(scouter.role);
                         };
                         this.addHandler("change", updateScouter);
                         updateScouter();

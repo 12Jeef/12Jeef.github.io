@@ -253,11 +253,15 @@ button[fail]:disabled {
 #navigator > header > h3 {
     position: relative;
 }
+#navigator > header > h3 > button {
+    min-width: 15em;
+}
 #navigator > header > h3 > div {
     position: absolute;
     top: 100%;
     left: 0%;
 
+    min-width: 100%;
     max-height: 50vh;
     overflow: auto;
 
@@ -276,6 +280,17 @@ button[fail]:disabled {
 }
 #navigator > header > h3 > div > button {
     border-radius: 0em;
+}
+#navigator > header > h3 button.other {
+    background-color: var(--b3);
+}
+#navigator > header > h3 button.dev {
+    background-color: var(--g3);
+}
+#navigator > header > h3 button.other:active,
+#navigator > header > h3 button.dev:active {
+    background-color: var(--fg);
+    color: var(--bg);
 }
 #navigator > .content {
     width: 100%;
@@ -1031,6 +1046,7 @@ button[fail]:disabled {
 
 #endgame > #endgame-pos {
     -webkit-appearance: none;
+    appearance: none;
 
     align-self: center;
 
@@ -1041,6 +1057,7 @@ button[fail]:disabled {
 }
 #endgame > #endgame-pos::-webkit-slider-thumb {
     -webkit-appearance: none;
+    appearance: none;
 
     height: 60px;
     aspect-ratio: 1 / 1;

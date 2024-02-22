@@ -4,6 +4,19 @@ import { V } from "./util.js";
 import { Match, fieldSize } from "./data.js";
 
 
+function sortScouter(a, b) {
+    let roleA = ["scouter", "other", "dev"].indexOf(a.role);
+    let roleB = ["scouter", "other", "dev"].indexOf(b.role);
+    if (roleA < roleB) return -1;
+    if (roleB < roleA) return +1;
+    let nameA = String(a.name);
+    let nameB = String(b.name);
+    if (nameA < nameB) return -1;
+    if (nameB < nameA) return +1;
+    return 0;
+}
+
+
 function mean(data, def=0) {
     if (data.length <= 0) return def;
     return data.sum() / data.length;
@@ -1742,9 +1755,17 @@ export default class App extends util.Target {
                 if (scouters.length == scouters2.length) {
                     let diff = false;
                     for (let i = 0; i < scouters.length; i++) {
-                        if (scouters[i] == scouters2[i]) continue;
-                        diff = true;
-                        break;
+                        for (let k in scouters[i]) {
+                            if (scouters[i][k] == scouters2[i][k]) continue;
+                            diff = true;
+                            break;
+                        }
+                        for (let k in scouters2[i]) {
+                            if (scouters2[i][k] == scouters[i][k]) continue;
+                            diff = true;
+                            break;
+                        }
+                        if (diff) break;
                     }
                     if (!diff) return;
                 }
@@ -1764,7 +1785,7 @@ export default class App extends util.Target {
                             "Password": "6036ftw",
                         },
                         body: JSON.stringify({
-                            v: scouters,
+                            v: scouters.sort(sortScouter),
                         }),
                     });
                     if (resp.status != 200) throw resp.status;
@@ -1907,16 +1928,25 @@ export default class App extends util.Target {
                         let names = prompt("Add scouter(s):");
                         if (names == null) return;
                         names = names.split(",").map(name => name.trim());
-                        scouters.push(...names);
+                        scouters.push(...names.map(name => { return { name: name, role: "scouter" }; }));
+                        scouters.sort(sortScouter);
                         updateAPIListing();
                     });
-                    scouters.forEach(name => {
+                    scouters.sort(sortScouter).forEach(scouter => {
                         let elem = document.createElement("div");
                         this.eAPIListing.appendChild(elem);
-                        elem.innerHTML = "<span></span><button><ion-icon name='close'></ion-icon></button>";
-                        elem.children[0].textContent = name;
+                        elem.classList.add(scouter.role);
+                        elem.innerHTML = "<span></span><button><ion-icon name='ellipsis-vertical'></ion-icon></button><button><ion-icon name='close'></ion-icon></button>";
+                        elem.children[0].textContent = scouter.name;
                         elem.children[1].addEventListener("click", e => {
-                            scouters.splice(scouters.indexOf(name), 1);
+                            let role = prompt(`Edit Role (${scouter.name} was ${scouter.role})`);
+                            if (role == null) return;
+                            if (!["scouter", "other", "dev"].includes(role)) return;
+                            scouters[scouters.indexOf(scouter)].role = role;
+                            updateAPIListing();
+                        });
+                        elem.children[2].addEventListener("click", e => {
+                            scouters.splice(scouters.indexOf(scouter), 1);
                             updateAPIListing();
                         });
                     });
@@ -3113,7 +3143,7 @@ export default class App extends util.Target {
                             scouters = null;
                         }
                     }
-                    scouters = util.ensure(scouters, "arr").map(name => String(name));
+                    scouters = util.ensure(scouters, "arr").map(scouter => util.ensure(scouter, "obj")).sort(sortScouter);
                     localStorage.setItem("scouters", JSON.stringify(scouters));
                 },
                 async () => {

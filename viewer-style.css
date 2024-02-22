@@ -482,7 +482,10 @@
     line-height: 2;
 }
 #server-config-page > .content > #api-listing:has(> button) {
+    padding-bottom: 0em;
+
     flex-direction: row;
+    flex-wrap: wrap;
     align-items: flex-start;
     gap: 0.5em;
 }
@@ -509,6 +512,15 @@
 
     border: 0.1rem solid var(--v8);
 }
+#server-config-page > .content > #api-listing > div:has(> button).scouter {
+    background-color: var(--bg);
+}
+#server-config-page > .content > #api-listing > div:has(> button).other {
+    background-color: var(--b3);
+}
+#server-config-page > .content > #api-listing > div:has(> button).dev {
+    background-color: var(--g3);
+}
 #server-config-page > .content > #api-listing > div > button {
     background-color: var(--v2);
 }
@@ -517,6 +529,19 @@
 }
 #server-config-page > .content > #api-listing > div > button:active {
     background-color: var(--v6);
+}
+#server-config-page > .content > #api-listing > div.other > button,
+#server-config-page > .content > #api-listing > div.dev > button {
+    background-color: #fff4;
+}
+#server-config-page > .content > #api-listing > div.other > button:hover,
+#server-config-page > .content > #api-listing > div.dev > button:hover {
+    background-color: #fff8;
+}
+#server-config-page > .content > #api-listing > div.other > button:active,
+#server-config-page > .content > #api-listing > div.dev > button:active {
+    background-color: var(--fg);
+    color: var(--bg);
 }
 
 #master-list-page {
