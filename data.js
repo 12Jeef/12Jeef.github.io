@@ -661,7 +661,7 @@ export class Match extends util.Target {
                 i += 8;
             }
         }
-        console.log(Match.fromBufferStr(buff.toStr()));
+        // console.log(Match.fromBufferStr(buff.toStr()));
         return buff.toStr();
     }
     static fromBufferStr(s) {

@@ -1480,7 +1480,7 @@ export default class App extends util.Target {
                         continue;
                     }
                     if (v == null) {
-                        dat.textContent = v;
+                        dat.textContent = data[k];
                         continue;
                     }
                     dat.setAttribute(v ? "yes" : "no", "");
