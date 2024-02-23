@@ -1543,7 +1543,7 @@ export default class App extends util.Target {
             };
             update();
             if (btn) btn.addEventListener("click", e => {
-                if (!collapsible) return;
+                if (!cnf.collapsible) return;
                 collapsed = !collapsed;
                 update();
             });
