@@ -2535,9 +2535,9 @@ export default class App extends util.Target {
                                 ],
                             ][ii][jj];
                             dat.textContent = n;
-                            dat.appendChild(document.createElement("span"));
-                            dat.lastChild.classList.add("p");
-                            dat.lastChild.textContent = "("+((m > 0) ? (Math.round(n/m*10000)/100) : 0)+"%)";
+                            // dat.appendChild(document.createElement("span"));
+                            // dat.lastChild.classList.add("p");
+                            // dat.lastChild.textContent = "("+((m > 0) ? (Math.round(n/m*10000)/100) : 0)+"%)";
                         }
                         continue;
                     }

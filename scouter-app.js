@@ -674,10 +674,10 @@ export default class App extends util.Target {
                             let source = [0, 0], ground = [0, 0], speaker = [0, 0], amp = [0, 0];
                             if (this.hasMatch())
                                 this.match.teleopFrames.frames.forEach(frame => {
-                                    if (frame.type == "source") source[+frame.state]++;
-                                    if (frame.type == "ground") ground[+frame.state]++;
-                                    if (frame.type == "speaker") speaker[+frame.state.value]++;
-                                    if (frame.type == "amp") amp[+frame.state]++;
+                                    if (frame.type == "source") source[+!frame.state]++;
+                                    if (frame.type == "ground") ground[+!frame.state]++;
+                                    if (frame.type == "speaker") speaker[+!frame.state.value]++;
+                                    if (frame.type == "amp") amp[+!frame.state]++;
                                 });
                             this.eTeleopPickupSourceCount.innerHTML = source.map(v => "<span>"+v+"</span>").join("");
                             this.eTeleopPickupGroundCount.innerHTML = ground.map(v => "<span>"+v+"</span>").join("");

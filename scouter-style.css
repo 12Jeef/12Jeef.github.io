@@ -849,10 +849,10 @@ button[fail]:disabled {
     align-content: center;
 }
 #teleop > .content button > .count > span:first-child {
-    color: var(--r4);
+    color: var(--g4);
 }
 #teleop > .content button > .count > span:last-child {
-    color: var(--g4);
+    color: var(--r4);
 }
 #teleop > .content #teleop-pickup-source,
 #teleop > .content #teleop-pickup-ground {
