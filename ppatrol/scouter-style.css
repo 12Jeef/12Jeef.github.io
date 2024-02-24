@@ -156,7 +156,8 @@ button[fail]:disabled {
     align-content: center;
     gap: 20px;
 }
-#settings > .field > div {
+#settings > .field > div,
+#settings > #setting-left {
     position: relative;
 
     width: 100%;
@@ -174,23 +175,40 @@ button[fail]:disabled {
 
     text-align: center;
 }
+#settings > #setting-left {
+    background-color: var(--b3);
+    color: #fff;
+}
 #settings > .field > div:has(> input:disabled) {
     background-color: var(--v2);
+    color: var(--v8);
+}
+#settings > #setting-left:has(> input:disabled) {
+    background-color: var(--b2);
     color: var(--v8);
 }
 #settings > .field > div:has(> input:checked) {
     background-color: var(--g4);
     color: #fff;
 }
-#settings > .field > div:has(> input:disabled:checked) {
+#settings > #setting-left:has(> input:checked) {
+    background-color: var(--r3);
+}
+#settings > #setting-left:has(> input:disabled:checked) {
+    background-color: var(--r2);
+}
+#settings > .field > div:has(> input:disabled:checked),
+#settings > #setting-left:has(> input:disabled:checked) {
     background-color: var(--g2);
     color: #fff8;
 }
-#settings > .field > div:has(> input:not(:disabled):active) {
+#settings > .field > div:has(> input:not(:disabled):active),
+#settings > #setting-left:has(> input:not(:disabled):active) {
     background-color: var(--fg) !important;
     color: var(--bg) !important;
 }
-#settings > .field > div > input {
+#settings > .field > div > input,
+#settings > #setting-left > input {
     position: absolute;
     top: 0%;
     left: 0%;
@@ -217,6 +235,12 @@ button[fail]:disabled {
 
     background-color: transparent;
     color: var(--fg);
+}
+#settings > #setting-left > h1::before {
+    content: "Blue";
+}
+#settings > #setting-left:has(> input:checked) > h1::before {
+    content: "Red";
 }
 
 #navigator {

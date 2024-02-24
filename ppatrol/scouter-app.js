@@ -268,10 +268,12 @@ export default class App extends util.Target {
             this.eSettingEvent = document.getElementById("setting-event");
             this.eSettingEventName = document.getElementById("setting-event-name");
             this.eSettingEventId = document.getElementById("setting-event-id");
-            this.eSettingFlipX = document.getElementById("setting-flipx");
-            this.eSettingFlippedX = document.getElementById("setting-flippedx");
-            this.eSettingFlipY = document.getElementById("setting-flipy");
-            this.eSettingFlippedY = document.getElementById("setting-flippedy");
+            // this.eSettingFlipX = document.getElementById("setting-flipx");
+            // this.eSettingFlippedX = document.getElementById("setting-flippedx");
+            // this.eSettingFlipY = document.getElementById("setting-flipy");
+            // this.eSettingFlippedY = document.getElementById("setting-flippedy");
+            this.eSettingLeft = document.getElementById("setting-left");
+            this.eSettingLeftRed = document.getElementById("setting-left-red");
             this.eSettingIds = Array.from(document.querySelectorAll(".setting-id"));
 
             this.eNavigatorPage = document.getElementById("navigator");
@@ -381,11 +383,16 @@ export default class App extends util.Target {
                 let state = states[id] = new util.Target();
                 let idfs = {
                     settings: () => {
-                        this.eSettingFlippedX.addEventListener("change", e => {
-                            this.flipX = this.eSettingFlippedX.checked;
-                        });
-                        this.eSettingFlippedY.addEventListener("change", e => {
-                            this.flipY = this.eSettingFlippedY.checked;
+                        // this.eSettingFlippedX.addEventListener("change", e => {
+                        //     this.flipX = this.eSettingFlippedX.checked;
+                        // });
+                        // this.eSettingFlippedY.addEventListener("change", e => {
+                        //     this.flipY = this.eSettingFlippedY.checked;
+                        // });
+                        this.eSettingLeftRed.addEventListener("change", e => {
+                            if (this.flipX && this.flipY)
+                                this.flipX = this.flipY = false;
+                            else this.flipX = this.flipY = true;
                         });
 
                         this.eSettingIds.forEach((elem, id) => {
@@ -988,8 +995,9 @@ export default class App extends util.Target {
                             return this.page = "navigator";
                         }
 
-                        this.eSettingFlippedX.checked = this.flipX;
-                        this.eSettingFlippedY.checked = this.flipY;
+                        // this.eSettingFlippedX.checked = this.flipX;
+                        // this.eSettingFlippedY.checked = this.flipY;
+                        this.eSettingLeftRed.checked = this.flipX && this.flipY;
                     },
                     navigator: () => {
                         this.match = null;
