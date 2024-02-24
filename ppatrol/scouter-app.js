@@ -305,14 +305,17 @@ export default class App extends util.Target {
             this.eAutoPickupFail = document.getElementById("auto-pickup-fail");
             this.eAutoPickupFailCount = document.getElementById("auto-pickup-fail-count");
             this.eAutoPickupCancel = document.getElementById("auto-pickup-cancel");
+            this.eAutoPickupUndo = document.getElementById("auto-pickup-undo");
             this.eAutoSpeakerSuccess = document.getElementById("auto-speaker-success");
             this.eAutoSpeakerSuccessCount = document.getElementById("auto-speaker-success-count");
             this.eAutoSpeakerFail = document.getElementById("auto-speaker-fail");
             this.eAutoSpeakerFailCount = document.getElementById("auto-speaker-fail-count");
+            this.eAutoSpeakerUndo = document.getElementById("auto-speaker-undo");
             this.eAutoAmpSuccess = document.getElementById("auto-amp-success");
             this.eAutoAmpSuccessCount = document.getElementById("auto-amp-success-count");
             this.eAutoAmpFail = document.getElementById("auto-amp-fail");
             this.eAutoAmpFailCount = document.getElementById("auto-amp-fail-count");
+            this.eAutoAmpUndo = document.getElementById("auto-amp-undo");
             this.eAutoDisable = document.getElementById("auto-disable");
             this.eAutoDisabled = document.getElementById("auto-disabled");
             this.eAutoNext = document.getElementById("auto-next");
@@ -321,12 +324,16 @@ export default class App extends util.Target {
 
             this.eTeleopPickupSourceSuccess = document.getElementById("teleop-pickup-source-success");
             this.eTeleopPickupSourceFail = document.getElementById("teleop-pickup-source-fail");
+            this.eTeleopPickupSourceUndo = document.getElementById("teleop-pickup-source-undo");
             this.eTeleopPickupGroundSuccess = document.getElementById("teleop-pickup-ground-success");
             this.eTeleopPickupGroundFail = document.getElementById("teleop-pickup-ground-fail");
+            this.eTeleopPickupGroundUndo = document.getElementById("teleop-pickup-ground-undo");
             this.eTeleopScoreSpeakerSuccess = document.getElementById("teleop-score-speaker-success");
             this.eTeleopScoreSpeakerFail = document.getElementById("teleop-score-speaker-fail");
+            this.eTeleopScoreSpeakerUndo = document.getElementById("teleop-score-speaker-undo");
             this.eTeleopScoreAmpSuccess = document.getElementById("teleop-score-amp-success");
             this.eTeleopScoreAmpFail = document.getElementById("teleop-score-amp-fail");
+            this.eTeleopScoreAmpUndo = document.getElementById("teleop-score-amp-undo");
             this.eTeleopPickupSourceSuccessCount = document.getElementById("teleop-pickup-source-success-count");
             this.eTeleopPickupSourceFailCount = document.getElementById("teleop-pickup-source-fail-count");
             this.eTeleopPickupGroundSuccessCount = document.getElementById("teleop-pickup-ground-success-count");
@@ -595,6 +602,15 @@ export default class App extends util.Target {
                             state.updateButtons();
                         };
                         state.addHandler("change", updatePickups);
+                        const undo = name => {
+                            if (!this.hasMatch()) return;
+                            let last = null;
+                            this.match.autoFrames.frames.forEach(frame => {
+                                if (frame.type != name) return;
+                                last = frame;
+                            });
+                            this.match.autoFrames.rem(last);
+                        };
                         this.eAutoPickupSuccess.addEventListener("click", e => {
                             if (!this.hasMatch()) return;
                             if (state.pickup < 0) return;
@@ -610,18 +626,21 @@ export default class App extends util.Target {
                         this.eAutoPickupCancel.addEventListener("click", e => {
                             state.pickup = -1;
                         });
+                        this.eAutoPickupUndo.addEventListener("click", e => undo("pickup"));
                         this.eAutoSpeakerSuccess.addEventListener("click", e => {
                             this.match.autoFrames.add(new Match.Frame(util.getTime()-startTime, "speaker", true));
                         });
                         this.eAutoSpeakerFail.addEventListener("click", e => {
                             this.match.autoFrames.add(new Match.Frame(util.getTime()-startTime, "speaker", false));
                         });
+                        this.eAutoSpeakerUndo.addEventListener("click", e => undo("speaker"));
                         this.eAutoAmpSuccess.addEventListener("click", e => {
                             this.match.autoFrames.add(new Match.Frame(util.getTime()-startTime, "amp", true));
                         });
                         this.eAutoAmpFail.addEventListener("click", e => {
                             this.match.autoFrames.add(new Match.Frame(util.getTime()-startTime, "amp", false));
                         });
+                        this.eAutoAmpUndo.addEventListener("click", e => undo("amp"));
 
                         state.updateCount = () => {
                             let pickup = [0, 0], speaker = [0, 0], amp = [0, 0];
@@ -735,6 +754,16 @@ export default class App extends util.Target {
                         };
                         ["match.globalFrames.add", "match.globalFrames.rem"].forEach(c => this.addHandler("change-"+c, state.updateButtons));
 
+                        const undo = name => {
+                            if (!this.hasMatch()) return;
+                            let last = null;
+                            this.match.teleopFrames.frames.forEach(frame => {
+                                if (frame.type != name) return;
+                                last = frame;
+                            });
+                            this.match.teleopFrames.rem(last);
+                        };
+
                         this.eTeleopPickupSourceSuccess.addEventListener("click", e => {
                             if (!this.hasMatch()) return;
                             this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, "source", true));
@@ -743,6 +772,7 @@ export default class App extends util.Target {
                             if (!this.hasMatch()) return;
                             this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, "source", false));
                         });
+                        this.eTeleopPickupSourceUndo.addEventListener("click", e => undo("source"));
                         this.eTeleopPickupGroundSuccess.addEventListener("click", e => {
                             if (!this.hasMatch()) return;
                             this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, "ground", true));
@@ -751,6 +781,7 @@ export default class App extends util.Target {
                             if (!this.hasMatch()) return;
                             this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, "ground", false));
                         });
+                        this.eTeleopPickupGroundUndo.addEventListener("click", e => undo("ground"));
                         this.eTeleopScoreAmpSuccess.addEventListener("click", e => {
                             if (!this.hasMatch()) return;
                             this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, "amp", true));
@@ -759,10 +790,12 @@ export default class App extends util.Target {
                             if (!this.hasMatch()) return;
                             this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, "amp", false));
                         });
+                        this.eTeleopScoreAmpUndo.addEventListener("click", e => undo("amp"));
 
                         this.eTeleopScoreSpeaker.addEventListener("click", e => {
                             state.type = "speaker";
                         });
+                        this.eTeleopScoreSpeakerUndo.addEventListener("click", e => undo("speaker"));
 
                         this.eTeleopDisabled.addEventListener("change", e => {
                             if (!this.hasMatch()) return;

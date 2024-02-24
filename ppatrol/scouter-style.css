@@ -675,12 +675,17 @@ button[fail]:disabled {
 #auto > .section > .nav > h1 > span:first-child {
     flex-basis: 100%;
 }
-#auto > .section > .nav > h1 > span:nth-last-child(2) {
+#auto > .section > .nav > h1 > button {
+    padding: 0.25em;
+
+    font-size: 0.75em;
+}
+#auto > .section > .nav > h1 > span:nth-last-of-type(2) {
     color: var(--g4);
 
     font-weight: 500;
 }
-#auto > .section > .nav > h1 > span:nth-last-child(1) {
+#auto > .section > .nav > h1 > span:nth-last-of-type(1) {
     color: var(--r4);
 
     font-weight: 500;
@@ -786,10 +791,15 @@ button[fail]:disabled {
     align-content: center;
     gap: 0.25em;
 }
-#auto > #auto-field > #auto-pickup > h2 > span:first-child {
+#auto > #auto-field > #auto-pickup > h2 > button {
+    padding: 0.25em;
+
+    border-radius: 0.5rem;
+}
+#auto > #auto-field > #auto-pickup > h2 > span:nth-last-of-type(2) {
     color: var(--g4);
 }
-#auto > #auto-field > #auto-pickup > h2 > span:last-child {
+#auto > #auto-field > #auto-pickup > h2 > span:nth-last-of-type(1) {
     color: var(--r4);
 }
 #auto > #auto-field > #auto-pickup > button {
@@ -854,16 +864,21 @@ button[fail]:disabled {
 
     font-size: 1.5em;
 }
+#teleop > .content > .section > h3 > button {
+    padding: 0.25em;
+
+    border-radius: 0.5rem;
+}
 #teleop > .content > .section > h3 > span:first-child {
     opacity: 50%;
 }
 #teleop > .content > .section > h3 > span:nth-child(2) {
     flex-basis: 100%;
 }
-#teleop > .content > .section > h3 > span:nth-last-child(2) {
+#teleop > .content > .section > h3 > span:nth-last-of-type(2) {
     color: var(--g4);
 }
-#teleop > .content > .section > h3 > span:nth-last-child(1) {
+#teleop > .content > .section > h3 > span:nth-last-of-type(1) {
     color: var(--r4);
 }
 #teleop > .content > .section > .nav {
