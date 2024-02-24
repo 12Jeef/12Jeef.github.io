@@ -592,11 +592,9 @@ export default class App extends util.Target {
                                     elem.classList.add("this");
                                 else elem.classList.remove("this");
                             });
-                            this.eAutoPickupSuccess.disabled = state.pickup < 0;
-                            this.eAutoPickupFail.disabled = state.pickup < 0;
+                            state.updateButtons();
                         };
                         state.addHandler("change", updatePickups);
-                        updatePickups();
                         this.eAutoPickupSuccess.addEventListener("click", e => {
                             if (!this.hasMatch()) return;
                             if (state.pickup < 0) return;
@@ -639,10 +637,20 @@ export default class App extends util.Target {
                         };
                         ["match", "match.autoFrames.add", "match.autoFrames.rem"].forEach(c => this.addHandler("change-"+c, state.updateCount));
 
+                        state.updateButtons = () => {
+                            this.eAutoSpeakerSuccess.disabled = this.eAutoDisabled.checked;
+                            this.eAutoSpeakerFail.disabled = this.eAutoDisabled.checked;
+                            this.eAutoAmpSuccess.disabled = this.eAutoDisabled.checked;
+                            this.eAutoAmpFail.disabled = this.eAutoDisabled.checked;
+                            this.eAutoPickupSuccess.disabled = this.eAutoDisabled.checked || state.pickup < 0;
+                            this.eAutoPickupFail.disabled = this.eAutoDisabled.checked || state.pickup < 0;
+                        };
+                        ["match.globalFrames.add", "match.globalFrames.rem"].forEach(c => this.addHandler("change-"+c, state.updateButtons));
+
                         const updateField = () => {
                             if (this.hasMatch() && this.match.robotTeam == "r")
                                 this.eAutoPage.style.flexDirection = "row-reverse";
-                            else this.eAutoPage.style.flexDirection = "row";
+                            else this.eAutoPage.style.flexDirection = "row-reverse";
                             this.eAutoField.style.backgroundPosition = ((this.hasMatch() && this.match.robotTeam == "r") ? 100 : 0)+"% 0%";
                             this.eAutoField.style.transform = "scale("+(this.flipX ? -1 : 1)+", "+(this.flipY ? -1 : 1)+")";
                             this.eAutoField.style.setProperty("--scale-x", this.flipX ? -1 : 1);
@@ -672,6 +680,8 @@ export default class App extends util.Target {
                             if (this.match.hasTeleopTime()) return;
                             this.match.teleopTime = util.getTime()-startTime;
                         });
+
+                        updatePickups();
                     },
                     teleop: () => {
                         let type = null;
