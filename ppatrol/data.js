@@ -3,7 +3,7 @@ import { V } from "./util.js";
 
 const N = Math.log2(util.BASE64.length);
 
-export const fieldSize = new V(1654, 802);
+export const fieldSize = new V(1654, 821);
 export const size = 304/4;
 export const zone = 193.3575;
 

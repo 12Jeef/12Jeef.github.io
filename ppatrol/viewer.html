@@ -7,6 +7,8 @@
         <script src="./prism.min.js"></script>
         <link rel="stylesheet" href="./prism.min.css">
         <script src="./qrious.min.js"></script>
+        <script src="./heatmap.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.js"></script>
         <script type="module">
             import App from "./viewer-app.js";
 			const app = new App();
@@ -14,9 +16,19 @@
         </script>
     </head>
     <body>
-        <script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.js"></script>
         <div id="header">
             <h1><span>Peninsula</span>Patrol</h1>
+        </div>
+        <div id="field-popup" class="popup">
+            <div class="content">
+                <div id="field">
+                    <div id="field-box"></div>
+                    <canvas id="field-canvas"></canvas>
+                </div>
+                <div class="nav" id="field-popup-nav">
+                </div>
+                <button id="field-popup-close"><ion-icon name="close"></ion-icon></button>
+            </div>
         </div>
         <div id="server-config-page" class="page">
             <div>

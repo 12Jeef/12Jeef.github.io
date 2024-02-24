@@ -64,6 +64,184 @@
     display: flex !important;
 }
 
+.popup {
+    z-index: 1000;
+
+    position: absolute;
+    top: 0em;
+    bottom: 0em;
+    left: 0em;
+    right: 0em;
+
+    display: none;
+
+    background-color: var(--bga);
+}
+.popup.this {
+    display: block;
+}
+.popup > .content {
+    position: absolute;
+    top: 5em;
+    bottom: 5em;
+    left: 10em;
+    right: 10em;
+
+    padding: 1em;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+    gap: 0.5em;
+
+    background-color: var(--v2);
+    border: 0.1rem solid var(--v8);
+}
+.popup > .content > button {
+    z-index: 1;
+
+    position: absolute;
+    top: 0em;
+    right: 0em;
+    
+    padding: 0.25em;
+
+    background-color: var(--v2);
+}
+.popup > .content > button:hover {
+    background-color: var(--v4);
+}
+.popup > .content > button:active {
+    background-color: var(--v6);
+}
+.popup > .content > div:first-of-type {
+    flex-basis: 100%;
+
+    position: relative;
+    
+    background-image: url(./field.png);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+.popup > .content > div:first-of-type > * {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+.popup > .content > div:last-of-type {
+    min-width: 20em;
+    max-height: 100%;
+    overflow: auto;
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+    gap: 0.25em;
+}
+.popup > .content > div:last-of-type > * {
+    margin: 0em;
+    padding: 0.25em;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    align-content: center;
+    gap: 0.5em;
+
+    font-size: 1.25em;
+}
+.popup > .content > div:last-of-type > * > span {
+    min-width: max-content;
+}
+.popup > .content > div:last-of-type > * > span:first-child {
+    color: var(--fga);
+
+    font-family: monospace;
+}
+.popup > .content > div:last-of-type > * > span[pickup],
+.popup > .content > div:last-of-type > * > span[source],
+.popup > .content > div:last-of-type > * > span[ground],
+.popup > .content > div:last-of-type > * > span[speaker],
+.popup > .content > div:last-of-type > * > span[amp],
+.popup > .content > div:last-of-type > * > span[climb] {
+    display: inline-block;
+
+    width: 0.5em;
+    aspect-ratio: 1 / 1;
+
+    border-radius: 100%;
+}
+.popup > .content > div:last-of-type > * > span[pickup],
+.popup > .content > div:last-of-type > * > span[source],
+.popup > .content > div:last-of-type > * > span[ground] {
+    background-color: var(--a2);
+}
+.popup > .content > div:last-of-type > * > span[speaker],
+.popup > .content > div:last-of-type > * > span[amp] {
+    background-color: var(--a);
+}
+.popup > .content > div:last-of-type > * > span[climb] {
+    background-color: var(--v8);
+}
+.popup > .content > div:last-of-type > h3:first-child {
+    background-color: var(--v2);
+}
+.popup > .content > div:last-of-type > h3:first-child > button {
+    flex-basis: 100%;
+
+    padding: 0.25em 0.5em;
+
+    background-color: var(--v4);
+}
+.popup > .content > div:last-of-type > h3:first-child > button.this {
+    outline: 0.1rem solid var(--fg);
+}
+.popup > .content > div:last-of-type > h3:first-child > button:hover {
+    background-color: var(--v6);
+}
+.popup > .content > div:last-of-type > h3:first-child > button:active {
+    background-color: var(--v8);
+}
+.popup > .content > div:last-of-type > h3:first-child > button[success] {
+    background-color: var(--g3);
+}
+.popup > .content > div:last-of-type > h3:first-child > button[success]:hover {
+    background-color: var(--g4);
+}
+.popup > .content > div:last-of-type > h3:first-child > button[success]:active {
+    background-color: var(--fg);
+    color: var(--bg);
+}
+.popup > .content > div:last-of-type > h3:first-child > button[fail] {
+    background-color: var(--r3);
+}
+.popup > .content > div:last-of-type > h3:first-child > button[fail]:hover {
+    background-color: var(--r4);
+}
+.popup > .content > div:last-of-type > h3:first-child > button[fail]:active {
+    background-color: var(--fg);
+    color: var(--bg);
+}
+.popup > .content > div:last-of-type > button {
+    background-color: var(--v4);
+}
+.popup > .content > div:last-of-type > button:hover {
+    background-color: var(--v6);
+}
+.popup > .content > div:last-of-type > button:active {
+    background-color: var(--v8);
+}
+
 #nav {
     position: absolute;
     bottom: 0%;

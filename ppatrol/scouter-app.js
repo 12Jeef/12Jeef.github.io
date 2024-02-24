@@ -319,17 +319,6 @@ export default class App extends util.Target {
 
             this.eTeleopPage = document.getElementById("teleop");
 
-            // this.eTeleopPickupSource = document.getElementById("teleop-pickup-source");
-            // this.eTeleopPickupSourceCount = document.getElementById("teleop-pickup-source-count");
-            // this.eTeleopPickupGround = document.getElementById("teleop-pickup-ground");
-            // this.eTeleopPickupGroundCount = document.getElementById("teleop-pickup-ground-count");
-            // this.eTeleopScoreSpeaker = document.getElementById("teleop-score-speaker");
-            // this.eTeleopScoreSpeakerCount = document.getElementById("teleop-score-speaker-count");
-            // this.eTeleopScoreAmp = document.getElementById("teleop-score-amp");
-            // this.eTeleopScoreAmpCount = document.getElementById("teleop-score-amp-count");
-            // this.eTeleopDisable = document.getElementById("teleop-disable");
-            // this.eTeleopDisabled = document.getElementById("teleop-disabled");
-            // this.eTeleopNext = document.getElementById("teleop-next");
             this.eTeleopPickupSourceSuccess = document.getElementById("teleop-pickup-source-success");
             this.eTeleopPickupSourceFail = document.getElementById("teleop-pickup-source-fail");
             this.eTeleopPickupGroundSuccess = document.getElementById("teleop-pickup-ground-success");
@@ -661,8 +650,8 @@ export default class App extends util.Target {
                             let h = this.eAutoField.getBoundingClientRect().height;
                             let scale = h/fieldSize.y;
                             this.eAutoPickups.forEach((elem, i) => {
-                                let x = [fieldSize.x/2-636.27+101.346, fieldSize.x/2][+(i >= 3)]*0.975;
-                                let y = [i=>(fieldSize.y/2-(2-i)*144.78*0.96), i=>(75.2856+(i-3)*167.64*0.975)][+(i >= 3)](i);
+                                let x = [fieldSize.x/2-636.27+101.346, fieldSize.x/2][+(i >= 3)];
+                                let y = [i=>(fieldSize.y/2-(2-i)*144.78), i=>(75.2856+(i-3)*167.64)][+(i >= 3)](i);
                                 elem.style.top = (y*scale)+"px";
                                 elem.style.right = (this.hasMatch() && this.match.robotTeam == "r") ? ((x*scale)+"px") : ("calc(100% - "+(x*scale+"px)"));
                             });
@@ -1041,6 +1030,7 @@ export default class App extends util.Target {
                         this.eSettingLeftRed.checked = this.flipX && this.flipY;
                     },
                     navigator: () => {
+                        startTime = null;
                         this.match = null;
                     },
                     preauto: () => {
@@ -1093,6 +1083,7 @@ export default class App extends util.Target {
                     finish: () => {
                         let data = this.hasMatch() ? this.match.toBufferStr(this.scouter) : "NO_MATCH_ERR";
                         console.log(data);
+                        console.log(Match.fromBufferStr(data));
                         new QRious({
                             element: this.eFinishCode,
                             value: data,

@@ -1130,11 +1130,12 @@ export class V extends Target {
     toString() { return "<"+this.xy.join(", ")+">" }
 
     toJSON() {
-        return Reviver.revivable(this.constructor, {
-            VERSION: VERSION,
-            x: this.x,
-            y: this.y,
-        });
+        return { x: this.x, y: this.y };
+        // return Reviver.revivable(this.constructor, {
+        //     VERSION: VERSION,
+        //     x: this.x,
+        //     y: this.y,
+        // });
     }
 }
 

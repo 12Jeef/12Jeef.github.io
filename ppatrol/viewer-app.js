@@ -949,7 +949,114 @@ export default class App extends util.Target {
         const makeMatchListing = match => {
             const k = getBufferStr(match);
             const comp = computeFullMatch(match);
-            console.log(comp);
+            const showMap = () => {
+                let elems = [], elem;
+
+                elem = document.createElement("h3");
+                elems.push({ elem: elem, ts: -1 });
+                elem.style.zIndex = 1;
+                elem.style.position = "sticky";
+                elem.style.top = "0%";
+                elem.innerHTML = "<button success>Success</button><button fail>Fail</button><button>All</button>";
+
+                elem = document.createElement("h3");
+                elems.push({ elem: elem, ts: 0 });
+                elem.addEventListener("click", e => (fieldTS = 0));
+                elem.innerHTML = "<span></span><span></span>";
+                elem.children[0].textContent = util.formatTime(0);
+                elem.children[1].textContent = "Auto";
+
+                match.autoFrames.forEach(frame => {
+                    elem = document.createElement("button");
+                    elems.push({ elem: elem, ts: frame.ts });
+                    elem.addEventListener("click", e => (fieldTS = frame.ts));
+                    elem.innerHTML = "<span></span><span></span><span></span>";
+                    elem.children[0].textContent = util.formatTime(frame.ts);
+                    elem.children[1].setAttribute(frame.type, "");
+                    let name = util.formatText(frame.type), value = frame.state;
+                    if (frame.type == "pickup") {
+                        name += " @ "+(value.at < 3 ? "Wing" : "Mid")+" "+(value.at < 3 ? value.at+1 : value.at-2);
+                        value = value.value;
+                    }
+                    elem.children[2].textContent = name;
+                    elem.style.borderRight = "0.5rem solid "+["var(--r4)", "var(--g4)"][+!!value];
+                });
+
+                elem = document.createElement("h3");
+                elems.push({ elem: elem, ts: match.teleopTime });
+                elem.addEventListener("click", e => (fieldTS = match.teleopTime));
+                elem.innerHTML = "<span></span><span></span>";
+                elem.children[0].textContent = util.formatTime(match.teleopTime);
+                elem.children[1].textContent = "Teleop";
+
+                match.teleopFrames.forEach(frame => {
+                    elem = document.createElement("button");
+                    elems.push({ elem: elem, ts: frame.ts });
+                    elem.addEventListener("click", e => (fieldTS = frame.ts));
+                    elem.innerHTML = "<span></span><span></span><span></span>";
+                    elem.children[0].textContent = util.formatTime(frame.ts);
+                    elem.children[1].setAttribute(frame.type, "");
+                    if (frame.type == "climb") {
+                        elem.children[2].textContent = ["None", "Park", "Onstage"][frame.state];
+                        return;
+                    }
+                    elem.children[2].textContent = util.formatText(frame.type);
+                    let value = frame.state;
+                    if (frame.type == "speaker") value = value.value;
+                    elem.style.borderRight = "0.5rem solid "+["var(--r4)", "var(--g4)"][+!!value];
+                });
+
+                this.eFieldPopupNav.style.display = "";
+                this.eFieldPopupNav.innerHTML = "";
+                elems.forEach(elem => this.eFieldPopupNav.appendChild(elem.elem));
+                let ts = null;
+                let id = setInterval(() => {
+                    if (ts != fieldTS) {
+                        ts = fieldTS;
+                        openFieldPopup();
+                    }
+                    let all = true;
+                    for (let elem of elems) {
+                        if (this.eFieldPopupNav.contains(elem.elem)) continue;
+                        all = false;
+                        break;
+                    }
+                    if (!all) return clearInterval(id);
+                    elems.forEach(elem => {
+                        elem.elem.style.opacity = (elem.ts <= fieldTS) ? "" : "50%";
+                    });
+                }, 100);
+
+                heatmapNodes = match.teleopFrames.filter(frame => (frame.type == "speaker" && frame.state.value)).map(frame => {
+                    return {
+                        ts: frame.ts,
+                        x: frame.state.at.x,
+                        y: frame.state.at.y,
+                    };
+                });
+                canvasNodes = match.autoFrames.map(frame => {
+                    if (frame.type == "pickup") {
+                        let at = frame.state.at;
+                        let x = [fieldSize.x/2-636.27+101.346, fieldSize.x/2][+(at >= 3)];
+                        let y = [i=>(fieldSize.y/2-(2-i)*144.78), i=>(75.2856+(i-3)*167.64)][+(at >= 3)](at);
+                        if (match.team == "r") x = fieldSize.x-x;
+                        return { ts: frame.ts, x: x, y: y, group: at };
+                    }
+                    if (frame.type == "speaker") {
+                        let x = fieldSize.x/2-636.27-101.4222/2;
+                        if (match.team == "r") x = fieldSize.x-x;
+                        return { ts: frame.ts, x: x, y: fieldSize.y/2-144.78, group: -1 };
+                    }
+                    if (frame.type == "amp") {
+                        let x = 193.294;
+                        if (match.team == "r") x = fieldSize.x-x;
+                        return { ts: frame.ts, x: x, y: 0, group: -2 };
+                    }
+                    return null;
+                }).filter(node => node != null);
+                fieldTS = 0;
+                openFieldPopup();
+            };
             let elem = document.createElement("table");
             elem.classList.add("match-listing");
             if (match.robotTeam == "r") elem.setAttribute("red", "");
@@ -1189,7 +1296,8 @@ export default class App extends util.Target {
                                 this.qual = match.id;
                             });
                         } else if (j == 12) {
-                            // dat.textContent = "See Pit Data";
+                            dat.textContent = "See Maps";
+                            dat.addEventListener("click", showMap);
                         }
                         continue;
                     }
@@ -1250,7 +1358,8 @@ export default class App extends util.Target {
                     }
                     if (i == 4) {
                         if (j == 3) {
-                            // dat.textContent = "See Pit Data";
+                            dat.textContent = "See Maps";
+                            dat.addEventListener("click", showMap);
                         } else if (j == 12) {
                             if (comp.endgame.trap.state) dat.setAttribute("yes", "");
                         }
@@ -1551,6 +1660,81 @@ export default class App extends util.Target {
             return elems;
         };
 
+        let heatmapNodes = [];
+        let canvasNodes = [];
+        let fieldTS = 0;
+        let doUpdateFieldPopup = false;
+        const updateFieldPopup = () => {
+            let r = this.eField.getBoundingClientRect();
+            let scaleX = r.width/fieldSize.x;
+            let scaleY = r.height/fieldSize.y;
+            let scale = Math.min(scaleX, scaleY);
+            this.eFieldCanvas.width = fieldSize.x;
+            this.eFieldCanvas.height = fieldSize.y;
+            this.eFieldBox.style.width = this.eFieldCanvas.style.width = (scale * fieldSize.x)+"px";
+            this.eFieldBox.style.height = this.eFieldCanvas.style.height = (scale * fieldSize.y)+"px";
+            if (scale <= 0) return;
+            this.eFieldBox.innerHTML = "";
+            const heatmap = h337.create({
+                container: this.eFieldBox,
+                radius: scale*100,
+                maxOpacity: 0.5,
+                minOpacity: 0,
+                // blur: 1,
+            });
+            heatmapNodes.filter(node => node.ts <= fieldTS).forEach(node => heatmap.addData(node));
+            const ctx = this.eFieldCanvas.getContext("2d");
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            canvasNodes.sort((a, b) => a.ts-b.ts);
+            let before = [], after = [];
+            canvasNodes.forEach(node => [before, after][+(node.ts > fieldTS)].push(node));
+            if (before.length > 0) after.unshift(before.at(-1));
+            ctx.lineCap = ctx.lineJoin = "round";
+            ctx.lineWidth = 3/scale;
+            ctx.strokeStyle = "#0f04";
+            ctx.beginPath();
+            after.forEach((node, i) => {
+                if (i <= 0) 
+                    ctx.moveTo(node.x, node.y);
+                else ctx.lineTo(node.x, node.y);
+            });
+            ctx.stroke();
+            ctx.strokeStyle = "#0f0";
+            ctx.beginPath();
+            before.forEach((node, i) => {
+                if (i <= 0) 
+                    ctx.moveTo(node.x, node.y);
+                else ctx.lineTo(node.x, node.y);
+            });
+            ctx.stroke();
+            after.forEach((node, i) => {
+                if (i <= 0) return ctx.fillStyle = "#0f04";
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, 10/scale, 0, 2*Math.PI);
+                ctx.fill();
+            });
+            before.forEach((node, i) => {
+                if (i+1 >= before.length)
+                    ctx.fillStyle = "#ff0";
+                else ctx.fillStyle = "#0f0";
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, 10/scale, 0, 2*Math.PI);
+                ctx.fill();
+            });
+        };
+        const openFieldPopup = () => {
+            this.eFieldPopup.classList.add("this");
+            updateFieldPopup();
+        };
+        const closeFieldPopup = () => {
+            this.eFieldPopup.classList.remove("this");
+        };
+        this.addHandler("update", () => {
+            if (!this.eFieldPopup.classList.contains("this")) return;
+            if (!doUpdateFieldPopup) return;
+            updateFieldPopup();
+        });
+
         let eNavButtons = {};
 
         this.addHandler("setup", async () => {
@@ -1605,6 +1789,16 @@ export default class App extends util.Target {
                     this.change("page", page, btn.id);
                 });
             });
+
+            this.eFieldPopup = document.getElementById("field-popup");
+            this.eFieldPopupClose = document.getElementById("field-popup-close");
+            this.eFieldPopupClose.addEventListener("click", closeFieldPopup);
+            this.eFieldPopupNav = document.getElementById("field-popup-nav");
+            this.eField = document.getElementById("field");
+            this.eFieldBox = document.getElementById("field-box");
+            this.eFieldCanvas = document.getElementById("field-canvas");
+            new ResizeObserver(updateFieldPopup).observe(this.eField);
+            updateFieldPopup();
 
             this.eServerConfigEvents = document.getElementById("server-config-events");
             this.eServerConfigEventsEnter = document.getElementById("server-config-events-enter");
@@ -1906,7 +2100,6 @@ export default class App extends util.Target {
                                     } else if (j == 2) {
                                         dat.textContent = team.nickname;
                                     } else {
-                                        // dat.textContent = ["See Analytics", "See Pit Data"][j-3];
                                         dat.textContent = ["See Analytics", ""][j-3];
                                         dat.addEventListener("click", e => {
                                             if (j-3 == 0) {
