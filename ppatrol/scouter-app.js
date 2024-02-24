@@ -319,14 +319,34 @@ export default class App extends util.Target {
 
             this.eTeleopPage = document.getElementById("teleop");
 
-            this.eTeleopPickupSource = document.getElementById("teleop-pickup-source");
-            this.eTeleopPickupSourceCount = document.getElementById("teleop-pickup-source-count");
-            this.eTeleopPickupGround = document.getElementById("teleop-pickup-ground");
-            this.eTeleopPickupGroundCount = document.getElementById("teleop-pickup-ground-count");
+            // this.eTeleopPickupSource = document.getElementById("teleop-pickup-source");
+            // this.eTeleopPickupSourceCount = document.getElementById("teleop-pickup-source-count");
+            // this.eTeleopPickupGround = document.getElementById("teleop-pickup-ground");
+            // this.eTeleopPickupGroundCount = document.getElementById("teleop-pickup-ground-count");
+            // this.eTeleopScoreSpeaker = document.getElementById("teleop-score-speaker");
+            // this.eTeleopScoreSpeakerCount = document.getElementById("teleop-score-speaker-count");
+            // this.eTeleopScoreAmp = document.getElementById("teleop-score-amp");
+            // this.eTeleopScoreAmpCount = document.getElementById("teleop-score-amp-count");
+            // this.eTeleopDisable = document.getElementById("teleop-disable");
+            // this.eTeleopDisabled = document.getElementById("teleop-disabled");
+            // this.eTeleopNext = document.getElementById("teleop-next");
+            this.eTeleopPickupSourceSuccess = document.getElementById("teleop-pickup-source-success");
+            this.eTeleopPickupSourceFail = document.getElementById("teleop-pickup-source-fail");
+            this.eTeleopPickupGroundSuccess = document.getElementById("teleop-pickup-ground-success");
+            this.eTeleopPickupGroundFail = document.getElementById("teleop-pickup-ground-fail");
+            this.eTeleopScoreSpeakerSuccess = document.getElementById("teleop-score-speaker-success");
+            this.eTeleopScoreSpeakerFail = document.getElementById("teleop-score-speaker-fail");
+            this.eTeleopScoreAmpSuccess = document.getElementById("teleop-score-amp-success");
+            this.eTeleopScoreAmpFail = document.getElementById("teleop-score-amp-fail");
+            this.eTeleopPickupSourceSuccessCount = document.getElementById("teleop-pickup-source-success-count");
+            this.eTeleopPickupSourceFailCount = document.getElementById("teleop-pickup-source-fail-count");
+            this.eTeleopPickupGroundSuccessCount = document.getElementById("teleop-pickup-ground-success-count");
+            this.eTeleopPickupGroundFailCount = document.getElementById("teleop-pickup-ground-fail-count");
+            this.eTeleopScoreSpeakerSuccessCount = document.getElementById("teleop-score-speaker-success-count");
+            this.eTeleopScoreSpeakerFailCount = document.getElementById("teleop-score-speaker-fail-count");
+            this.eTeleopScoreAmpSuccessCount = document.getElementById("teleop-score-amp-success-count");
+            this.eTeleopScoreAmpFailCount = document.getElementById("teleop-score-amp-fail-count");
             this.eTeleopScoreSpeaker = document.getElementById("teleop-score-speaker");
-            this.eTeleopScoreSpeakerCount = document.getElementById("teleop-score-speaker-count");
-            this.eTeleopScoreAmp = document.getElementById("teleop-score-amp");
-            this.eTeleopScoreAmpCount = document.getElementById("teleop-score-amp-count");
             this.eTeleopDisable = document.getElementById("teleop-disable");
             this.eTeleopDisabled = document.getElementById("teleop-disabled");
             this.eTeleopNext = document.getElementById("teleop-next");
@@ -616,7 +636,7 @@ export default class App extends util.Target {
                             this.match.autoFrames.add(new Match.Frame(util.getTime()-startTime, "amp", false));
                         });
 
-                        const updateCount = () => {
+                        state.updateCount = () => {
                             let pickup = [0, 0], speaker = [0, 0], amp = [0, 0];
                             if (this.hasMatch())
                                 this.match.autoFrames.frames.forEach(frame => {
@@ -628,7 +648,7 @@ export default class App extends util.Target {
                             [this.eAutoSpeakerSuccessCount.textContent, this.eAutoSpeakerFailCount.textContent] = speaker;
                             [this.eAutoAmpSuccessCount.textContent, this.eAutoAmpFailCount.textContent] = amp;
                         };
-                        ["match", "match.autoFrames.add", "match.autoFrames.rem"].forEach(c => this.addHandler("change-"+c, updateCount));
+                        ["match", "match.autoFrames.add", "match.autoFrames.rem"].forEach(c => this.addHandler("change-"+c, state.updateCount));
 
                         const updateField = () => {
                             if (this.hasMatch() && this.match.robotTeam == "r")
@@ -676,7 +696,7 @@ export default class App extends util.Target {
                             set: v => pos.set(v),
                         });
                         pos.addHandler("change", (c, f, t) => state.change("pos."+c, f, t));
-
+                        
                         state.updateCount = () => {
                             let source = [0, 0], ground = [0, 0], speaker = [0, 0], amp = [0, 0];
                             if (this.hasMatch())
@@ -686,37 +706,85 @@ export default class App extends util.Target {
                                     if (frame.type == "speaker") speaker[+!frame.state.value]++;
                                     if (frame.type == "amp") amp[+!frame.state]++;
                                 });
-                            this.eTeleopPickupSourceCount.innerHTML = source.map(v => "<span>"+v+"</span>").join("");
-                            this.eTeleopPickupGroundCount.innerHTML = ground.map(v => "<span>"+v+"</span>").join("");
-                            this.eTeleopScoreSpeakerCount.innerHTML = speaker.map(v => "<span>"+v+"</span>").join("");
-                            this.eTeleopScoreAmpCount.innerHTML = amp.map(v => "<span>"+v+"</span>").join("");
+                            [
+                                this.eTeleopPickupSourceSuccessCount.textContent,
+                                this.eTeleopPickupSourceFailCount.textContent,
+                            ] = source;
+                            [
+                                this.eTeleopPickupGroundSuccessCount.textContent,
+                                this.eTeleopPickupGroundFailCount.textContent,
+                            ] = ground;
+                            [
+                                this.eTeleopScoreSpeakerSuccessCount.textContent,
+                                this.eTeleopScoreSpeakerFailCount.textContent,
+                            ] = speaker;
+                            [
+                                this.eTeleopScoreAmpSuccessCount.textContent,
+                                this.eTeleopScoreAmpFailCount.textContent,
+                            ] = amp;
                         };
                         ["match", "match.teleopFrames.add", "match.teleopFrames.rem"].forEach(c => this.addHandler("change-"+c, state.updateCount));
 
-                        this.eTeleopPickupSource.addEventListener("click", e => {
-                            state.type = "source";
+                        state.updateButtons = () => {
+                            this.eTeleopPickupSourceSuccess.disabled = this.eTeleopDisabled.checked;
+                            this.eTeleopPickupSourceFail.disabled = this.eTeleopDisabled.checked;
+                            this.eTeleopPickupGroundSuccess.disabled = this.eTeleopDisabled.checked;
+                            this.eTeleopPickupGroundFail.disabled = this.eTeleopDisabled.checked;
+                            this.eTeleopScoreSpeaker.disabled = this.eTeleopDisabled.checked;
+                            this.eTeleopScoreAmpSuccess.disabled = this.eTeleopDisabled.checked;
+                            this.eTeleopScoreAmpFail.disabled = this.eTeleopDisabled.checked;
+                        };
+                        ["match.globalFrames.add", "match.globalFrames.rem"].forEach(c => this.addHandler("change-"+c, state.updateButtons));
+
+                        this.eTeleopPickupSourceSuccess.addEventListener("click", e => {
+                            if (!this.hasMatch()) return;
+                            this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, "source", true));
                         });
-                        this.eTeleopPickupGround.addEventListener("click", e => {
-                            state.type = "ground";
+                        this.eTeleopPickupSourceFail.addEventListener("click", e => {
+                            if (!this.hasMatch()) return;
+                            this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, "source", false));
                         });
+                        this.eTeleopPickupGroundSuccess.addEventListener("click", e => {
+                            if (!this.hasMatch()) return;
+                            this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, "ground", true));
+                        });
+                        this.eTeleopPickupGroundFail.addEventListener("click", e => {
+                            if (!this.hasMatch()) return;
+                            this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, "ground", false));
+                        });
+                        this.eTeleopScoreAmpSuccess.addEventListener("click", e => {
+                            if (!this.hasMatch()) return;
+                            this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, "amp", true));
+                        });
+                        this.eTeleopScoreAmpFail.addEventListener("click", e => {
+                            if (!this.hasMatch()) return;
+                            this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, "amp", false));
+                        });
+
                         this.eTeleopScoreSpeaker.addEventListener("click", e => {
                             state.type = "speaker";
                         });
-                        this.eTeleopScoreAmp.addEventListener("click", e => {
-                            state.type = "amp";
-                        });
-
-                        const updateButtons = () => {
-                            this.eTeleopPickupSource.disabled = this.eTeleopDisabled.checked;
-                            this.eTeleopPickupGround.disabled = this.eTeleopDisabled.checked;
-                            this.eTeleopScoreSpeaker.disabled = this.eTeleopDisabled.checked;
-                            this.eTeleopScoreAmp.disabled = this.eTeleopDisabled.checked;
-                        };
-                        ["match.globalFrames.add", "match.globalFrames.rem"].forEach(c => this.addHandler("change-"+c, updateButtons));
 
                         this.eTeleopDisabled.addEventListener("change", e => {
                             if (!this.hasMatch()) return;
                             this.match.globalFrames.add(new Match.Frame(util.getTime()-startTime, "disable", this.eTeleopDisabled.checked));
+                        });
+                        this.eTeleopNext.addEventListener("click", e => {
+                            this.page = "endgame";
+                        });
+
+                        this.eTeleopSuccess.addEventListener("click", e => {
+                            if (!this.hasMatch()) return;
+                            this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, state.type, { at: state.pos.xy, value: true }));
+                            state.type = null;
+                        });
+                        this.eTeleopFail.addEventListener("click", e => {
+                            if (!this.hasMatch()) return;
+                            this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, state.type, { at: state.pos.xy, value: false }));
+                            state.type = null;
+                        });
+                        this.eTeleopCancel.addEventListener("click", e => {
+                            state.type = null;
                         });
 
                         this.eTeleopField.addEventListener("touchstart", e => {
@@ -743,32 +811,6 @@ export default class App extends util.Target {
                             mousemove(e);
                             document.body.addEventListener("touchmove", mousemove);
                             document.body.addEventListener("touchend", mouseup);
-                        });
-
-                        this.eTeleopSuccess.addEventListener("click", e => {
-                            if (this.hasMatch()) {
-                                let value = true;
-                                if (state.type == "speaker")
-                                    value = { at: state.pos.xy, value: value };
-                                this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, state.type, value));
-                            }
-                            state.type = null;
-                        });
-                        this.eTeleopFail.addEventListener("click", e => {
-                            if (this.hasMatch()) {
-                                let value = false;
-                                if (state.type == "speaker")
-                                    value = { at: state.pos.xy, value: value };
-                                this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, state.type, value));
-                            }
-                            state.type = null;
-                        });
-                        this.eTeleopCancel.addEventListener("click", e => {
-                            state.type = null;
-                        });
-
-                        this.eTeleopNext.addEventListener("click", e => {
-                            this.page = "endgame";
                         });
 
                         const updateField = () => {
@@ -808,11 +850,10 @@ export default class App extends util.Target {
                             let type = state.type;
                             if (type) this.eTeleopModal.classList.add("this");
                             else this.eTeleopModal.classList.remove("this");
-                            if (type) {
-                                if (type == "speaker") this.eTeleopModal.classList.add("field");
-                                else this.eTeleopModal.classList.remove("field");
-                                this.eTeleopType.textContent = { source: "Pickup: Source", ground: "Pickup: Ground", speaker: "Score: Speaker", amp: "Score: Amp" }[type];
-                            }
+                            if (!type) return;
+                            if (type == "speaker") this.eTeleopModal.classList.add("field");
+                            else this.eTeleopModal.classList.remove("field");
+                            this.eTeleopType.textContent = { source: "Pickup: Source", ground: "Pickup: Ground", speaker: "Score: Speaker", amp: "Score: Amp" }[type];
                         });
                     },
                     endgame: () => {
@@ -1032,15 +1073,17 @@ export default class App extends util.Target {
                                 if (frame.type != "disable") return;
                                 this.eAutoDisabled.checked = frame.state;
                             });
+                        state.updateCount();
                     },
                     teleop: () => {
-                        state.updateCount();
                         this.eTeleopDisabled.checked = false;
                         if (this.hasMatch())
                             this.match.globalFrames.frames.forEach(frame => {
                                 if (frame.type != "disable") return;
                                 this.eTeleopDisabled.checked = frame.state;
                             });
+                        state.updateCount();
+                        state.updateButtons();
                     },
                     endgame: () => {
                     },

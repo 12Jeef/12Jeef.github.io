@@ -121,16 +121,33 @@
         </div>
         <div id="teleop" class="page">
             <div class="content">
-                <div class="col">
-                    <button id="teleop-pickup-source"><h3>Pickup:</h3><h1>Source</h1><h3 id="teleop-pickup-source-count" class="count"></h3></button>
-                    <button id="teleop-pickup-ground"><h3>Pickup:</h3><h1>Ground</h1><h3 id="teleop-pickup-ground-count" class="count"></h3></button>
-                    <div id="teleop-disable"><input type="checkbox" id="teleop-disabled"><h1></h1></div>
+                <div class="section">
+                    <h3><span>Pickup:</span><span>Source</span><span id="teleop-pickup-source-success-count"></span><span id="teleop-pickup-source-fail-count"></span></h3>
+                    <div class="nav">
+                        <button id="teleop-pickup-source-success" success><ion-icon name="checkmark"></ion-icon></button>
+                        <button id="teleop-pickup-source-fail" fail><ion-icon name="close-outline"></ion-icon></button>
+                    </div>
+                    <h3><span>Pickup:</span><span>Ground</span><span id="teleop-pickup-ground-success-count"></span><span id="teleop-pickup-ground-fail-count"></span></h3>
+                    <div class="nav">
+                        <button id="teleop-pickup-ground-success" success><ion-icon name="checkmark"></ion-icon></button>
+                        <button id="teleop-pickup-ground-fail" fail><ion-icon name="close-outline"></ion-icon></button>
+                    </div>
                 </div>
-                <div class="col">
-                    <button id="teleop-score-speaker"><h3>Score:</h3><h1>Speaker</h1><h3 id="teleop-score-speaker-count" class="count"></h3></button>
-                    <button id="teleop-score-amp"><h3>Score:</h3><h1>Amp</h1><h3 id="teleop-score-amp-count" class="count"></h3></button>
-                    <button id="teleop-next" style="flex-direction:row;" special><h1>ENDGAME</h1><ion-icon name="arrow-forward"></ion-icon></button>
+                <div class="section">
+                    <h3><span>Score:</span><span>Speaker</span><span id="teleop-score-speaker-success-count"></span><span id="teleop-score-speaker-fail-count"></span></h3>
+                    <div class="nav">
+                        <button id="teleop-score-speaker"><ion-icon name="ellipsis-horizontal"></ion-icon></button>
+                    </div>
+                    <h3><span>Score:</span><span>Amp</span><span id="teleop-score-amp-success-count"></span><span id="teleop-score-amp-fail-count"></span></h3>
+                    <div class="nav">
+                        <button id="teleop-score-amp-success" success><ion-icon name="checkmark"></ion-icon></button>
+                        <button id="teleop-score-amp-fail" fail><ion-icon name="close-outline"></ion-icon></button>
+                    </div>
                 </div>
+            </div>
+            <div class="nav">
+                <div id="teleop-disable"><input type="checkbox" id="teleop-disabled"><h1></h1></div>
+                <button id="teleop-next" special><h1>ENDGAME</h1><ion-icon name="arrow-forward"></ion-icon></button>
             </div>
             <div id="teleop-modal">
                 <div>

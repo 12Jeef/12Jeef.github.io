@@ -283,6 +283,8 @@ button[fail]:disabled {
     justify-content: flex-start;
 }
 #navigator > header > h3 > div {
+    z-index: 1;
+
     position: absolute;
     top: 100%;
     left: 0%;
@@ -814,79 +816,91 @@ button[fail]:disabled {
     border: 0.25rem solid var(--fg);
 }
 
+#teleop {
+    gap: 0.5em;
+}
 #teleop > .content {
     flex-basis: 100%;
 
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
+    justify-content: center;
+    align-items: stretch;
+    align-content: center;
+    gap: 0.5em;
+}
+#teleop > .content > .section {
+    flex-basis: 100%;
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
     justify-content: flex-start;
     align-items: stretch;
     align-content: center;
-    gap: 20px;
+    gap: 0.5em;
+}
+#teleop > .content > .section > h3 {
+    margin: 0em;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    align-content: center;
+    gap: 0.5em;
 
     font-size: 1.5em;
 }
-#teleop > .content > * {
+#teleop > .content > .section > h3 > span:first-child {
+    opacity: 50%;
+}
+#teleop > .content > .section > h3 > span:nth-child(2) {
     flex-basis: 100%;
 }
-#teleop > .content .row,
-#teleop > .content .col {
+#teleop > .content > .section > h3 > span:nth-last-child(2) {
+    color: var(--g4);
+}
+#teleop > .content > .section > h3 > span:nth-last-child(1) {
+    color: var(--r4);
+}
+#teleop > .content > .section > .nav {
+    flex-basis: 100%;
+
     display: flex;
+    flex-direction: row;
     flex-wrap: nowrap;
     justify-content: flex-start;
     align-items: stretch;
-    align-content: center;
-    gap: 20px;
+    align-content: stretch;
+    gap: 0.5em;
 }
-#teleop > .content .row > *,
-#teleop > .content .col > * {
+#teleop > .content > .section > .nav > button {
     flex-basis: 100%;
-}
-#teleop > .content .row {
-    flex-direction: row;
-}
-#teleop > .content .col {
-    flex-direction: column;
-}
-#teleop > .content button {
-    position: relative;
+    
+    padding: 0em;
+    
+    border-radius: 0.5rem;
 
-    flex-direction: column;
-
-    border-radius: 10px;
+    font-size: 5em;
 }
-#teleop > .content button > ion-icon {
-    font-size: 2em;
-}
-#teleop > .content button > .count {
-    position: absolute;
-    top: 50%;
-    right: 20px;
-    transform: translateY(-50%);
-
+#teleop > .nav {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     flex-wrap: nowrap;
     justify-content: center;
-    align-items: center;
+    align-items: stretch;
     align-content: center;
+    gap: 0.5em;
 }
-#teleop > .content button > .count > span:first-child {
-    color: var(--g4);
+#teleop > .nav > * {
+    flex-basis: 100%;
+
+    border-radius: 0.5rem;
 }
-#teleop > .content button > .count > span:last-child {
-    color: var(--r4);
-}
-#teleop > .content #teleop-pickup-source,
-#teleop > .content #teleop-pickup-ground {
-    border: 5px solid var(--fg);
-}
-#teleop > .content #teleop-score-speaker,
-#teleop > .content #teleop-score-amp {
-    border: 5px solid var(--a2);
-}
-#teleop > .content #teleop-disable {
+#teleop > .nav #teleop-disable {
     position: relative;
 
     width: 100%;
@@ -904,15 +918,15 @@ button[fail]:disabled {
 
     text-align: center;
 }
-#teleop > .content #teleop-disable:has(> input:checked) {
+#teleop > .nav #teleop-disable:has(> input:checked) {
     background-color: var(--r4);
     color: #fff;
 }
-#teleop > .content #teleop-disable:has(> input:active) {
+#teleop > .nav #teleop-disable:has(> input:active) {
     background-color: var(--fg) !important;
     color: var(--bg) !important;
 }
-#teleop > .content #teleop-disable > input {
+#teleop > .nav #teleop-disable > input {
     position: absolute;
     top: 0%;
     left: 0%;
@@ -922,24 +936,19 @@ button[fail]:disabled {
 
     opacity: 0%;
 }
-#teleop > .content #teleop-disable > h1::before {
+#teleop > .nav #teleop-disable > h1::before {
     content: "Disabled";
 
     text-decoration: line-through;
 }
-#teleop > .content #teleop-disable:has(> input:checked) > h1::before {
+#teleop > .nav #teleop-disable:has(> input:checked) > h1::before {
     text-decoration: none;
 }
-#teleop > .content #teleop-next {
-    padding: 10px;
-
-    border-radius: 10px;
-    border: none;
+#teleop > .nav > button {
+    padding: 1em;
 }
-@media screen and (orientation:portrait) {
-    #teleop > .content #teleop-next {
-        font-size: 0.75em;
-    }
+#teleop > .nav > button > ion-icon {
+    font-size: 2em;
 }
 #teleop > #teleop-modal {
     position: absolute;
