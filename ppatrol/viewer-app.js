@@ -957,11 +957,45 @@ export default class App extends util.Target {
                 elem.style.zIndex = 1;
                 elem.style.position = "sticky";
                 elem.style.top = "0%";
-                elem.innerHTML = "<button success>Success</button><button fail>Fail</button><button>All</button>";
+                elem.innerHTML = "<button success style='flex-basis:100%;'>Success</button><button fail style='flex-basis:100%;'>Fail</button><button style='flex-basis:100%;'>All</button><button><ion-icon name='arrow-back'></ion-icon></button><button><ion-icon name='arrow-forward'></ion-icon></button>";
+                let mode = "success", modeBtns = [elem.children[0], elem.children[1], elem.children[2]];
+                elem.children[0].addEventListener("click", e => {
+                    mode = "success";
+                    update();
+                });
+                elem.children[1].addEventListener("click", e => {
+                    mode = "fail";
+                    update();
+                });
+                elem.children[2].addEventListener("click", e => {
+                    mode = "all";
+                    update();
+                });
+                const getIndex = () => {
+                    for (let i = 1; i < elems.length; i++) {
+                        if (i+1 >= elems.length) return i;
+                        if (elems[i+1].ts <= fieldTS) continue;
+                        return i;
+                    }
+                    return 1;
+                };
+                elem.children[3].addEventListener("click", e => {
+                    let i = getIndex()-1;
+                    i = Math.min(elems.length-1, Math.max(1, i));
+                    if (i < 1 || i >= elems.length) return;
+                    fieldTS = elems[i].ts;
+                    openFieldPopup();
+                });
+                elem.children[4].addEventListener("click", e => {
+                    let i = getIndex()+1;
+                    i = Math.min(elems.length-1, Math.max(1, i));
+                    if (i < 1 || i >= elems.length) return;
+                    fieldTS = elems[i].ts;
+                    openFieldPopup();
+                });
 
                 elem = document.createElement("h3");
                 elems.push({ elem: elem, ts: 0 });
-                elem.addEventListener("click", e => (fieldTS = 0));
                 elem.innerHTML = "<span></span><span></span>";
                 elem.children[0].textContent = util.formatTime(0);
                 elem.children[1].textContent = "Auto";
@@ -969,7 +1003,6 @@ export default class App extends util.Target {
                 match.autoFrames.forEach(frame => {
                     elem = document.createElement("button");
                     elems.push({ elem: elem, ts: frame.ts });
-                    elem.addEventListener("click", e => (fieldTS = frame.ts));
                     elem.innerHTML = "<span></span><span></span><span></span>";
                     elem.children[0].textContent = util.formatTime(frame.ts);
                     elem.children[1].setAttribute(frame.type, "");
@@ -984,7 +1017,6 @@ export default class App extends util.Target {
 
                 elem = document.createElement("h3");
                 elems.push({ elem: elem, ts: match.teleopTime });
-                elem.addEventListener("click", e => (fieldTS = match.teleopTime));
                 elem.innerHTML = "<span></span><span></span>";
                 elem.children[0].textContent = util.formatTime(match.teleopTime);
                 elem.children[1].textContent = "Teleop";
@@ -992,7 +1024,6 @@ export default class App extends util.Target {
                 match.teleopFrames.forEach(frame => {
                     elem = document.createElement("button");
                     elems.push({ elem: elem, ts: frame.ts });
-                    elem.addEventListener("click", e => (fieldTS = frame.ts));
                     elem.innerHTML = "<span></span><span></span><span></span>";
                     elem.children[0].textContent = util.formatTime(frame.ts);
                     elem.children[1].setAttribute(frame.type, "");
@@ -1008,7 +1039,11 @@ export default class App extends util.Target {
 
                 this.eFieldPopupNav.style.display = "";
                 this.eFieldPopupNav.innerHTML = "";
-                elems.forEach(elem => this.eFieldPopupNav.appendChild(elem.elem));
+                elems.forEach(elem => {
+                    this.eFieldPopupNav.appendChild(elem.elem);
+                    if (elem.ts < 0) return;
+                    elem.elem.addEventListener("click", e => (fieldTS = elem.ts));
+                });
                 let ts = null;
                 let id = setInterval(() => {
                     if (ts != fieldTS) {
@@ -1022,40 +1057,54 @@ export default class App extends util.Target {
                         break;
                     }
                     if (!all) return clearInterval(id);
-                    elems.forEach(elem => {
+                    elems.forEach((elem, i) => {
                         elem.elem.style.opacity = (elem.ts <= fieldTS) ? "" : "50%";
+                        elem.elem.style.outline = ((elem.ts <= fieldTS) && (i+1 >= elems.length || elems[i+1].ts > fieldTS)) ? "0.1rem solid var(--fg)" : "";
                     });
                 }, 100);
 
-                heatmapNodes = match.teleopFrames.filter(frame => (frame.type == "speaker" && frame.state.value)).map(frame => {
-                    return {
-                        ts: frame.ts,
-                        x: frame.state.at.x,
-                        y: frame.state.at.y,
-                    };
-                });
-                canvasNodes = match.autoFrames.map(frame => {
-                    if (frame.type == "pickup") {
-                        let at = frame.state.at;
-                        let x = [fieldSize.x/2-636.27+101.346, fieldSize.x/2][+(at >= 3)];
-                        let y = [i=>(fieldSize.y/2-(2-i)*144.78), i=>(75.2856+(i-3)*167.64)][+(at >= 3)](at);
-                        if (match.team == "r") x = fieldSize.x-x;
-                        return { ts: frame.ts, x: x, y: y, group: at };
-                    }
-                    if (frame.type == "speaker") {
-                        let x = fieldSize.x/2-636.27-101.4222/2;
-                        if (match.team == "r") x = fieldSize.x-x;
-                        return { ts: frame.ts, x: x, y: fieldSize.y/2-144.78, group: -1 };
-                    }
-                    if (frame.type == "amp") {
-                        let x = 193.294;
-                        if (match.team == "r") x = fieldSize.x-x;
-                        return { ts: frame.ts, x: x, y: 0, group: -2 };
-                    }
-                    return null;
-                }).filter(node => node != null);
+                const update = () => {
+                    modeBtns.forEach(btn => btn.classList.remove("this"));
+                    modeBtns[["success", "fail", "all"].indexOf(mode)].classList.add("this");
+                    heatmapNodes = match.teleopFrames.filter(frame => (frame.type == "speaker")).map(frame => {
+                        if (mode == "success") {
+                            if (!frame.state.value)
+                                return null;
+                        } else if (mode == "fail") {
+                            if (frame.state.value)
+                                return null;
+                        } else if (mode == "all");
+                        else return null;
+                        return {
+                            ts: frame.ts,
+                            x: frame.state.at.x,
+                            y: frame.state.at.y,
+                        };
+                    }).filter(node => node != null);
+                    canvasNodes = match.autoFrames.map(frame => {
+                        if (frame.type == "pickup") {
+                            let at = frame.state.at;
+                            let x = [fieldSize.x/2-636.27+101.346, fieldSize.x/2][+(at >= 3)];
+                            let y = [i=>(fieldSize.y/2-(2-i)*144.78), i=>(75.2856+(i-3)*167.64)][+(at >= 3)](at);
+                            if (match.team == "r") x = fieldSize.x-x;
+                            return { ts: frame.ts, x: x, y: y, group: at };
+                        }
+                        if (frame.type == "speaker") {
+                            let x = fieldSize.x/2-636.27-101.4222/2;
+                            if (match.team == "r") x = fieldSize.x-x;
+                            return { ts: frame.ts, x: x, y: fieldSize.y/2-144.78, group: -1 };
+                        }
+                        if (frame.type == "amp") {
+                            let x = 193.294;
+                            if (match.team == "r") x = fieldSize.x-x;
+                            return { ts: frame.ts, x: x, y: 0, group: -2 };
+                        }
+                        return null;
+                    }).filter(node => node != null);
+                    openFieldPopup();
+                }
                 fieldTS = 0;
-                openFieldPopup();
+                update();
             };
             let elem = document.createElement("table");
             elem.classList.add("match-listing");
