@@ -1726,12 +1726,18 @@ export default class App extends util.Target {
             this.eFieldBox.innerHTML = "";
             const heatmap = h337.create({
                 container: this.eFieldBox,
-                radius: scale*100,
+                radius: 100*scale,
                 maxOpacity: 0.5,
                 minOpacity: 0,
                 // blur: 1,
             });
-            heatmapNodes.filter(node => node.ts <= fieldTS).forEach(node => heatmap.addData(node));
+            heatmapNodes.filter(node => node.ts <= fieldTS).forEach(node => {
+                heatmap.addData({
+                    x: Math.round(node.x*scale),
+                    y: Math.round(node.y*scale),
+                });
+            });
+            console.log(heatmap.getData());
             const ctx = this.eFieldCanvas.getContext("2d");
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
             canvasNodes.sort((a, b) => a.ts-b.ts);
@@ -1768,6 +1774,13 @@ export default class App extends util.Target {
                 else ctx.fillStyle = "#0f0";
                 ctx.beginPath();
                 ctx.arc(node.x, node.y, 10/scale, 0, 2*Math.PI);
+                ctx.fill();
+            });
+            heatmapNodes.forEach(node => {
+                if (node.ts > fieldTS) return;
+                ctx.fillStyle = "#fff";
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, 5/scale, 0, 2*Math.PI);
                 ctx.fill();
             });
         };
@@ -2459,17 +2472,48 @@ export default class App extends util.Target {
                     }
                 }
                 this.eTeamAnalyticsAPITable.innerHTML = "";
-                for (let i = 0; i < 3; i++) {
+                for (let i = 0; i < 4; i++) {
                     let row = document.createElement("tr");
                     this.eTeamAnalyticsAPITable.appendChild(row);
                     for (let j = 0; j < 2; j++) {
                         let dat = document.createElement("td");
                         row.appendChild(dat);
-                        if (j <= 0) {
-                            dat.textContent = ["OPR", "DPR", "CCWM"][i];
+                        if (i < 3) {
+                            if (j <= 0) {
+                                dat.textContent = ["OPR", "DPR", "CCWM"][i];
+                                continue;
+                            }
+                            dat.textContent = Math.round((util.ensure(util.ensure(eventRatings[["oprs", "dprs", "ccwms"][i]], "obj")["frc"+this.team], "num"))*100)/100;
                             continue;
                         }
-                        dat.textContent = Math.round((util.ensure(util.ensure(eventRatings[["oprs", "dprs", "ccwms"][i]], "obj")["frc"+this.team], "num"))*100)/100;
+                        if (j >= 1) {
+                            dat.remove();
+                            continue;
+                        }
+                        dat.colSpan = 2;
+                        dat.style.color = "var(--a)";
+                        dat.style.textDecoration = "underline";
+                        dat.style.cursor = "pointer";
+                        dat.textContent = "Show Scoring Maps";
+                        dat.addEventListener("click", e => {
+                            heatmapNodes = [];
+                            matchesScouted.filter(match => {
+                                if (match.robot != this.team) return;
+                                if (getSkipped(match)) return;
+                                match.teleopFrames.forEach(frame => {
+                                    if (frame.type != "speaker") return;
+                                    heatmapNodes.push({
+                                        x: frame.state.at.x,
+                                        y: frame.state.at.y,
+                                        ts: 0,
+                                    });
+                                });
+                            });
+                            canvasNodes = [];
+                            this.eFieldPopupNav.style.display = "none";
+                            fieldTS = 1;
+                            openFieldPopup();
+                        });
                     }
                 }
                 this.eTeamAnalyticsNotesTable.innerHTML = "";
