@@ -1737,7 +1737,6 @@ export default class App extends util.Target {
                     y: Math.round(node.y*scale),
                 });
             });
-            console.log(heatmap.getData());
             const ctx = this.eFieldCanvas.getContext("2d");
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
             canvasNodes.sort((a, b) => a.ts-b.ts);
