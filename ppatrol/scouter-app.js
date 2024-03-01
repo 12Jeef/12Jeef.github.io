@@ -239,7 +239,7 @@ export default class App extends util.Target {
                             }
                         }
                         teams = util.ensure(teams, "arr");
-                        localStorage.setItem("🛜 teams", JSON.stringify(teams));
+                        localStorage.setItem("teams", JSON.stringify(teams));
                     },
                 ].map(f => f()));
                 lock = false;
