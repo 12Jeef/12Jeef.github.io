@@ -1038,7 +1038,8 @@ export default class App extends util.Target {
                     elem.style.borderRight = "0.5rem solid "+["var(--r4)", "var(--g4)"][+!!value];
                 });
 
-                this.eFieldPopupNav.style.display = "";
+                this.eFieldPopupNav.style.minWidth = "";
+                this.eFieldPopupNav.style.maxWidth = "";
                 this.eFieldPopupNav.innerHTML = "";
                 elems.forEach(elem => {
                     this.eFieldPopupNav.appendChild(elem.elem);
@@ -2498,7 +2499,9 @@ export default class App extends util.Target {
                         dat.addEventListener("click", e => {
                             heatmapNodes = [];
                             canvasNodes = [];
-                            this.eFieldPopupNav.innerHTML = "<h3><button success style='flex-basis:100%;'>Success</button><button fail style='flex-basis:100%;'>Fail</button><button style='flex-basis:100%;'>All</button></h3>";
+                            this.eFieldPopupNav.style.minWidth = "7.5em";
+                            this.eFieldPopupNav.style.maxWidth = "7.5em";
+                            this.eFieldPopupNav.innerHTML = "<h3 style='flex-direction:column;align-items:stretch;'><button success style='flex-basis:100%;'>Success</button><button fail style='flex-basis:100%;'>Fail</button><button style='flex-basis:100%;'>All</button></h3>";
                             const elem = this.eFieldPopupNav.children[0];
                             let mode = "success", modeBtns = [elem.children[0], elem.children[1], elem.children[2]];
                             elem.children[0].addEventListener("click", e => {
