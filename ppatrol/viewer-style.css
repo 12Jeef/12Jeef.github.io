@@ -1210,6 +1210,8 @@
 }
 
 #pit-data-page {
+    overflow: auto;
+    
     gap: 0em;
 }
 #pit-data-page:empty::before {
