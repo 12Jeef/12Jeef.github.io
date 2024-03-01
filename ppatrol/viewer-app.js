@@ -1103,6 +1103,7 @@ export default class App extends util.Target {
                         }
                         return null;
                     }).filter(node => node != null);
+                    canvasNodes.unshift({ ts: 0, x: match.pos.x, y: match.pos.y });
                     openFieldPopup();
                 }
                 fieldTS = 0;
