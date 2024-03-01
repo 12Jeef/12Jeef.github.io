@@ -2213,6 +2213,7 @@ export default class App extends util.Target {
                     let canvas = this.eAPIListing.children[0].children[0];
                     let path = window.location.pathname.split("/");
                     path.pop();
+                    path.push("scanner");
                     path = path.join("/");
                     new QRious({
                         element: canvas,
