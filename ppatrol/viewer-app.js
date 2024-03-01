@@ -2497,22 +2497,48 @@ export default class App extends util.Target {
                         dat.textContent = "Show Scoring Maps";
                         dat.addEventListener("click", e => {
                             heatmapNodes = [];
-                            matchesScouted.filter(match => {
-                                if (match.robot != this.team) return;
-                                if (getSkipped(match)) return;
-                                match.teleopFrames.forEach(frame => {
-                                    if (frame.type != "speaker") return;
-                                    heatmapNodes.push({
-                                        x: frame.state.at.x,
-                                        y: frame.state.at.y,
-                                        ts: 0,
+                            canvasNodes = [];
+                            this.eFieldPopupNav.innerHTML = "<h3><button success style='flex-basis:100%;'>Success</button><button fail style='flex-basis:100%;'>Fail</button><button style='flex-basis:100%;'>All</button></h3>";
+                            const elem = this.eFieldPopupNav.children[0];
+                            let mode = "success", modeBtns = [elem.children[0], elem.children[1], elem.children[2]];
+                            elem.children[0].addEventListener("click", e => {
+                                mode = "success";
+                                update();
+                            });
+                            elem.children[1].addEventListener("click", e => {
+                                mode = "fail";
+                                update();
+                            });
+                            elem.children[2].addEventListener("click", e => {
+                                mode = "all";
+                                update();
+                            });
+                            const update = () => {
+                                modeBtns.forEach(btn => btn.classList.remove("this"));
+                                modeBtns[["success", "fail", "all"].indexOf(mode)].classList.add("this");
+                                heatmapNodes = [];
+                                matchesScouted.filter(match => {
+                                    if (match.robot != this.team) return;
+                                    if (getSkipped(match)) return;
+                                    match.teleopFrames.forEach(frame => {
+                                        if (frame.type != "speaker") return;
+                                        if (mode == "success")
+                                            if (!frame.state.value)
+                                                return;
+                                        if (mode == "fail")
+                                            if (frame.state.value)
+                                                return;
+                                        heatmapNodes.push({
+                                            x: frame.state.at.x,
+                                            y: frame.state.at.y,
+                                            ts: 0,
+                                        });
                                     });
                                 });
-                            });
-                            canvasNodes = [];
-                            this.eFieldPopupNav.style.display = "none";
+                                openFieldPopup();
+                            };
                             fieldTS = 1;
-                            openFieldPopup();
+                            update();
                         });
                     }
                 }
