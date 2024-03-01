@@ -1088,22 +1088,26 @@ export default class App extends util.Target {
                             let at = frame.state.at;
                             let x = [fieldSize.x/2-636.27+101.346, fieldSize.x/2][+(at >= 3)];
                             let y = [i=>(fieldSize.y/2-(2-i)*144.78), i=>(75.2856+(i-3)*167.64)][+(at >= 3)](at);
-                            if (match.team == "r") x = fieldSize.x-x;
                             return { ts: frame.ts, x: x, y: y, group: at };
                         }
                         if (frame.type == "speaker") {
                             let x = fieldSize.x/2-636.27-101.4222/2;
-                            if (match.team == "r") x = fieldSize.x-x;
                             return { ts: frame.ts, x: x, y: fieldSize.y/2-144.78, group: -1 };
                         }
                         if (frame.type == "amp") {
                             let x = 193.294;
-                            if (match.team == "r") x = fieldSize.x-x;
                             return { ts: frame.ts, x: x, y: 0, group: -2 };
                         }
                         return null;
                     }).filter(node => node != null);
                     canvasNodes.unshift({ ts: 0, x: match.pos.x, y: match.pos.y });
+                    canvasNodes = canvasNodes.map(node => {
+                        return {
+                            ts: node.ts,
+                            x: (match.robotTeam == "r" ? fieldSize.x-node.x : node.x),
+                            y: node.y,
+                        };
+                    });
                     openFieldPopup();
                 }
                 fieldTS = 0;
