@@ -2121,7 +2121,6 @@ export default class App extends util.Target {
                                     if (j == 1) {
                                         dat.textContent = "Onstage";
                                     } else if (j < 8) {
-
                                     }
                                     continue;
                                 }
