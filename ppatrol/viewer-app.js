@@ -436,6 +436,7 @@ export default class App extends util.Target {
             return getBufferStr(match);
         };
         const getSkipped = match => {
+            return false;
             let k = getBufferStr(match);
             if (match.id < 0)
                 return !this.hasSkippedMatch(k);
@@ -3606,7 +3607,7 @@ export default class App extends util.Target {
                         }
                     }
                     matches = util.ensure(matches, "arr");
-                    localStorage.setItem("🛜 matches", JSON.stringify(matches));
+                    localStorage.setItem("matches", JSON.stringify(matches));
                     let matches2 = {};
                     matches.forEach(match => {
                         if (match.comp_level != "qm") return;
@@ -3641,7 +3642,7 @@ export default class App extends util.Target {
                         }
                     }
                     teams = util.ensure(teams, "arr");
-                    localStorage.setItem("🛜 teams", JSON.stringify(teams));
+                    localStorage.setItem("teams", JSON.stringify(teams));
                 },
             ].map(f => f()));
 
