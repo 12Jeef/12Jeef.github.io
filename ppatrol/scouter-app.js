@@ -64,6 +64,7 @@ export default class App extends util.Target {
             let scouters = [];
             let event = {};
             let matches = [];
+            let teams = [];
 
             let lock = false;
             const pull = async () => {
@@ -210,6 +211,35 @@ export default class App extends util.Target {
                         }
                         matches = util.ensure(matches, "arr");
                         localStorage.setItem("🛜 matches", JSON.stringify(matches));
+                    },
+                    async () => {
+                        try {
+                            console.log("🛜 teams: TBA");
+                            if (apiKey == null) throw "api-key";
+                            if (eventKey == null) throw "event-key";
+                            let resp = await fetch("https://www.thebluealliance.com/api/v3/event/"+eventKey+"/teams", {
+                                method: "GET",
+                                headers: {
+                                    "Accept": "application/json",
+                                    "X-TBA-Auth-Key": apiKey,
+                                },
+                            });
+                            if (resp.status != 200) throw resp.status;
+                            resp = await resp.text();
+                            // console.log("🛜 teams: TBA = "+resp);
+                            teams = JSON.parse(resp);
+                        } catch (e) {
+                            console.log("🛜 teams: TBA ERR", e);
+                            try {
+                                console.log("🛜 teams: LS");
+                                teams = JSON.parse(localStorage.getItem("teams"));
+                            } catch (e) {
+                                console.log("🛜 teams: LS ERR", e);
+                                teams = null;
+                            }
+                        }
+                        teams = util.ensure(teams, "arr");
+                        localStorage.setItem("🛜 teams", JSON.stringify(teams));
                     },
                 ].map(f => f()));
                 lock = false;
@@ -1079,13 +1109,14 @@ export default class App extends util.Target {
                     preauto: () => {
                         this.ePreAutoRobot.disabled = this.hasMatch() && !this.match.isPractice();
                         this.ePreAutoRobotDropdown.innerHTML = "";
-                        let robots = [];
-                        if (this.hasMatch()) {
-                            if (this.match.isPractice()) {
-                                this.matches.forEach(match => robots.push(...match.red, ...match.blue));
-                                robots = [...new Set(robots)].sort((a, b) => a-b);
-                            } else robots = [];
-                        }
+                        // let robots = [];
+                        // if (this.hasMatch()) {
+                        //     if (this.match.isPractice()) {
+                        //         this.matches.forEach(match => robots.push(...match.red, ...match.blue));
+                        //         robots = [...new Set(robots)].sort((a, b) => a-b);
+                        //     } else robots = [];
+                        // }
+                        let robots = teams.map(team => team.team_number).sort((a, b) => a-b);
                         robots.forEach(id => {
                             let btn = document.createElement("button");
                             this.ePreAutoRobotDropdown.appendChild(btn);
