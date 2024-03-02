@@ -1293,7 +1293,26 @@ button[fail]:disabled {
     background-color: var(--v4);
     border-radius: 10px;
 }
-#finish > .content > #finish-code > img {
+#finish > .content > #finish-code {
+    position: relative;
+}
+#finish > .content > #finish-code::before {
+    content: "";
+
+    position: absolute;
+    top: -20px;
+    left: -20px;
+
+    width: calc(100% + 40px);
+    height: calc(100% + 40px);
+
+    background-color: #fff;
+}
+#finish > .content > #finish-code > canvas {
+    z-index: 2;
+
+    position: relative;
+
     width: 100%;
     height: auto;
 }

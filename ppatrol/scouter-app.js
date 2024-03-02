@@ -409,6 +409,8 @@ export default class App extends util.Target {
 
             this.eFinishCodeBox = document.getElementById("finish-code-box");
             this.eFinishCode = document.getElementById("finish-code");
+            this.eFinishCode.innerHTML = "<canvas></canvas>";
+            this.eFinishCodeCanvas = this.eFinishCode.children[0];
             this.eFinishNext = document.getElementById("finish-next");
             this.eFinishReset = document.getElementById("finish-reset");
 
@@ -1175,7 +1177,7 @@ export default class App extends util.Target {
                         console.log(data);
                         console.log(Match.fromBufferStr(data));
                         new QRious({
-                            element: this.eFinishCode,
+                            element: this.eFinishCodeCanvas,
                             value: data,
                             size: 1000,
                         });
