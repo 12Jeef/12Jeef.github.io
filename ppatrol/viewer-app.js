@@ -2137,12 +2137,17 @@ export default class App extends util.Target {
                                     if (j == 1) {
                                         dat.textContent = "Auto Mobility";
                                     } else if (j < 8) {
-                                        let data = [
+                                        let value;
+                                        if (!util.is(match.score_breakdown, "obj") || !("red" in match.score_breakdown) || !("blue" in match.score_breakdown))
+                                            value = null;
+                                        else value = [
                                             ...Array.from(new Array(3).keys()).map(i => match.score_breakdown.red["mobilityRobot"+(i+1)] == "Yes"),
                                             ...Array.from(new Array(3).keys()).map(i => match.score_breakdown.blue["mobilityRobot"+(i+1)] == "Yes"),
-                                        ];
-                                        if (data[j-2]) dat.setAttribute("yes", "");
-                                        else dat.setAttribute("no", "");
+                                        ][j-2];
+                                        if (value != null) {
+                                            if (value) dat.setAttribute("yes", "");
+                                            else dat.setAttribute("no", "");
+                                        }
                                     }
                                     continue;
                                 }
@@ -2158,7 +2163,9 @@ export default class App extends util.Target {
                                         dat.textContent = "Scores";
                                     } else if (j < 8) {
                                         dat.colSpan = 3;
-                                        dat.textContent = [
+                                        if (!util.is(match.score_breakdown, "obj") || !("red" in match.score_breakdown) || !("blue" in match.score_breakdown))
+                                            dat.textContent = "N/A";
+                                        else dat.textContent = [
                                             match.score_breakdown.red.totalPoints,
                                             match.score_breakdown.blue.totalPoints,
                                         ][j-2];
@@ -3125,10 +3132,14 @@ export default class App extends util.Target {
             this.ePitDataPage = document.getElementById("pit-data-page");
             const updatePitDataPage = () => {
                 this.ePitDataPage.innerHTML = "";
+                let listings = {};
                 for (let t in pitData) {
                     let data = pitData[t];
-                    makePitDataListing(data, { collapsible: true, showTeam: true }).forEach(elem => this.ePitDataPage.appendChild(elem));
+                    let team = getPitValue(data, "team-number");
+                    listings[team] = [];
+                    makePitDataListing(data, { collapsible: true, showTeam: true }).forEach(elem => listings[team].push(elem));
                 }
+                Object.keys(listings).sort((a, b) => parseInt(a)-parseInt(b)).forEach(team => listings[team].forEach(elem => this.ePitDataPage.appendChild(elem)));
             };
             this.addHandler("post-refresh", updatePitDataPage);
 

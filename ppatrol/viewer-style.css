@@ -580,6 +580,9 @@
 #server-config-page > .content > #api-listing > table.match tr:first-child td:nth-child(9):hover {
     color: var(--fg);
 }
+#server-config-page > .content > #api-listing > table.match tr:not(:first-child):not(:last-child) td:not(:nth-child(1)):not(:nth-child(2))::before {
+    content: "N/A";
+}
 #server-config-page > .content > #api-listing > table.match tr:not(:first-child):not(:last-child) td:not(:nth-child(1)):not(:nth-child(2))[no] {
     background-color: var(--r2);
 }
@@ -1211,7 +1214,7 @@
 
 #pit-data-page {
     overflow: auto;
-    
+
     gap: 0em;
 }
 #pit-data-page:empty::before {
