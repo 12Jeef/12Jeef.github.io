@@ -1273,9 +1273,9 @@ export default class App extends util.Target {
                                         [comp.auto.scores.fail, comp.auto.scores.total],
                                     ],
                                     [
-                                        [comp.auto.scores.speaker.total, comp.auto.scores.amp.total],
-                                        [comp.auto.scores.speaker.success, comp.auto.scores.amp.total],
-                                        [comp.auto.scores.speaker.fail, comp.auto.scores.amp.total],
+                                        [comp.auto.scores.speaker.total, comp.auto.scores.speaker.total],
+                                        [comp.auto.scores.speaker.success, comp.auto.scores.speaker.total],
+                                        [comp.auto.scores.speaker.fail, comp.auto.scores.speaker.total],
                                     ],
                                     [
                                         [comp.auto.scores.amp.total, comp.auto.scores.amp.total],
@@ -1288,9 +1288,9 @@ export default class App extends util.Target {
                                         [comp.teleop.scores.fail, comp.teleop.scores.total],
                                     ],
                                     [
-                                        [comp.teleop.scores.speaker.total, comp.teleop.scores.amp.total],
-                                        [comp.teleop.scores.speaker.success, comp.teleop.scores.amp.total],
-                                        [comp.teleop.scores.speaker.fail, comp.teleop.scores.amp.total],
+                                        [comp.teleop.scores.speaker.total, comp.teleop.scores.speaker.total],
+                                        [comp.teleop.scores.speaker.success, comp.teleop.scores.speaker.total],
+                                        [comp.teleop.scores.speaker.fail, comp.teleop.scores.speaker.total],
                                     ],
                                     [
                                         [comp.teleop.scores.amp.total, comp.teleop.scores.amp.total],
