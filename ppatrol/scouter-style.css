@@ -242,6 +242,16 @@ button[fail]:disabled {
 #settings > #setting-left:has(> input:checked) > h1::before {
     content: "Red";
 }
+#settings > button {
+    padding: 0.5em;
+
+    gap: 0.5em;
+
+    border-radius: 10px;
+    
+    font-size: 2em;
+    font-weight: 700;
+}
 
 #navigator {
     padding: 0px;

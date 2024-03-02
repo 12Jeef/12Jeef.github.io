@@ -59,6 +59,12 @@ export default class App extends util.Target {
             document.body.style.backgroundImage = "url(./field.png)";
             document.body.style.backgroundSize = "0% auto";
 
+            let pwd = localStorage.getItem("pwd");
+            if (pwd == null) {
+                let v = prompt("Password:");
+                if (v != null) localStorage.setItem("pwd", pwd = (v.length <= 0) ? null : v);
+            }
+
             let apiKey = null;
             let eventKey = null;
             let scouters = [];
@@ -78,7 +84,7 @@ export default class App extends util.Target {
                                 method: "GET",
                                 mode: "cors",
                                 headers: {
-                                    "Password": localStorage.getItem("pwd"),
+                                    "Password": pwd,
                                 },
                             });
                             if (resp.status != 200) throw resp.status;
@@ -105,7 +111,7 @@ export default class App extends util.Target {
                                 method: "GET",
                                 mode: "cors",
                                 headers: {
-                                    "Password": localStorage.getItem("pwd"),
+                                    "Password": pwd,
                                 },
                             });
                             if (resp.status != 200) throw resp.status;
@@ -132,7 +138,7 @@ export default class App extends util.Target {
                                 method: "GET",
                                 mode: "cors",
                                 headers: {
-                                    "Password": localStorage.getItem("pwd"),
+                                    "Password": pwd,
                                 },
                             });
                             if (resp.status != 200) throw resp.status;
@@ -305,6 +311,7 @@ export default class App extends util.Target {
             this.eSettingLeft = document.getElementById("setting-left");
             this.eSettingLeftRed = document.getElementById("setting-left-red");
             this.eSettingIds = Array.from(document.querySelectorAll(".setting-id"));
+            this.eSettingPwdEdit = document.getElementById("setting-pwd-edit");
 
             this.eNavigatorPage = document.getElementById("navigator");
 
@@ -447,6 +454,14 @@ export default class App extends util.Target {
                             elem.addEventListener("click", e => {
                                 this.id = id;
                             });
+                        });
+
+                        this.eSettingPwdEdit.addEventListener("click", e => {
+                            let v = prompt("Password:");
+                            if (v == null) return;
+                            if (v.length <= 0) v = null;
+                            localStorage.setItem("pwd", pwd = v);
+                            pull();
                         });
 
                         this.addHandler("change-id", () => {
@@ -1032,6 +1047,7 @@ export default class App extends util.Target {
             ["match", "match.startTime"].forEach(c => this.addHandler("change-"+c, updateMenu));
 
             this.addHandler("update", delta => {
+                pwd = localStorage.getItem("pwd");
                 this.eTime.textContent = this.hasMatch() ?
                     (startTime != null) ?
                         util.formatTime(
@@ -1068,7 +1084,6 @@ export default class App extends util.Target {
                 let pagefs = {
                     settings: () => {
                         if (util.is(state.userPwd, "str")) {
-                            localStorage.setItem("pwd", state.userPwd);
                             const userPwd = hashStr(state.userPwd);
                             delete state.userPwd;
                             const correctPwd = 750852430;

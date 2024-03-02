@@ -420,6 +420,10 @@ export default class App extends util.Target {
         });
 
         let pwd = localStorage.getItem("pwd");
+        if (pwd == null) {
+            let v = prompt("Password:");
+            if (v != null) localStorage.setItem("pwd", pwd = (v.length <= 0) ? null : v);
+        }
 
         let apiKey = null;
         let eventKey = null;
@@ -2015,10 +2019,10 @@ export default class App extends util.Target {
             });
 
             this.eServerConfigAccessPwdEdit.addEventListener("click", async e => {
-                const v = prompt("Password:");
+                let v = prompt("Password:");
                 if (v == null) return;
-                localStorage.setItem("pwd", v);
-                pwd = localStorage.getItem("pwd");
+                if (v.length <= 0) v = null;
+                localStorage.setItem("pwd", pwd = v);
                 await this.whenUnlocked();
                 this.refresh();
             });
