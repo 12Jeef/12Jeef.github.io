@@ -966,15 +966,15 @@ export default class App extends util.Target {
                 elem.style.top = "0%";
                 elem.innerHTML = "<button success style='flex-basis:100%;'>Success</button><button fail style='flex-basis:100%;'>Fail</button><button style='flex-basis:100%;'>All</button><button><ion-icon name='arrow-back'></ion-icon></button><button><ion-icon name='arrow-forward'></ion-icon></button>";
                 let mode = "success", modeBtns = [elem.children[0], elem.children[1], elem.children[2]];
-                elem.children[0].addEventListener("click", e => {
+                modeBtns[0].addEventListener("click", e => {
                     mode = "success";
                     update();
                 });
-                elem.children[1].addEventListener("click", e => {
+                modeBtns[1].addEventListener("click", e => {
                     mode = "fail";
                     update();
                 });
-                elem.children[2].addEventListener("click", e => {
+                modeBtns[2].addEventListener("click", e => {
                     mode = "all";
                     update();
                 });
@@ -1741,17 +1741,14 @@ export default class App extends util.Target {
             if (scale <= 0) return;
             this.eFieldBox.innerHTML = "";
             heatmapNodes.forEach(nodes => {
-                const color1 = new util.Color(nodes.color);
-                const color2 = new util.Color(nodes.color);
-                color1.a = 0;
                 const heatmap = h337.create({
                     container: this.eFieldBox,
-                    radius: 100*scale,
+                    radius: Math.round(75*scale),
                     maxOpacity: 0.5,
                     minOpacity: 0,
                     gradient: {
-                        "0.0": color1.toHex(),
-                        "1.0": color2.toHex(),
+                        "0.0": nodes.color.toHex(),
+                        "1.0": nodes.color.toHex(),
                     },
                 });
                 nodes.nodes.filter(node => node.ts <= fieldTS).forEach(node => {
@@ -2548,24 +2545,31 @@ export default class App extends util.Target {
                             canvasNodes = [];
                             this.eFieldPopupNav.style.minWidth = "7.5em";
                             this.eFieldPopupNav.style.maxWidth = "7.5em";
-                            this.eFieldPopupNav.innerHTML = "<h3 style='flex-direction:column;align-items:stretch;'><button success style='flex-basis:100%;'>Success</button><button fail style='flex-basis:100%;'>Fail</button><button style='flex-basis:100%;'>All</button></h3>";
+                            this.eFieldPopupNav.innerHTML = "<h3 style='flex-direction:column;align-items:stretch;'><button success style='flex-basis:100%;'>Success</button><button fail style='flex-basis:100%;'>Fail</button><button style='flex-basis:100%;'>All</button><button style='flex-basis:100%;'>Fold Map</button></h3>";
                             const elem = this.eFieldPopupNav.children[0];
                             let mode = "success", modeBtns = [elem.children[0], elem.children[1], elem.children[2]];
-                            elem.children[0].addEventListener("click", e => {
+                            let fold = false, foldBtn = elem.children[3];
+                            modeBtns[0].addEventListener("click", e => {
                                 mode = "success";
                                 update();
                             });
-                            elem.children[1].addEventListener("click", e => {
+                            modeBtns[1].addEventListener("click", e => {
                                 mode = "fail";
                                 update();
                             });
-                            elem.children[2].addEventListener("click", e => {
+                            modeBtns[2].addEventListener("click", e => {
                                 mode = "all";
+                                update();
+                            });
+                            foldBtn.addEventListener("click", e => {
+                                fold = !fold;
                                 update();
                             });
                             const update = () => {
                                 modeBtns.forEach(btn => btn.classList.remove("this"));
                                 modeBtns[["success", "fail", "all"].indexOf(mode)].classList.add("this");
+                                foldBtn.classList.remove("this");
+                                if (fold) foldBtn.classList.add("this");
                                 heatmapNodes = [
                                     { color: new util.Color(255, 0, 0), nodes: [] },
                                     { color: new util.Color(0, 255, 0), nodes: [] },
@@ -2575,9 +2579,11 @@ export default class App extends util.Target {
                                     if (getSkipped(match)) return;
                                     match.teleopFrames.forEach(frame => {
                                         if (frame.type != "speaker") return;
+                                        let x = frame.state.at.x;
+                                        let y = frame.state.at.y;
+                                        if (fold && x > fieldSize.x/2) x = fieldSize.x-x;
                                         heatmapNodes[+!!frame.state.value].nodes.push({
-                                            x: frame.state.at.x,
-                                            y: frame.state.at.y,
+                                            x: x, y: y,
                                             ts: 0,
                                         });
                                     });
