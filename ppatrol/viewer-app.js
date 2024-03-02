@@ -455,7 +455,8 @@ export default class App extends util.Target {
         };
         const getAutoMobility = match => {
             let tbamatch = getTBAMatch(match);
-            if (tbamatch == null) return false;
+            const nonexistent = (tbamatch == null) || (!tbamatch.score_breakdown || !tbamatch.score_breakdown.red || !tbamatch.score_breakdown.blue);
+            if (nonexistent) return false;
             let teams = [
                 ...tbamatch.alliances.red.team_keys.map(key => parseInt(key.substring(3))),
                 ...tbamatch.alliances.blue.team_keys.map(key => parseInt(key.substring(3))),
@@ -479,7 +480,8 @@ export default class App extends util.Target {
                 tsMax = (tsMax == null) ? frame.ts : Math.max(tsMax, frame.ts);
             });
             let tbamatch = getTBAMatch(match);
-            if (tbamatch != null) {
+            const nonexistent = (tbamatch == null) || (!tbamatch.score_breakdown || !tbamatch.score_breakdown.red || !tbamatch.score_breakdown.blue);
+            if (!nonexistent) {
                 let teams = [
                     ...tbamatch.alliances.red.team_keys.map(key => parseInt(key.substring(3))),
                     ...tbamatch.alliances.blue.team_keys.map(key => parseInt(key.substring(3))),
@@ -2148,7 +2150,8 @@ export default class App extends util.Target {
                                         dat.textContent = "Auto Mobility";
                                     } else if (j < 8) {
                                         let value;
-                                        if (!util.is(match.score_breakdown, "obj") || !("red" in match.score_breakdown) || !("blue" in match.score_breakdown))
+                                        const nonexistent = (!match.score_breakdown || !match.score_breakdown.red || !match.score_breakdown.blue);
+                                        if (nonexistent)
                                             value = null;
                                         else value = [
                                             ...Array.from(new Array(3).keys()).map(i => match.score_breakdown.red["mobilityRobot"+(i+1)] == "Yes"),
@@ -2173,7 +2176,8 @@ export default class App extends util.Target {
                                         dat.textContent = "Scores";
                                     } else if (j < 8) {
                                         dat.colSpan = 3;
-                                        if (!util.is(match.score_breakdown, "obj") || !("red" in match.score_breakdown) || !("blue" in match.score_breakdown))
+                                        const nonexistent = (!match.score_breakdown || !match.score_breakdown.red || !match.score_breakdown.blue);
+                                        if (nonexistent)
                                             dat.textContent = "N/A";
                                         else dat.textContent = [
                                             match.score_breakdown.red.totalPoints,
@@ -2817,7 +2821,9 @@ export default class App extends util.Target {
                             dat.classList.add("special");
                             if (!this.simulated) {
                                 let mobility = false;
-                                if (tbamatch != null) mobility = tbamatch.score_breakdown[["red", "blue"][Math.floor(j/3)]]["autoLineRobot"+(j%3+1)] == "Yes";
+                                const nonexistent = (tbamatch == null) || (!tbamatch.score_breakdown || !tbamatch.score_breakdown.red || !tbamatch.score_breakdown.blue);
+                                if (!nonexistent)
+                                    mobility = tbamatch.score_breakdown[["red", "blue"][Math.floor(j/3)]]["autoLineRobot"+(j%3+1)] == "Yes";
                                 dat.textContent = mobility ? "Yes" : "No";
                                 if (mobility) dat.setAttribute("yes", "");
                                 continue;
@@ -2862,16 +2868,17 @@ export default class App extends util.Target {
                                 dat.classList.add("v");
                                 dat.classList.add("i1");
                                 dat.classList.add("border");
+                                const nonexistent = (tbamatch == null) || (!tbamatch.score_breakdown || !tbamatch.score_breakdown.red || !tbamatch.score_breakdown.blue);
                                 dat.textContent = [
                                     [
                                         0,
-                                        (tbamatch == null) ? 0 : tbamatch.score_breakdown[["red", "blue"][Math.floor(j/6)]].autoSpeakerNoteCount,
-                                        (tbamatch == null) ? 0 : tbamatch.score_breakdown[["red", "blue"][Math.floor(j/6)]].autoAmpNoteCount,
+                                        nonexistent ? 0 : tbamatch.score_breakdown[["red", "blue"][Math.floor(j/6)]].autoSpeakerNoteCount,
+                                        nonexistent ? 0 : tbamatch.score_breakdown[["red", "blue"][Math.floor(j/6)]].autoAmpNoteCount,
                                     ],
                                     [
                                         0, 0,
-                                        (tbamatch == null) ? 0 : tbamatch.score_breakdown[["red", "blue"][Math.floor(j/6)]].teleopSpeakerNoteCount,
-                                        (tbamatch == null) ? 0 : tbamatch.score_breakdown[["red", "blue"][Math.floor(j/6)]].teleopAmpNoteCount,
+                                        nonexistent ? 0 : tbamatch.score_breakdown[["red", "blue"][Math.floor(j/6)]].teleopSpeakerNoteCount,
+                                        nonexistent ? 0 : tbamatch.score_breakdown[["red", "blue"][Math.floor(j/6)]].teleopAmpNoteCount,
                                     ],
                                 ][ii][jj];
                                 continue;
@@ -2944,7 +2951,8 @@ export default class App extends util.Target {
                                 if (this.simulated)
                                     score = comps.slice(j*3, (j+1)*3).map(comp => comp[["auto", "teleop", "endgame"][ii]].score).sum();
                                 else {
-                                    if (tbamatch != null) {
+                                    const nonexistent = (tbamatch == null) || (!tbamatch.score_breakdown || !tbamatch.score_breakdown.red || !tbamatch.score_breakdown.blue);
+                                    if (!nonexistent) {
                                         let breakdown = tbamatch.score_breakdown[["red", "blue"][j]];
                                         score = [
                                             breakdown.autoPoints,
@@ -3011,7 +3019,8 @@ export default class App extends util.Target {
                                 if (Math.floor(j/2) % 3 == 2) dat.classList.add("border");
                                 dat.colSpan = 2;
                                 dat.classList.add("eg");
-                                let k = (tbamatch == null) ? 0 : ["None", "Parked", "Onstage"].indexOf(tbamatch.score_breakdown[["red", "blue"][Math.floor(j/6)]]["endGameRobot"+(Math.floor(j/2)%3+1)]);
+                                const nonexistent = (tbamatch == null) || (!tbamatch.score_breakdown || !tbamatch.score_breakdown.red || !tbamatch.score_breakdown.blue);
+                                let k = nonexistent ? 0 : ["None", "Parked", "Onstage"].indexOf(tbamatch.score_breakdown[["red", "blue"][Math.floor(j/6)]]["endGameRobot"+(Math.floor(j/2)%3+1)]);
                                 if (k == 0);
                                 else if (k == 1) dat.setAttribute("park", "");
                                 else if (k == 2) dat.setAttribute("onstage", "");
@@ -3055,7 +3064,8 @@ export default class App extends util.Target {
                                 }
                                 dat.colSpan = 6;
                                 dat.classList.add("border");
-                                dat.textContent = (tbamatch == null) ? 0 : tbamatch.score_breakdown[["red", "blue"][Math.floor(j/6)]].endGameNoteInTrapPoints;
+                                const nonexistent = (tbamatch == null) || (!tbamatch.score_breakdown || !tbamatch.score_breakdown.red || !tbamatch.score_breakdown.blue);
+                                dat.textContent = nonexistent ? 0 : tbamatch.score_breakdown[["red", "blue"][Math.floor(j/6)]].endGameNoteInTrapPoints;
                                 continue;
                             }
                             dat.classList.add("yn");
@@ -3107,7 +3117,8 @@ export default class App extends util.Target {
                                     dat.rowSpan = 3;
                                     dat.style.textAlign = "center";
                                     if (!this.simulated) {
-                                        if (tbamatch == null) {
+                                        const nonexistent = (tbamatch == null) || (!tbamatch.score_breakdown || !tbamatch.score_breakdown.red || !tbamatch.score_breakdown.blue);
+                                        if (nonexistent) {
                                             dat.textContent = 0;
                                             continue;
                                         }
@@ -3133,7 +3144,8 @@ export default class App extends util.Target {
                                 if (ii < 3) score = comps.slice(k*3, (k+1)*3).map(comp => comp[["auto", "teleop", "endgame"][ii]].score).sum();
                                 else score = comps.slice(k*3, (k+1)*3).map(comp => ["auto", "teleop", "endgame"].map(k => comp[k].score).sum()).sum();
                             } else {
-                                if (tbamatch != null) {
+                                const nonexistent = (tbamatch == null) || (!tbamatch.score_breakdown || !tbamatch.score_breakdown.red || !tbamatch.score_breakdown.blue);
+                                if (!nonexistent) {
                                     let breakdown = tbamatch.score_breakdown[["red", "blue"][Math.floor(j/2)]];
                                     score = [
                                         breakdown.autoPoints,
