@@ -539,6 +539,8 @@ export default class App extends util.Target {
                                 else theMatches.push(oldMatches[i]);
                             });
                             this.matches = theMatches;
+                            console.log("*");
+                            this.eNavigatorList.innerHTML = matches.filter(match => match.comp_level == "qm").map(match => match.key).join("<br>");
                         });
                     },
                     preauto: () => {
