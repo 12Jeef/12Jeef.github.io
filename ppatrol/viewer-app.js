@@ -419,7 +419,7 @@ export default class App extends util.Target {
             }, 10);
         });
 
-        const pwd = prompt("Password");
+        let pwd = localStorage.getItem("pwd");
 
         let apiKey = null;
         let eventKey = null;
@@ -1800,6 +1800,7 @@ export default class App extends util.Target {
             this.eFieldPopup.classList.remove("this");
         };
         this.addHandler("update", () => {
+            pwd = localStorage.getItem("pwd");
             if (!this.eFieldPopup.classList.contains("this")) return;
             if (!doUpdateFieldPopup) return;
             updateFieldPopup();
@@ -1814,6 +1815,7 @@ export default class App extends util.Target {
 
                 this.eServerConfigAPIKeyEdit.disabled = true;
                 this.eServerConfigEventEdit.disabled = true;
+                this.eServerConfigAccessPwdEdit.disabled = true;
 
                 this.ePickListAdd.disabled = true;
 
@@ -1824,6 +1826,7 @@ export default class App extends util.Target {
 
                 this.eServerConfigAPIKeyEdit.disabled = false;
                 this.eServerConfigEventEdit.disabled = false;
+                this.eServerConfigAccessPwdEdit.disabled = false;
 
                 this.ePickListAdd.disabled = false;
 
@@ -1836,6 +1839,7 @@ export default class App extends util.Target {
                 this.eServerConfigAPIKey.textContent = String(apiKey);
                 this.eServerConfigEventName.textContent = util.ensure(event.name, "str", "None");
                 this.eServerConfigEventKey.textContent = String(eventKey);
+                this.eServerConfigAccessPwd.textContent = "*";
             });
 
             this.eRefresh = document.getElementById("refresh");
@@ -1881,6 +1885,9 @@ export default class App extends util.Target {
             this.eServerConfigEventName = document.getElementById("server-config-event-name");
             this.eServerConfigEventKey = document.getElementById("server-config-event-key");
             this.eServerConfigEventEdit = document.getElementById("server-config-event-edit");
+
+            this.eServerConfigAccessPwd = document.getElementById("server-config-pwd");
+            this.eServerConfigAccessPwdEdit = document.getElementById("server-config-pwd-edit");
 
             this.eServerConfigAPIKeyEdit.addEventListener("click", async e => {
                 let newKey = prompt("New API Key:");
@@ -2004,6 +2011,14 @@ export default class App extends util.Target {
 
                 this.unlock();
 
+                this.refresh();
+            });
+
+            this.eServerConfigAccessPwdEdit.addEventListener("click", async e => {
+                const pwd = prompt("Password:");
+                if (pwd == null) return;
+                localStorage.setItem("pwd", pwd);
+                await this.whenUnlocked();
                 this.refresh();
             });
 
@@ -3405,6 +3420,7 @@ export default class App extends util.Target {
                     } catch (e) {
                         console.log("🛜 api-key: PYAW ERR", e);
                         try {
+                            throw "LS IGNORE";
                             console.log("🛜 api-key: LS");
                             apiKey = JSON.parse(localStorage.getItem("api-key"));
                         } catch (e) {
@@ -3432,6 +3448,7 @@ export default class App extends util.Target {
                     } catch (e) {
                         console.log("🛜 event-key: PYAW ERR", e);
                         try {
+                            throw "LS IGNORE";
                             console.log("🛜 event-key: LS");
                             eventKey = JSON.parse(localStorage.getItem("event-key"));
                         } catch (e) {
@@ -3459,6 +3476,7 @@ export default class App extends util.Target {
                     } catch (e) {
                         console.log("🛜 scouters: PYAW ERR", e);
                         try {
+                            throw "LS IGNORE";
                             console.log("🛜 scouters: LS");
                             scouters = JSON.parse(localStorage.getItem("scouters"));
                         } catch (e) {
@@ -3486,6 +3504,7 @@ export default class App extends util.Target {
                     } catch (e) {
                         console.log("🛜 matches-scouted: PYAW ERR", e);
                         try {
+                            throw "LS IGNORE";
                             console.log("🛜 matches-scouted: LS");
                             matchesScouted = JSON.parse(localStorage.getItem("matches-scouted"));
                         } catch (e) {
@@ -3519,6 +3538,7 @@ export default class App extends util.Target {
                     } catch (e) {
                         console.log("🛜 pit: PYAW ERR", e);
                         try {
+                            throw "LS IGNORE";
                             console.log("🛜 pit: LS");
                             pitData = JSON.parse(localStorage.getItem("pit"));
                         } catch (e) {
@@ -3546,6 +3566,7 @@ export default class App extends util.Target {
                     } catch (e) {
                         console.log("🛜 pick-list: PYAW ERR", e);
                         try {
+                            throw "LS IGNORE";
                             console.log("🛜 pick-list: LS");
                             pickList = JSON.parse(localStorage.getItem("pick-list"));
                         } catch (e) {
@@ -3577,6 +3598,7 @@ export default class App extends util.Target {
                     } catch (e) {
                         console.log("🛜 event: TBA ERR", e);
                         try {
+                            throw "LS IGNORE";
                             console.log("🛜 event: LS");
                             event = JSON.parse(localStorage.getItem("event"));
                         } catch (e) {
@@ -3606,6 +3628,7 @@ export default class App extends util.Target {
                     } catch (e) {
                         console.log("🛜 event-ratings: TBA ERR", e);
                         try {
+                            throw "LS IGNORE";
                             console.log("🛜 event-ratings: LS");
                             eventRatings = JSON.parse(localStorage.getItem("event-ratings"));
                         } catch (e) {
@@ -3635,6 +3658,7 @@ export default class App extends util.Target {
                     } catch (e) {
                         console.log("🛜 matches: TBA ERR", e);
                         try {
+                            throw "LS IGNORE";
                             console.log("🛜 matches: LS");
                             matches = JSON.parse(localStorage.getItem("matches"));
                         } catch (e) {
@@ -3670,6 +3694,7 @@ export default class App extends util.Target {
                     } catch (e) {
                         console.log("🛜 teams: TBA ERR", e);
                         try {
+                            throw "LS IGNORE";
                             console.log("🛜 teams: LS");
                             teams = JSON.parse(localStorage.getItem("teams"));
                         } catch (e) {
