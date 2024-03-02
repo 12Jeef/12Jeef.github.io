@@ -29,9 +29,23 @@ export default class App extends util.Target {
         });
 
         this.addHandler("setup", async () => {
-            const pwd = prompt("Password");
+            let pwd = localStorage.getItem("pwd");
+            if (pwd == null) {
+                let v = prompt("Password:");
+                if (v != null) localStorage.setItem("pwd", pwd = (v.length <= 0) ? null : v);
+            }
+
+            this.addHandler("update", delta => (pwd => localStorage.getItem("pwd")));
 
             this.#scanner = new Html5Qrcode("feed");
+
+            this.ePwdEdit = document.getElementById("pwd-edit");
+            this.ePwdEdit.addEventListener("click", e => {
+                let v = prompt("Password:");
+                if (v == null) return;
+                if (v.length <= 0) v = null;
+                localStorage.setItem("pwd", pwd = v);
+            });
 
             this.ePrompt = document.getElementById("prompt");
             this.eMessage = document.getElementById("message");
