@@ -2015,9 +2015,10 @@ export default class App extends util.Target {
             });
 
             this.eServerConfigAccessPwdEdit.addEventListener("click", async e => {
-                const pwd = prompt("Password:");
-                if (pwd == null) return;
-                localStorage.setItem("pwd", pwd);
+                const v = prompt("Password:");
+                if (v == null) return;
+                localStorage.setItem("pwd", v);
+                pwd = localStorage.getItem("pwd");
                 await this.whenUnlocked();
                 this.refresh();
             });
