@@ -1074,21 +1074,24 @@ export default class App extends util.Target {
                 const update = () => {
                     modeBtns.forEach(btn => btn.classList.remove("this"));
                     modeBtns[["success", "fail", "all"].indexOf(mode)].classList.add("this");
-                    heatmapNodes = match.teleopFrames.filter(frame => (frame.type == "speaker")).map(frame => {
-                        if (mode == "success") {
-                            if (!frame.state.value)
-                                return null;
-                        } else if (mode == "fail") {
-                            if (frame.state.value)
-                                return null;
-                        } else if (mode == "all");
-                        else return null;
-                        return {
+                    heatmapNodes = [
+                        { color: new util.Color(255, 0, 0), nodes: [] },
+                        { color: new util.Color(0, 255, 0), nodes: [] },
+                    ];
+                    match.teleopFrames.filter(frame => (frame.type == "speaker")).forEach(frame => {
+                        heatmapNodes[+!!frame.state.value].nodes.push({
                             ts: frame.ts,
                             x: frame.state.at.x,
                             y: frame.state.at.y,
-                        };
-                    }).filter(node => node != null);
+                        });
+                    });
+                    heatmapNodes = heatmapNodes.filter((_, i) => {
+                        return {
+                            fail: [0],
+                            success: [1],
+                            all: [0, 1],
+                        }[mode].includes(i);
+                    });
                     canvasNodes = match.autoFrames.map(frame => {
                         if (frame.type == "pickup") {
                             let at = frame.state.at;
@@ -1737,17 +1740,25 @@ export default class App extends util.Target {
             this.eFieldBox.style.height = this.eFieldCanvas.style.height = (scale * fieldSize.y)+"px";
             if (scale <= 0) return;
             this.eFieldBox.innerHTML = "";
-            const heatmap = h337.create({
-                container: this.eFieldBox,
-                radius: 100*scale,
-                maxOpacity: 0.5,
-                minOpacity: 0,
-                // blur: 1,
-            });
-            heatmapNodes.filter(node => node.ts <= fieldTS).forEach(node => {
-                heatmap.addData({
-                    x: Math.round(node.x*scale),
-                    y: Math.round(node.y*scale),
+            heatmapNodes.forEach(nodes => {
+                const color1 = new util.Color(nodes.color);
+                const color2 = new util.Color(nodes.color);
+                color1.a = 0;
+                const heatmap = h337.create({
+                    container: this.eFieldBox,
+                    radius: 100*scale,
+                    maxOpacity: 0.5,
+                    minOpacity: 0,
+                    gradient: {
+                        "0.0": color1.toHex(),
+                        "1.0": color2.toHex(),
+                    },
+                });
+                nodes.nodes.filter(node => node.ts <= fieldTS).forEach(node => {
+                    heatmap.addData({
+                        x: Math.round(node.x*scale),
+                        y: Math.round(node.y*scale),
+                    });
                 });
             });
             const ctx = this.eFieldCanvas.getContext("2d");
@@ -1788,12 +1799,14 @@ export default class App extends util.Target {
                 ctx.arc(node.x, node.y, 10/scale, 0, 2*Math.PI);
                 ctx.fill();
             });
-            heatmapNodes.forEach(node => {
-                if (node.ts > fieldTS) return;
-                ctx.fillStyle = "#fff";
-                ctx.beginPath();
-                ctx.arc(node.x, node.y, 5/scale, 0, 2*Math.PI);
-                ctx.fill();
+            heatmapNodes.forEach(nodes => {
+                nodes.nodes.forEach(node => {
+                    if (node.ts > fieldTS) return;
+                    ctx.fillStyle = nodes.color.toHex();
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, 5/scale, 0, 2*Math.PI);
+                    ctx.fill();
+                });
             });
         };
         const openFieldPopup = () => {
@@ -2553,24 +2566,28 @@ export default class App extends util.Target {
                             const update = () => {
                                 modeBtns.forEach(btn => btn.classList.remove("this"));
                                 modeBtns[["success", "fail", "all"].indexOf(mode)].classList.add("this");
-                                heatmapNodes = [];
+                                heatmapNodes = [
+                                    { color: new util.Color(255, 0, 0), nodes: [] },
+                                    { color: new util.Color(0, 255, 0), nodes: [] },
+                                ];
                                 matchesScouted.filter(match => {
                                     if (match.robot != this.team) return;
                                     if (getSkipped(match)) return;
                                     match.teleopFrames.forEach(frame => {
                                         if (frame.type != "speaker") return;
-                                        if (mode == "success")
-                                            if (!frame.state.value)
-                                                return;
-                                        if (mode == "fail")
-                                            if (frame.state.value)
-                                                return;
-                                        heatmapNodes.push({
+                                        heatmapNodes[+!!frame.state.value].nodes.push({
                                             x: frame.state.at.x,
                                             y: frame.state.at.y,
                                             ts: 0,
                                         });
                                     });
+                                });
+                                heatmapNodes = heatmapNodes.filter((_, i) => {
+                                    return {
+                                        fail: [0],
+                                        success: [1],
+                                        all: [0, 1],
+                                    }[mode].includes(i);
                                 });
                                 openFieldPopup();
                             };
