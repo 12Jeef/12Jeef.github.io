@@ -78,7 +78,7 @@ export default class App extends util.Target {
                                 method: "GET",
                                 mode: "cors",
                                 headers: {
-                                    "Password": "6036ftw",
+                                    "Password": localStorage.getItem("pwd"),
                                 },
                             });
                             if (resp.status != 200) throw resp.status;
@@ -105,7 +105,7 @@ export default class App extends util.Target {
                                 method: "GET",
                                 mode: "cors",
                                 headers: {
-                                    "Password": "6036ftw",
+                                    "Password": localStorage.getItem("pwd"),
                                 },
                             });
                             if (resp.status != 200) throw resp.status;
@@ -132,7 +132,7 @@ export default class App extends util.Target {
                                 method: "GET",
                                 mode: "cors",
                                 headers: {
-                                    "Password": "6036ftw",
+                                    "Password": localStorage.getItem("pwd"),
                                 },
                             });
                             if (resp.status != 200) throw resp.status;
@@ -1068,6 +1068,7 @@ export default class App extends util.Target {
                 let pagefs = {
                     settings: () => {
                         if (util.is(state.userPwd, "str")) {
+                            localStorage.setItem("pwd", state.userPwd);
                             const userPwd = hashStr(state.userPwd);
                             delete state.userPwd;
                             const correctPwd = 750852430;

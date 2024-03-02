@@ -419,6 +419,8 @@ export default class App extends util.Target {
             }, 10);
         });
 
+        const pwd = prompt("Password");
+
         let apiKey = null;
         let eventKey = null;
         let scouters = [];
@@ -1158,7 +1160,7 @@ export default class App extends util.Target {
                                         mode: "cors",
                                         headers: {
                                             "Content-Type": "application/json",
-                                            "Password": "6036ftw",
+                                            "Password": pwd,
                                         },
                                         body: JSON.stringify({}),
                                     });
@@ -1895,7 +1897,7 @@ export default class App extends util.Target {
                         mode: "cors",
                         headers: {
                             "Content-Type": "application/json",
-                            "Password": "6036ftw",
+                            "Password": pwd,
                         },
                         body: JSON.stringify({
                             v: newKey,
@@ -1986,7 +1988,7 @@ export default class App extends util.Target {
                             mode: "cors",
                             headers: {
                                 "Content-Type": "application/json",
-                                "Password": "6036ftw",
+                                "Password": pwd,
                             },
                             body: JSON.stringify({
                                 v: key,
@@ -2045,7 +2047,7 @@ export default class App extends util.Target {
                         mode: "cors",
                         headers: {
                             "Content-Type": "application/json",
-                            "Password": "6036ftw",
+                            "Password": pwd,
                         },
                         body: JSON.stringify({
                             v: scouters.sort(sortScouter),
@@ -3148,7 +3150,7 @@ export default class App extends util.Target {
                         mode: "cors",
                         headers: {
                             "Content-Type": "application/json",
-                            "Password": "6036ftw",
+                            "Password": pwd,
                         },
                         body: JSON.stringify({
                             v: pickList,
@@ -3304,7 +3306,7 @@ export default class App extends util.Target {
                         mode: "cors",
                         headers: {
                             "Content-Type": "application/json",
-                            "Password": "6036ftw",
+                            "Password": pwd,
                         },
                         body: JSON.stringify({
                             v: JSON.parse(this.eAPIInput.value.replaceAll("\t", "  ")),
@@ -3359,7 +3361,7 @@ export default class App extends util.Target {
                         method: "GET",
                         mode: "cors",
                         headers: {
-                            "Password": "6036ftw",
+                            "Password": pwd,
                             "Clean": true,
                         },
                     });
@@ -3393,7 +3395,7 @@ export default class App extends util.Target {
                             method: "GET",
                             mode: "cors",
                             headers: {
-                                "Password": "6036ftw",
+                                "Password": pwd,
                             },
                         });
                         if (resp.status != 200) throw resp.status;
@@ -3420,7 +3422,7 @@ export default class App extends util.Target {
                             method: "GET",
                             mode: "cors",
                             headers: {
-                                "Password": "6036ftw",
+                                "Password": pwd,
                             },
                         });
                         if (resp.status != 200) throw resp.status;
@@ -3447,7 +3449,7 @@ export default class App extends util.Target {
                             method: "GET",
                             mode: "cors",
                             headers: {
-                                "Password": "6036ftw",
+                                "Password": pwd,
                             },
                         });
                         if (resp.status != 200) throw resp.status;
@@ -3474,7 +3476,7 @@ export default class App extends util.Target {
                             method: "GET",
                             mode: "cors",
                             headers: {
-                                "Password": "6036ftw",
+                                "Password": pwd,
                             },
                         });
                         if (resp.status != 200) throw resp.status;
@@ -3507,7 +3509,7 @@ export default class App extends util.Target {
                             method: "GET",
                             mode: "cors",
                             headers: {
-                                "Password": "6036ftw",
+                                "Password": pwd,
                             },
                         });
                         if (resp.status != 200) throw resp.status;
@@ -3534,7 +3536,7 @@ export default class App extends util.Target {
                             method: "GET",
                             mode: "cors",
                             headers: {
-                                "Password": "6036ftw",
+                                "Password": pwd,
                             },
                         });
                         if (resp.status != 200) throw resp.status;
@@ -3681,6 +3683,15 @@ export default class App extends util.Target {
             ].map(f => f()));
 
             // pickList = teams.map(team => team.team_number);
+
+            if (1) {
+                let c = [];
+                teams.map(team => team.team_number).sort((a, b) => a-b).forEach(team => {
+                    const comp = computeFullTeam(team);
+                    c.push([team, comp.score]);
+                });
+                console.log(c.map(line => line.map(v => String(v).padEnd(4, " ")).join("\t")).join("\n"));
+            }
 
             if (0) {
                 matchesScouted = [];

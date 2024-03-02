@@ -29,6 +29,8 @@ export default class App extends util.Target {
         });
 
         this.addHandler("setup", async () => {
+            const pwd = prompt("Password");
+
             this.#scanner = new Html5Qrcode("feed");
 
             this.ePrompt = document.getElementById("prompt");
@@ -56,7 +58,7 @@ export default class App extends util.Target {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
-                            "Password": "6036ftw"
+                            "Password": pwd,
                         },
                         body: JSON.stringify({
                             v: data,
