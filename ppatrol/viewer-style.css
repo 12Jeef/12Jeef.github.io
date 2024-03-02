@@ -954,7 +954,7 @@
     font-style: italic;
 }
 #team-analytics-page > div.info > div > div > table tr.note td:first-child {
-    min-width: 7.5em;
+    min-width: 15em;
 }
 #team-analytics-page > div.info > div > div > table tr.note td:first-child > span {
     color: var(--a);

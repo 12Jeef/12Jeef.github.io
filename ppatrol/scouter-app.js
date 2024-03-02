@@ -519,27 +519,28 @@ export default class App extends util.Target {
                             }
                         });
                         this.addHandler("pull", () => {
-                            // let newMatches = [
-                            //     new App.Match(-1),
-                            //     ...matches.filter(match => match.comp_level == "qm").sort((a, b) => a.match_number-b.match_number).map(match => {
-                            //         return new App.Match(
-                            //             match.match_number-1,
-                            //             match.alliances.red.team_keys.map(key => parseInt(key.substring(3))),
-                            //             match.alliances.blue.team_keys.map(key => parseInt(key.substring(3))),
-                            //             null,
-                            //         );
-                            //     }),
-                            // ];
-                            // if (newMatches.length <= 1) newMatches.push(new App.Match(0, [1111, 2222, 3333], [4444, 5555, 6666]));
-                            // let oldMatches = this.matches;
-                            // let theMatches = [];
-                            // newMatches.forEach(match => {
-                            //     let i = oldMatches.findIndex(match2 => match2.match.id == match.match.id);
-                            //     if (i < 0) theMatches.push(match);
-                            //     else theMatches.push(oldMatches[i]);
-                            // });
-                            // this.matches = theMatches;
-                            this.eNavigatorList.innerHTML = matches.filter(match => match.comp_level == "qm").map(match => match.key).join("<br>");
+                            try {
+                                let newMatches = [
+                                    new App.Match(-1),
+                                    ...matches.filter(match => match.comp_level == "qm").sort((a, b) => a.match_number-b.match_number).map(match => {
+                                        return new App.Match(
+                                            match.match_number-1,
+                                            match.alliances.red.team_keys.map(key => parseInt(key.substring(3))),
+                                            match.alliances.blue.team_keys.map(key => parseInt(key.substring(3))),
+                                            null,
+                                        );
+                                    }),
+                                ];
+                                if (newMatches.length <= 1) newMatches.push(new App.Match(0, [1111, 2222, 3333], [4444, 5555, 6666]));
+                                let oldMatches = this.matches;
+                                let theMatches = [];
+                                newMatches.forEach(match => {
+                                    let i = oldMatches.findIndex(match2 => match2.match.id == match.match.id);
+                                    if (i < 0) theMatches.push(match);
+                                    else theMatches.push(oldMatches[i]);
+                                });
+                                this.matches = theMatches;
+                            } catch (e) { alert(e); }
                         });
                     },
                     preauto: () => {
