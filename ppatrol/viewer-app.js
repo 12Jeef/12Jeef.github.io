@@ -444,8 +444,9 @@ export default class App extends util.Target {
         const getSkipped = match => {
             // return false;
             let k = getBufferStr(match);
-            // if (match.id < 0)
+            if (match.id < 0)
                 // return !this.hasSkippedMatch(k);
+                return true;
             return this.hasSkippedMatch(k);
         };
 
