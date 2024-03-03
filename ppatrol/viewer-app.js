@@ -1912,7 +1912,7 @@ export default class App extends util.Target {
             this.eServerConfigAccessPwdEdit = document.getElementById("server-config-pwd-edit");
 
             this.eServerConfigAPIKeyEdit.addEventListener("click", async e => {
-                let newKey = prompt("New API Key:");
+                let newKey = prompt("API Key:");
                 if (newKey == null) return;
                 if (newKey.length <= 0) newKey = null;
 
@@ -3259,11 +3259,11 @@ export default class App extends util.Target {
             this.ePickListPage.addEventListener("drop", drop);
             this.ePickListAdd = document.getElementById("pick-list-add");
             this.ePickListAdd.addEventListener("click", e => {
-                let team = prompt("Team:");
-                if (team == null) return;
-                team = util.ensure(parseInt(team), "int");
+                let teams = prompt("Team(s):");
+                if (teams == null) return;
+                teams = teams.split(",").map(team => util.ensure(parseInt(team.trim()), "int"));
                 if (this.locked) return;
-                pickList.unshift(team);
+                pickList.unshift(...teams);
                 updatePickListTable();
             });
             this.ePickListTable = document.getElementById("pick-list-table");
@@ -3469,7 +3469,7 @@ export default class App extends util.Target {
                     } catch (e) {
                         console.log("🛜 api-key: PYAW ERR", e);
                         try {
-                            throw "LS IGNORE";
+                            // throw "LS IGNORE";
                             console.log("🛜 api-key: LS");
                             apiKey = JSON.parse(localStorage.getItem("api-key"));
                         } catch (e) {
@@ -3497,7 +3497,7 @@ export default class App extends util.Target {
                     } catch (e) {
                         console.log("🛜 event-key: PYAW ERR", e);
                         try {
-                            throw "LS IGNORE";
+                            // throw "LS IGNORE";
                             console.log("🛜 event-key: LS");
                             eventKey = JSON.parse(localStorage.getItem("event-key"));
                         } catch (e) {
@@ -3525,7 +3525,7 @@ export default class App extends util.Target {
                     } catch (e) {
                         console.log("🛜 scouters: PYAW ERR", e);
                         try {
-                            throw "LS IGNORE";
+                            // throw "LS IGNORE";
                             console.log("🛜 scouters: LS");
                             scouters = JSON.parse(localStorage.getItem("scouters"));
                         } catch (e) {
@@ -3553,7 +3553,7 @@ export default class App extends util.Target {
                     } catch (e) {
                         console.log("🛜 matches-scouted: PYAW ERR", e);
                         try {
-                            throw "LS IGNORE";
+                            // throw "LS IGNORE";
                             console.log("🛜 matches-scouted: LS");
                             matchesScouted = JSON.parse(localStorage.getItem("matches-scouted"));
                         } catch (e) {
@@ -3587,7 +3587,7 @@ export default class App extends util.Target {
                     } catch (e) {
                         console.log("🛜 pit: PYAW ERR", e);
                         try {
-                            throw "LS IGNORE";
+                            // throw "LS IGNORE";
                             console.log("🛜 pit: LS");
                             pitData = JSON.parse(localStorage.getItem("pit"));
                         } catch (e) {
@@ -3615,7 +3615,7 @@ export default class App extends util.Target {
                     } catch (e) {
                         console.log("🛜 pick-list: PYAW ERR", e);
                         try {
-                            throw "LS IGNORE";
+                            // throw "LS IGNORE";
                             console.log("🛜 pick-list: LS");
                             pickList = JSON.parse(localStorage.getItem("pick-list"));
                         } catch (e) {
@@ -3647,7 +3647,7 @@ export default class App extends util.Target {
                     } catch (e) {
                         console.log("🛜 event: TBA ERR", e);
                         try {
-                            throw "LS IGNORE";
+                            // throw "LS IGNORE";
                             console.log("🛜 event: LS");
                             event = JSON.parse(localStorage.getItem("event"));
                         } catch (e) {
@@ -3677,7 +3677,7 @@ export default class App extends util.Target {
                     } catch (e) {
                         console.log("🛜 event-ratings: TBA ERR", e);
                         try {
-                            throw "LS IGNORE";
+                            // throw "LS IGNORE";
                             console.log("🛜 event-ratings: LS");
                             eventRatings = JSON.parse(localStorage.getItem("event-ratings"));
                         } catch (e) {
@@ -3707,7 +3707,7 @@ export default class App extends util.Target {
                     } catch (e) {
                         console.log("🛜 matches: TBA ERR", e);
                         try {
-                            throw "LS IGNORE";
+                            // throw "LS IGNORE";
                             console.log("🛜 matches: LS");
                             matches = JSON.parse(localStorage.getItem("matches"));
                         } catch (e) {
@@ -3743,7 +3743,7 @@ export default class App extends util.Target {
                     } catch (e) {
                         console.log("🛜 teams: TBA ERR", e);
                         try {
-                            throw "LS IGNORE";
+                            // throw "LS IGNORE";
                             console.log("🛜 teams: LS");
                             teams = JSON.parse(localStorage.getItem("teams"));
                         } catch (e) {
@@ -3758,13 +3758,24 @@ export default class App extends util.Target {
 
             // pickList = teams.map(team => team.team_number);
 
-            if (1) {
+            if (0) {
                 let c = [];
                 teams.map(team => team.team_number).sort((a, b) => a-b).forEach(team => {
                     const comp = computeFullTeam(team);
                     c.push([team, comp.score]);
                 });
                 console.log(c.map(line => line.map(v => String(v).padEnd(4, " ")).join("\t")).join("\n"));
+            }
+            
+            if (1) {
+                let tops = teams.map(team => team.team_number).map(team => {
+                    return {
+                        team: team,
+                        comp: computeFullTeam(team),
+                    };
+                }).sort((a, b) => b.comp.score-a.comp.score).map(data => data.team);
+                tops = tops.slice(0, 20);
+                console.log("****", tops.join(", "));
             }
 
             if (0) {
