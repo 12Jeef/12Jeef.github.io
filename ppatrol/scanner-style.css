@@ -67,9 +67,12 @@ body > button:active {
     color: var(--fg);
     border-radius: 0.5em;
 }
-#prompt > button:active {
+#prompt > button:not(:disabled):active {
     background-color: var(--fg);
     color: var(--bg);
+}
+#prompt > button:disabled {
+    opacity: 50%;
 }
 #prompt > button > h1 {
     margin: 0em;
