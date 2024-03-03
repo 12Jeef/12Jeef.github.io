@@ -2309,11 +2309,12 @@ export default class App extends util.Target {
             this.addHandler("post-refresh", () => {
                 this.eMasterListPage.innerHTML = "";
                 matchesScouted.sort((a, b) => {
-                    if (a.id < 0 && b.id < 0) return a.robot-b.robot;
-                    if (a.id < 0) return -1;
-                    if (b.id < 0) return +1;
-                    if (a.id != b.id) return a.id-b.id;
-                    return getRobotI(a)-getRobotI(b);
+                    // if (a.id < 0 && b.id < 0) return a.robot-b.robot;
+                    // if (a.id < 0) return -1;
+                    // if (b.id < 0) return +1;
+                    // if (a.id != b.id) return a.id-b.id;
+                    // return getRobotI(a)-getRobotI(b);
+                    return parseFloat(a._t)-parseFloat(b._t);
                 }).forEach(match => this.eMasterListPage.appendChild(makeMatchListing(match)));
             });
 
@@ -3283,7 +3284,10 @@ export default class App extends util.Target {
                     ids.delete(id);
                 });
                 Array.from(this.ePickListTable.querySelectorAll("tr.item")).forEach(elem => elem.remove());
+                let csv = [["Team", "Auto Score", "Teleop Score", "Endgame Score", "Total Score", "Notes"]];
                 pickList.forEach((team, k) => {
+                    let entry = [];
+                    csv.push(entry);
                     const comp = computeFullTeam(team);
                     const scouted = computeScouted(team);
                     let row = document.createElement("tr");
@@ -3333,6 +3337,7 @@ export default class App extends util.Target {
                             continue;
                         }
                         if (i == 1) {
+                            entry.push(team);
                             dat.textContent = team;
                             dat.addEventListener("click", e => {
                                 eNavButtons["team-analytics"].click();
@@ -3346,21 +3351,29 @@ export default class App extends util.Target {
                             continue;
                         }
                         if (i >= 3 && i <= 6) {
-                            dat.textContent = [
+                            let v = [
                                 comp.auto.score,
                                 comp.teleop.score,
+                                // comp.teleop.scores.success,
                                 comp.endgame.score,
                                 comp.score,
                             ][i-3];
+                            dat.textContent = v;
                             continue;
                         }
                         if (i == 7) {
                             dat.innerHTML = new Array(comp.notes.length).fill("<span></span>").join("<span></span>");
+                            entry.push(comp.notes.map(note => note.note).join("    /    "));
                             for (let j = 0; j < dat.children.length; j += 2) dat.children[j].textContent = comp.notes[j/2].note;
                             continue;
                         }
                     }
                 });
+                let r = csv.map(entry => entry.map(v => {
+                    v = String(v).replaceAll("\"", "\"\"").replaceAll(",", "-");
+                    return v;
+                }).join(", ")).join("\n");
+                console.log(r);
             };
             this.addHandler("post-refresh", updatePickListTable);
 
@@ -3765,7 +3778,7 @@ export default class App extends util.Target {
                 },
             ].map(f => f()));
 
-            // pickList = teams.map(team => team.team_number);
+            pickList = teams.map(team => team.team_number);
 
             if (0) {
                 let c = [];
