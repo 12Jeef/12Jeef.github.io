@@ -461,19 +461,25 @@ export default class App extends util.Target {
             if (!match.score_breakdown.blue) return false;
             return true;
         };
-        const getAutoMobility = match => {
+        const getRobotI = match => {
             let tbamatch = getTBAMatch(match);
-            if (!getTBAScored(tbamatch)) return false;
+            if (!util.is(tbamatch, "obj")) return -1;
             let teams = [
                 ...tbamatch.alliances.red.team_keys.map(key => parseInt(key.substring(3))),
                 ...tbamatch.alliances.blue.team_keys.map(key => parseInt(key.substring(3))),
             ];
+            return teams.indexOf(match.robot);
+        };
+        const getAutoMobility = match => {
+            let i = getRobotI(match);
+            if (i < 0) return false;
+            let tbamatch = getTBAMatch(match);
+            if (!getTBAScored(tbamatch)) return false;
             let values = [
                 ...Array.from(new Array(3).keys()).map(i => ["No", "Yes"].indexOf(tbamatch.score_breakdown.red["autoLineRobot"+(i+1)])),
                 ...Array.from(new Array(3).keys()).map(i => ["No", "Yes"].indexOf(tbamatch.score_breakdown.blue["autoLineRobot"+(i+1)])),
             ];
-            if (!teams.includes(match.robot)) return false;
-            let state = values[teams.indexOf(match.robot)];
+            let state = values[i];
             if (state < 0) return false;
             return [false, true][state];
         };
@@ -488,16 +494,13 @@ export default class App extends util.Target {
             });
             let tbamatch = getTBAMatch(match);
             if (getTBAScored(tbamatch)) {
-                let teams = [
-                    ...tbamatch.alliances.red.team_keys.map(key => parseInt(key.substring(3))),
-                    ...tbamatch.alliances.blue.team_keys.map(key => parseInt(key.substring(3))),
-                ];
+                let i = getRobotI(match);
                 let values = [
                     ...Array.from(new Array(3).keys()).map(i => ["None", "Parked", "Onstage"].indexOf(tbamatch.score_breakdown.red["endGameRobot"+(i+1)])),
                     ...Array.from(new Array(3).keys()).map(i => ["None", "Parked", "Onstage"].indexOf(tbamatch.score_breakdown.blue["endGameRobot"+(i+1)])),
                 ];
-                if (teams.includes(match.robot)) {
-                    let pos2 = values[teams.indexOf(match.robot)];;
+                if (i >= 0) {
+                    let pos2 = values[i];
                     if (pos2 >= 0) {
                         safe = true;
                         pos = pos2;
@@ -2305,7 +2308,13 @@ export default class App extends util.Target {
             this.eMasterListPage = document.getElementById("master-list-page");
             this.addHandler("post-refresh", () => {
                 this.eMasterListPage.innerHTML = "";
-                matchesScouted.sort((a, b) => a.id-b.id).forEach(match => this.eMasterListPage.appendChild(makeMatchListing(match)));
+                matchesScouted.sort((a, b) => {
+                    if (a.id < 0 && b.id < 0) return a.robot-b.robot;
+                    if (a.id < 0) return -1;
+                    if (b.id < 0) return +1;
+                    if (a.id != b.id) return a.id-b.id;
+                    return getRobotI(a)-getRobotI(b);
+                }).forEach(match => this.eMasterListPage.appendChild(makeMatchListing(match)));
             });
 
             this.eTeamAnalyticsTeam = document.getElementById("team-analytics-team");
