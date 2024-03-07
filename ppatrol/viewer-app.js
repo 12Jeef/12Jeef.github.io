@@ -1754,7 +1754,7 @@ export default class App extends util.Target {
             heatmapNodes.forEach(nodes => {
                 const heatmap = h337.create({
                     container: this.eFieldBox,
-                    radius: Math.round(75*scale),
+                    radius: Math.round(50*scale),
                     maxOpacity: 0.5,
                     minOpacity: 0,
                     gradient: {
@@ -1812,13 +1812,32 @@ export default class App extends util.Target {
                     if (node.ts > fieldTS) return;
                     ctx.fillStyle = nodes.color.toHex();
                     ctx.beginPath();
-                    ctx.arc(node.x, node.y, 5/scale, 0, 2*Math.PI);
+                    ctx.arc(node.x, node.y, 2/scale, 0, 2*Math.PI);
                     ctx.fill();
                 });
             });
         };
         const openFieldPopup = () => {
             this.eFieldPopup.classList.add("this");
+            if (0) {
+                heatmapNodes = [
+                    { color: new util.Color(255, 0, 0), nodes: [] },
+                    { color: new util.Color(0, 255, 0), nodes: [] },
+                ];
+                matchesScouted.forEach(match => {
+                    if (getSkipped(match)) return;
+                    match.teleopFrames.forEach(frame => {
+                        if (frame.type != "speaker") return;
+                        let x = frame.state.at.x;
+                        let y = frame.state.at.y;
+                        if (0 && x > fieldSize.x/2) x = fieldSize.x-x;
+                        heatmapNodes[+!!frame.state.value].nodes.push({
+                            x: x, y: y,
+                            ts: 0,
+                        });
+                    });
+                });
+            }
             updateFieldPopup();
         };
         const closeFieldPopup = () => {

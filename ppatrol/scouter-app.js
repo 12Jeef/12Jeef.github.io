@@ -1339,14 +1339,10 @@ export default class App extends util.Target {
             this.#matches.push(match);
             if (!match.match.isPractice()) this.eNavigatorList.appendChild(match.eListItem);
             match.addLinkedHandler(this, "trigger", e => {
-                if (match.match.isPractice()) {
-                    this.match = new Match(-1);
-                    this.page = "preauto";
-                } else {
-                    this.match = match.match;
-                    if (this.match.hasFinishTime()) this.page = "finish";
-                    else this.page = "preauto";
-                }
+                this.match = match.match;
+                if (this.match.hasFinishTime())
+                    this.page = "finish";
+                else this.page = "preauto";
             });
             this.change("addMatch", null, match);
             return match;
