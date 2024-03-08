@@ -34,22 +34,30 @@ export default class App extends util.Target {
                 const w = 750, h = 500;
                 let q = 1;
                 let stars = [];
-                for (let i = 0; i < 100; i++) stars.push({
+                for (let i = 0; i < 300; i++) stars.push({
                     pos: new V(Math.random()*w, Math.random()*h),
+                    d: 360*Math.random(), l: util.lerp(5, 20, Math.random()),
+                    t: util.lerp(1000, 3000, Math.random()), to: Math.random(),
                     r: Math.random(),
                 });
                 const update = delta => {
                     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
                     const scale = (ctx.canvas.height/q) / h;
                     stars.forEach(star => {
+                        const t = ((((util.getTime()/star.t)-star.to)%1)+1)%1;
+                        const p = util.ease.quadIO(1-Math.abs(t-0.5)/0.5);
+                        let x = star.pos.x, y = star.pos.y;
+                        let [ox, oy] = V.dir(star.d, util.lerp(-0.5, 0.5, t)*star.l).xy;
+                        x += ox; y += oy;
                         const c = new util.Color((star.r < 0.5) ? [0, 128, 255, (star.r/0.5)] : [255*((star.r-0.5)/0.5), util.lerp(128, 255, ((star.r-0.5)/0.5)), 255, 0.5]);
-                        c.a *= 1-(star.pos.x/w - 0.25*star.pos.y/h);
+                        c.a *= 1-(x/w - 0.25*y/h);
+                        c.a *= p;
                         ctx.fillStyle = c.toRGBA();
                         ctx.beginPath();
                         ctx.arc(
-                            ctx.canvas.width-star.pos.x*scale*q,
-                            ctx.canvas.height/2 + (star.pos.y-h/2)*scale*q,
-                            util.lerp(0.1, 1, star.r)*scale*q,
+                            ctx.canvas.width-x*scale*q,
+                            ctx.canvas.height/2 + (y-h/2)*scale*q,
+                            util.lerp(0.1, 1, star.r)*p*scale*q,
                             0, 2*Math.PI,
                         );
                         ctx.fill();
@@ -131,12 +139,12 @@ export default class App extends util.Target {
 
                         i: newline ? 1 : 0,
                         type: "content",
-                        text: "Frontend and application developer, graphic designer", size: "1em",
+                        text: "Fellow developer, designer", size: "1em",
 
                         br: newline,
 
                         init: elem => {
-                            elem.style.color = "#fffc";
+                            elem.style.color = "#defc";
                             elem.style.letterSpacing = "0.1em";
                             elem.style.fontWeight = 400;
                         },
@@ -174,11 +182,6 @@ export default class App extends util.Target {
                     const tStop = autocomplete ?
                         (tPause+tTag+tPause+tContent1+tPause+tTag+tPause+tContent2+10*tPause) :
                         (tPause+tTag+tPause+tContent1+tPause+tTag+tPause+tTag+tPause+tContent2+tPause+tTag+10*tPause);
-                    if (t > tStop) {
-                        this.remHandler("update", update);
-                        eCursor.remove();
-                        return;
-                    }
                     elems.forEach(data => {
                         if (t < data.t) return;
                         if (!data.elem) {
@@ -242,6 +245,9 @@ export default class App extends util.Target {
                         eTitleCard.insertBefore(eCursor, children[at].nextSibling);
                         eCursor.style.fontSize = children[at].classList.contains("tag") ? "1em" : elems.find(data => data.elem == children[at]).size;
                     }
+                    if (t <= tStop) return;
+                    this.remHandler("update", update);
+                    eCursor.remove();
                 };
                 this.addHandler("update", update);
             }
