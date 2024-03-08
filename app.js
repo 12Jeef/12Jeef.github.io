@@ -30,49 +30,100 @@ export default class App extends util.Target {
             if (eTitleCard) {
                 eTitleCard.innerHTML = "";
                 const autocomplete = false;
-                const tShift = -250;
+                const newline = true;
+                const tShift = -1000;
                 const tPause = 250;
                 const tTag = 250;
-                const tContent = 750;
+                const tContent1 = 750;
+                const tContent2 = 1500;
                 const tCursor = 750;
-                const tag = "h1";
-                const content = "Jeffrey Fan";
                 const eCursor = document.createElement("span");
                 eTitleCard.appendChild(eCursor);
                 eCursor.classList.add("cursor");
                 const elems = [
                     {
                         t: 0, l: tTag, at: 0,
+                        i: 0,
                         type: "tag",
-                        text: tag, wraps: ["<", ">"],
+                        text: "h1", wraps: ["<", ">"],
+
+                        br: newline,
                     },
                     {
-                        t: tTag+tPause, l: tContent, at: 1,
+                        t: tTag+tPause, l: tContent1, at: autocomplete ? 1 : 2,
+                        i: newline ? 1 : 0,
                         type: "content",
-                        text: content,
+                        text: "Jeffrey Fan", size: "4em",
+
+                        br: newline,
                     },
                     {
-                        t: autocomplete ? tTag : (tTag+tPause+tContent+tPause),
+                        t: autocomplete ? tTag : (tTag+tPause+tContent1+tPause),
                         l: autocomplete ? 0 : tTag,
                         at: autocomplete ? 1 : 2,
 
+                        i: 0,
                         type: "tag",
-                        text: tag, wraps: ["</", ">"],
+                        text: "h1", wraps: ["</", ">"],
+
+                        br: true,
+                    },
+                    {
+                        t: tTag+tPause+tContent1+tPause + (autocomplete ? 0 : (tTag+tPause)),
+                        l: tTag,
+                        at: 3,
+
+                        i: 0,
+                        type: "tag",
+                        text: "p", wraps: ["<", ">"],
+
+                        br: newline,
+                    },
+                    {
+                        t: tTag+tPause+tContent1+tPause + (autocomplete ? 0 : (tTag+tPause)) + tTag+tPause,
+                        l: tContent2,
+                        at: 4,
+
+                        i: newline ? 1 : 0,
+                        type: "content",
+                        text: "Frontend and application developer, graphic designer", size: "1em",
+                        init: elem => {
+                            elem.style.color = "#fffa";
+                            elem.style.letterSpacing = "0.1em";
+                            elem.style.fontWeight = 400;
+                        },
+
+                        br: newline,
+                    },
+                    {
+                        t: tTag+tPause+tContent1+tPause + (autocomplete ? 0 : (tTag+tPause)) + (autocomplete ? tTag : (tTag+tPause+tContent2+tPause)),
+                        l: tTag,
+                        at: autocomplete ? 4 : 5,
+
+                        i: 0,
+                        type: "tag",
+                        text: "p", wraps: ["</", ">"],
+
+                        br: true,
                     },
                 ];
                 const cursor = autocomplete ?
                     [
                         { t: 0, at: 1 },
-                        { t: tTag+tPause, at: 2 },
-                        { t: tTag+tPause+tContent+3*tPause, at: 3 },
+                        { t: tTag, at: 0 },
+                        { t: tTag+tPause, at: 1 },
+                        { t: tTag+tPause+tContent1+tPause, at: 3 },
+                        { t: tTag+tPause+tContent1+tPause+tTag+tPause, at: 4 },
                     ] : [
                         { t: 0, at: 1000 },
                     ];
                 const tStart = util.getTime();
                 const update = delta => {
                     const tNow = util.getTime();
-                    const t = tNow-tStart + tShift;
-                    const tStop = autocomplete ? (tPause+tTag+tPause+tContent+10*tPause) : (tPause+tTag+tPause+tContent+tPause+tTag+10*tPause);
+                    const t = (tNow-tStart + tShift) / 1;
+                    const tStop = autocomplete ?
+                        (tPause+tTag+tPause+tContent1+tPause+tTag+tPause+tContent2+10*tPause) :
+                        (tPause+tTag+tPause+tContent1+tPause+tTag+tPause+tTag+tPause+tContent2+tPause+tTag+10*tPause);
                     if (t > tStop) {
                         this.remHandler("update", update);
                         eCursor.remove();
@@ -82,10 +133,20 @@ export default class App extends util.Target {
                         if (t < data.t) return;
                         if (!data.elem) {
                             data.elem = document.createElement("span");
+                            data.elem.style.setProperty("--i", data.i);
                             if (data.type == "tag") data.elem.classList.add("tag");
-                            if (data.at < 0 || data.at >= eTitleCard.children.length)
+                            if (data.type == "content") data.elem.style.fontSize = data.size;
+                            if (data.init) data.init(data.elem);
+                            let at = data.at;
+                            const children = Array.from(eTitleCard.children).filter(elem => (!(elem instanceof HTMLBRElement) && !elem.classList.contains("cursor")));
+                            if (at < 0 || at >= children.length) {
                                 eTitleCard.appendChild(data.elem);
-                            else eTitleCard.insertBefore(data.elem, eTitleCard.children[data.at]);
+                                if (data.br) eTitleCard.appendChild(document.createElement("br"));
+                            } else {
+                                const before = children[at];
+                                eTitleCard.insertBefore(data.elem, before);
+                                if (data.br) eTitleCard.insertBefore(document.createElement("br"), before);
+                            }
                         }
                         const text = String((data.type == "tag") ? data.wraps[0]+data.text+data.wraps[1] : data.text);
                         const p = Math.min(1, Math.max(0, (t-data.t)/data.l));
@@ -116,11 +177,20 @@ export default class App extends util.Target {
                         if (t < data.t) return;
                         at = data.at;
                     });
-                    if (Array.from(eTitleCard.children).indexOf(eCursor) == at) return;
+                    const children = Array.from(eTitleCard.children).filter(elem => (!(elem instanceof HTMLBRElement) && !elem.classList.contains("cursor")));
                     eCursor.remove();
-                    if (at < 0 || at >= eTitleCard.children.length)
-                        eTitleCard.appendChild(eCursor);
-                    else eTitleCard.insertBefore(eCursor, eTitleCard.children[at]);
+                    if (at < 0 || at >= children.length) {
+                        if (children.at(-1) && children.at(-1).nextSibling) {
+                            eTitleCard.insertBefore(eCursor, children.at(-1).nextSibling);
+                            eCursor.style.fontSize = children.at(-1).classList.contains("tag") ? "1em" : elems.find(data => data.elem == children.at(-1)).size;
+                        } else {
+                            eTitleCard.appendChild(eCursor);
+                            eCursor.style.fontSize = "1em";
+                        }
+                    } else {
+                        eTitleCard.insertBefore(eCursor, children[at].nextSibling);
+                        eCursor.style.fontSize = children[at].classList.contains("tag") ? "1em" : elems.find(data => data.elem == children[at]).size;
+                    }
                 };
                 this.addHandler("update", update);
             }
