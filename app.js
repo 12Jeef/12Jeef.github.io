@@ -29,7 +29,7 @@ export default class App extends util.Target {
             const eTitleCard = document.getElementById("title-card");
             if (eTitleCard) {
                 eTitleCard.innerHTML = "";
-                const autocomplete = true;
+                const autocomplete = false;
                 const tShift = -250;
                 const tPause = 250;
                 const tTag = 250;
