@@ -1,6 +1,8 @@
 import * as util from "./util.mjs";
 import { V } from "./util.mjs";
 
+import * as THREE from "three";
+
 
 export default class App extends util.Target {
     constructor() {
@@ -26,6 +28,45 @@ export default class App extends util.Target {
         });
 
         this.addHandler("setup", () => {
+            const canvas = document.getElementById("canvas");
+            if (canvas && canvas.getContext) {
+                const ctx = canvas.getContext("2d");
+                const w = 750, h = 500;
+                let q = 1;
+                let stars = [];
+                for (let i = 0; i < 100; i++) stars.push({
+                    pos: new V(Math.random()*w, Math.random()*h),
+                    r: Math.random(),
+                });
+                const update = delta => {
+                    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                    const scale = (ctx.canvas.height/q) / h;
+                    stars.forEach(star => {
+                        const c = new util.Color((star.r < 0.5) ? [0, 128, 255, (star.r/0.5)] : [255*((star.r-0.5)/0.5), util.lerp(128, 255, ((star.r-0.5)/0.5)), 255, 0.5]);
+                        c.a *= 1-(star.pos.x/w - 0.25*star.pos.y/h);
+                        ctx.fillStyle = c.toRGBA();
+                        ctx.beginPath();
+                        ctx.arc(
+                            ctx.canvas.width-star.pos.x*scale*q,
+                            ctx.canvas.height/2 + (star.pos.y-h/2)*scale*q,
+                            util.lerp(0.1, 1, star.r)*scale*q,
+                            0, 2*Math.PI,
+                        );
+                        ctx.fill();
+                    });
+                };
+                this.addHandler("update", update);
+                const resize = () => {
+                    q = window.devicePixelRatio;
+                    ctx.canvas.style.width = window.innerWidth+"px";
+                    ctx.canvas.style.heght = window.innerHeight+"px";
+                    ctx.canvas.width = window.innerWidth*q;
+                    ctx.canvas.height = window.innerHeight*q;
+                    update(0);
+                };
+                new ResizeObserver(resize).observe(document.body);
+                resize();
+            }
             const eTitleCard = document.getElementById("title-card");
             if (eTitleCard) {
                 eTitleCard.innerHTML = "";
@@ -48,6 +89,10 @@ export default class App extends util.Target {
                         text: "h1", wraps: ["<", ">"],
 
                         br: newline,
+
+                        init: elem => {
+                            elem.style.filter = "blur(0.025em)";
+                        },
                     },
                     {
                         t: tTag+tPause, l: tContent1, at: autocomplete ? 1 : 2,
@@ -87,13 +132,14 @@ export default class App extends util.Target {
                         i: newline ? 1 : 0,
                         type: "content",
                         text: "Frontend and application developer, graphic designer", size: "1em",
+
+                        br: newline,
+
                         init: elem => {
-                            elem.style.color = "#fffa";
+                            elem.style.color = "#fffc";
                             elem.style.letterSpacing = "0.1em";
                             elem.style.fontWeight = 400;
                         },
-
-                        br: newline,
                     },
                     {
                         t: tTag+tPause+tContent1+tPause + (autocomplete ? 0 : (tTag+tPause)) + (autocomplete ? tTag : (tTag+tPause+tContent2+tPause)),
@@ -105,6 +151,10 @@ export default class App extends util.Target {
                         text: "p", wraps: ["</", ">"],
 
                         br: true,
+
+                        init: elem => {
+                            elem.style.filter = "blur(0.025em)";
+                        },
                     },
                 ];
                 const cursor = autocomplete ?
@@ -171,7 +221,8 @@ export default class App extends util.Target {
                         }
                         data.elem.textContent = text.substring(0, i);
                     });
-                    eCursor.style.opacity = (((t/tCursor)%1) < 0.5) ? util.lerp(1, 0.75, ((t/tCursor)%1)/0.5) : 0;
+                    const p = (((t/tCursor)%1)+1)%1;
+                    eCursor.style.opacity = (p < 0.5) ? util.lerp(1, 0.75, p/0.5) : 0;
                     let at = 0;
                     cursor.forEach(data => {
                         if (t < data.t) return;

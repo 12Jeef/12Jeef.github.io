@@ -17,11 +17,24 @@ body {
     font-weight: inherit;
 }
 
+body {
+    overscroll-behavior: none;
+
+    background: linear-gradient(-15deg, #08f2, #0000), #001;
+}
+
+body > canvas {
+    z-index: -1;
+
+    position: absolute;
+    top: 0%;
+    left: 0%;
+}
+
 body > .window {
-    height: 100%;
+    height: max(30rem, calc(100% - 8.5rem));
     padding: 5rem;
     
-    background: linear-gradient(-15deg, #08f2, #0000), #001;
     color: #fff;
 
     font-size: 0.75em;
@@ -34,6 +47,9 @@ body > .window span:not(.cursor) {
     --i: 0;
 
     margin-left: calc(var(--i) * 2rem) !important;
+}
+body > .window span:not(.cursor):not(.tag) {
+    filter: drop-shadow(0em 0em 0.5em #fff8);
 }
 body > .window span:not(.cursor).tag {
     margin: 0em 0.25em;
@@ -65,4 +81,86 @@ body > .window span.cursor {
 
     user-select: none;
     pointer-events: none;
+}
+body > nav {
+    padding: 0rem 5rem;
+    padding-bottom: 5rem;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+    gap: 1rem;
+}
+body > nav a {
+    text-decoration: none;
+}
+@property --color {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #fff;
+}
+@property --size {
+    syntax: "<percentage>";
+    inherits: true;
+    initial-value: 0%;
+}
+body > nav button {
+    --color: #fffa;
+    --size: 0%;
+
+    position: relative;
+
+    padding: 1em 2em;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    gap: 1em;
+
+    background: linear-gradient(135deg, var(--color) 0%, var(--color) var(--size), #0000 var(--size), #0000 100%);
+    color: var(--color);
+    border: 0.1rem solid var(--color);
+    outline: none;
+
+    letter-spacing: 0.1em;
+    font-size: inherit;
+
+    transition: --color 0.25s, --size 0.25s, color 0.25s;
+}
+body > nav button:hover {
+    --color: #08f;
+    --size: 100%;
+
+    color: #fff;
+}
+body > nav button::before {
+    content: "";
+
+    z-index: -1;
+
+    position: absolute;
+    top: 0%;
+    bottom: 0%;
+    left: 0%;
+    right: 0%;
+
+    background-color: var(--color);
+    opacity: 0%;
+
+    filter: blur(0em);
+
+    pointer-events: none;
+
+    transition: opacity 0.25s, filter 0.25s;
+}
+body > nav button:hover::before {
+    opacity: 50%;
+
+    filter: blur(1em);
 }
