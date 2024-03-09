@@ -1137,7 +1137,7 @@ export default class App extends util.Target {
                             elem.textContent = id;
                             btn.addEventListener("click", e => {
                                 if (!this.hasMatch()) return;
-                                if (!this.match.isPractice()) return;
+                                if (this.match.isNormal()) return;
                                 this.match.robot = id;
                             });
                         });
