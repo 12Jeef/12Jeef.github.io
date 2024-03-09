@@ -1342,8 +1342,9 @@ export default class App extends util.Target {
                     }
                     if (i == 0) {
                         if (j == 1) {
-                            dat.textContent = (match.id < 0) ? "Practice" : match.id+1;
-                            if (match.id < 0) dat.classList.add("practice");
+                            dat.textContent = (match.id == -1) ? "Practice" : (match.id < -1) ? "Elim#"+(-match.id-1) : match.id+1;
+                            if (match.id == -1) dat.classList.add("practice");
+                            if (match.id < -1) dat.classList.add("elim");
                         } else if (j == 2) {
                             dat.textContent = match.robot;
                         } else if (j == 3) {
@@ -1379,8 +1380,9 @@ export default class App extends util.Target {
                     }
                     if (i == 1) {
                         if (j == 1) {
-                            dat.textContent = (match.id < 0) ? "Practice" : match.id+1;
-                            if (match.id < 0) dat.classList.add("practice");
+                            dat.textContent = (match.id == -1) ? "Practice" : (match.id < -1) ? "Elim#"+(-match.id-1) : match.id+1;
+                            if (match.id == -1) dat.classList.add("practice");
+                            if (match.id < -1) dat.classList.add("elim");
                         } else if (j == 2) {
                             dat.textContent = match.robot;
                         } else if (j == 3) {
@@ -2328,12 +2330,22 @@ export default class App extends util.Target {
             this.addHandler("post-refresh", () => {
                 this.eMasterListPage.innerHTML = "";
                 matchesScouted.sort((a, b) => {
+                    if (a.id == -1 && b.id == -1) return a.robot-b.robot;
+                    if (a.id == -1) return -1;
+                    if (b.id == -1) return +1;
+                    if (a.id < -1 && b.id < -1) {
+                        if (a.id != b.id) return b.id-a.id;
+                        return a.robot-b.robot;
+                    }
+                    if (a.id < -1) return +1;
+                    if (b.id < -1) return -1;
+                    if (a.id != b.id) return a.id-b.id;
+                    return getRobotI(a)-getRobotI(b);
                     // if (a.id < 0 && b.id < 0) return a.robot-b.robot;
                     // if (a.id < 0) return -1;
                     // if (b.id < 0) return +1;
                     // if (a.id != b.id) return a.id-b.id;
                     // return getRobotI(a)-getRobotI(b);
-                    return parseFloat(a._t)-parseFloat(b._t);
                 }).forEach(match => this.eMasterListPage.appendChild(makeMatchListing(match)));
             });
 

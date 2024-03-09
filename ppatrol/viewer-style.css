@@ -1542,6 +1542,10 @@ table.match-listing tr:nth-child(1) td:nth-child(2).practice,
 table.match-listing tr:nth-child(2) td:nth-child(2).practice {
     color: var(--r4);
 }
+table.match-listing tr:nth-child(1) td:nth-child(2).elim,
+table.match-listing tr:nth-child(2) td:nth-child(2).elim {
+    color: var(--g4);
+}
 table.match-listing tr:first-child td:nth-last-child(1),
 table.match-listing tr:first-child td:nth-last-child(2),
 table.match-listing tr:first-child td:nth-last-child(3) {

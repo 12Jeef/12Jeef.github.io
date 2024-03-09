@@ -210,11 +210,17 @@ export class Match extends util.Target {
 
     get id() { return this.#id; }
     set id(v) {
-        v = Math.max(-1, util.ensure(v, "int"));
+        v = util.ensure(v, "int");
         if (this.id == v) return;
         this.change("id", this.id, this.#id=v);
     }
-    isPractice() { return this.id < 0; }
+    isNormal() { return !this.isPractice() && !this.isElim(); }
+    isPractice() { return this.id == -1; }
+    isElim() { return this.id < -1; }
+    get elimId() {
+        if (!this.isElim()) return null;
+        return -this.id-2;
+    }
 
     get robot() { return this.#robot; }
     set robot(v) {

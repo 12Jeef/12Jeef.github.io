@@ -531,6 +531,7 @@ export default class App extends util.Target {
                                         null,
                                     );
                                 }),
+                                ...Array.from(new Array(14).keys()).map(i => new App.Match(-2-i)),
                             ];
                             if (newMatches.length <= 1) newMatches.push(new App.Match(0, [1111, 2222, 3333], [4444, 5555, 6666]));
                             let oldMatches = this.matches;
@@ -623,7 +624,7 @@ export default class App extends util.Target {
                             if (this.hasMatch() && this.match.robotTeam == "b")
                                 this.ePreAutoTeam.setAttribute("blue", "");
                             else this.ePreAutoTeam.removeAttribute("blue");
-                            this.ePreAutoTeam.disabled = !this.hasMatch() || !this.match.isPractice();
+                            this.ePreAutoTeam.disabled = !this.hasMatch() || this.match.isNormal();
                             this.ePreAutoStart.disabled = !this.hasMatch() || !this.match.hasRobot() || !this.match.hasRobotTeam();
                         };
                         ["match", "match.id", "match.robot", "match.robotTeam", "match.preloaded"].forEach(c => this.addHandler("change-"+c, updateMenu));
@@ -1125,15 +1126,8 @@ export default class App extends util.Target {
                         this.match = null;
                     },
                     preauto: () => {
-                        this.ePreAutoRobot.disabled = this.hasMatch() && !this.match.isPractice();
+                        this.ePreAutoRobot.disabled = this.hasMatch() && this.match.isNormal();
                         this.ePreAutoRobotDropdown.innerHTML = "";
-                        // let robots = [];
-                        // if (this.hasMatch()) {
-                        //     if (this.match.isPractice()) {
-                        //         this.matches.forEach(match => robots.push(...match.red, ...match.blue));
-                        //         robots = [...new Set(robots)].sort((a, b) => a-b);
-                        //     } else robots = [];
-                        // }
                         let robots = teams.map(team => team.team_number).sort((a, b) => a-b);
                         robots.forEach(id => {
                             let btn = document.createElement("button");
@@ -1365,7 +1359,7 @@ export default class App extends util.Target {
     }
     updateMatches() {
         this.matches.forEach(match => {
-            if (match.match.isPractice()) return;
+            if (!match.match.isNormal()) return;
             match.match.robot = (this.id > 0 && this.id <= 3) ? match.red[this.id-1] : (this.id > 3 && this.id <= 6) ? match.blue[this.id-4] : null;
         });
     }
@@ -1377,7 +1371,7 @@ export default class App extends util.Target {
         if (this.hasMatch()) this.match.clearLinkedHandlers(this, "change");
         this.change("match", this.match, this.#match=v);
         if (this.hasMatch()) this.match.addLinkedHandler(this, "change", (c, f, t) => this.change("match."+c, f, t));
-        this.eMatch.textContent = this.hasMatch() ? this.match.isPractice() ? "Practice" : "Q"+(this.match.id+1) : "";
+        this.eMatch.textContent = this.hasMatch() ? this.match.isPractice() ? "Practice" : this.match.isElim() ? "E"+(this.match.elimId+1) : "Q"+(this.match.id+1) : "";
     }
 }
 App.Match = class AppMatch extends util.Target {
@@ -1423,11 +1417,11 @@ App.Match = class AppMatch extends util.Target {
 
             this.eListItem.style.opacity = this.match.hasFinishTime() ? "50%" : "";
 
-            this.eItemId.textContent = this.match.isPractice() ? "Practice Match" : this.match.id+1;
-            this.eItemId.style.textAlign = this.match.isPractice() ? "center" : "";
-            this.eItemTeams.style.display = this.match.isPractice() ? "none" : "";
+            this.eItemId.textContent = this.match.isPractice() ? "Practice Match" : this.match.isElim() ? "Elim Match #"+(this.match.elimId+1) : (this.match.id+1);
+            this.eItemId.style.textAlign = !this.match.isNormal() ? "center" : "";
+            this.eItemTeams.style.display = !this.match.isNormal() ? "none" : "";
 
-            if (!this.match.isPractice()) {
+            if (this.match.isNormal()) {
                 ignore = true;
 
                 if (!this.hasRed(this.match.robot) && !this.hasBlue(this.match.robot)) this.match.robot = null;
@@ -1469,7 +1463,7 @@ App.Match = class AppMatch extends util.Target {
     }
     addRed(...v) {
         let r = util.Target.resultingForEach(v, v => {
-            if (this.match.isPractice()) return false;
+            if (!this.match.isNormal()) return false;
             v = Math.max(1, util.ensure(v, "int"));
             if (this.hasRed(v)) return false;
             this.#red.push(v);
@@ -1516,7 +1510,7 @@ App.Match = class AppMatch extends util.Target {
     }
     addBlue(...v) {
         let r = util.Target.resultingForEach(v, v => {
-            if (this.match.isPractice()) return false;
+            if (!this.match.isNormal()) return false;
             v = Math.max(1, util.ensure(v, "int"));
             if (this.hasBlue(v)) return false;
             this.#blue.push(v);
