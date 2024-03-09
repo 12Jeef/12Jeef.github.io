@@ -112,6 +112,16 @@ body {
     background-repeat: no-repeat;
     background: linear-gradient(-15deg, #08f3, #0000), #000820;
 }
+body::-webkit-scrollbar {
+    width: 0.5rem;
+}
+body::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+body::-webkit-scrollbar-thumb {
+    background-color: #8bf4;
+    border-radius: 0.5rem 0rem 0rem 0.5rem;
+}
 
 body > canvas {
     z-index: -1;
