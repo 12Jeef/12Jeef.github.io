@@ -31,10 +31,10 @@ export default class App extends util.Target {
             const canvas = document.getElementById("canvas");
             if (canvas && canvas.getContext) {
                 const ctx = canvas.getContext("2d");
-                const w = 750, h = 500;
+                const w = 1000, h = 500;
                 let q = 1;
                 let stars = [];
-                for (let i = 0; i < 300; i++) stars.push({
+                for (let i = 0; i < 450; i++) stars.push({
                     pos: new V(Math.random()*w, Math.random()*h),
                     d: 360*Math.random(), l: util.lerp(5, 20, Math.random()),
                     t: util.lerp(1000, 3000, Math.random()), to: Math.random(),
@@ -57,7 +57,7 @@ export default class App extends util.Target {
                         ctx.arc(
                             ctx.canvas.width-x*scale*q,
                             ctx.canvas.height/2 + (y-h/2)*scale*q,
-                            util.lerp(0.1, 1, star.r)*p*scale*q,
+                            util.lerp(0.5, 1.5, star.r)*p*scale*q,
                             0, 2*Math.PI,
                         );
                         ctx.fill();
@@ -186,7 +186,7 @@ export default class App extends util.Target {
                         if (t < data.t) return;
                         if (!data.elem) {
                             data.elem = document.createElement("span");
-                            data.elem.style.setProperty("--i", data.i);
+                            data.elem.style.setProperty("--i", data.i+0);
                             if (data.type == "tag") data.elem.classList.add("tag");
                             if (data.type == "content") data.elem.style.fontSize = data.size;
                             if (data.init) data.init(data.elem);
