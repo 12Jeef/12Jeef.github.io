@@ -674,7 +674,7 @@ export class Match extends util.Target {
         let data = {};
         let i = 0, buff = Buffer.fromStr(s);
         {
-            data.id = buff.read(i, 8)-1;
+            data.id = buff.read(i, 8)-128;
             i += 8;
         }
         {
