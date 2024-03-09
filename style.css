@@ -254,9 +254,22 @@ body > nav a {
     text-decoration: none;
 }
 body > article {
+    --y: 0;
+
+    transform: translateY(calc(2rem * var(--y)));
+
     margin-top: 10rem;
 
+    opacity: 0;
+
     font-size: 1.1rem;
+
+    transition: transform 0.25s, opacity 0.25s;
+}
+body > article.this {
+    transform: translateY(0rem);
+
+    opacity: 1;
 }
 body > article.conjoin {
     margin-top: 1rem;
@@ -332,15 +345,19 @@ body > article section.picture > div {
     height: auto;
     overflow: hidden;
 
-    background-color: #bdfa;
-    outline: 0.1rem solid #bdfa;
+    background-color: #08fa;
+    outline: 0.1rem solid #08fa;
     border-radius: 0.5rem;
+
+    filter: drop-shadow(0.5rem 0.5rem 1rem #0008);
 
     line-height: 0em;
 }
 body > article section.picture > div > img {
     width: 100%;
     height: auto;
+
+    opacity: 0.85;
 
     filter: grayscale(1);
     mix-blend-mode: multiply;
@@ -350,21 +367,21 @@ body > article section.picture > div > img:nth-child(2) {
     top: 0%;
     left: 0%;
 
-    opacity: 50%;
+    opacity: 0;
 
     mix-blend-mode: normal;
 
     transition: opacity 0.25s, filter 0.25s;
 }
 body > article section.picture > div:hover > img:nth-child(2) {
-    opacity: 100%;
+    opacity: 0.75;
 
     filter: grayscale(0);
 }
 body > article section.picture > p {
     margin-top: 1em;
 
-    color: #bdf8;
+    color: #08f8;
 
     font-style: italic;
     font-size: 0.85em;
@@ -379,9 +396,20 @@ body > article section.list {
     gap: 1em;
 }
 body > article section.list a {
+    transform: translateY(calc(2rem * var(--y)));
+
+    opacity: 0;
+
     filter: none !important;
 
     text-decoration: none;
+
+    transition: transform 0.25s, opacity 0.25s;
+}
+body > article section.list a.this {
+    transform: translateY(0rem);
+
+    opacity: 1;
 }
 body > article section.timeline {
     position: relative;
@@ -412,6 +440,7 @@ body > article section.timeline::before {
 }
 body > article section.timeline > section {
     position: relative;
+    transform: translateY(calc(2rem * var(--y)));
 
     width: min(100%, 35rem);
 
@@ -422,6 +451,15 @@ body > article section.timeline > section {
     align-items: stretch;
     align-content: center;
     gap: 0.5em;
+
+    opacity: 0;
+
+    transition: transform 0.25s, opacity 0.25s;
+}
+body > article section.timeline > section.this {
+    transform: translateY(0rem);
+
+    opacity: 1;
 }
 body > article section.timeline > section::before {
     content: "";
@@ -483,7 +521,7 @@ body > article section.timeline > section > ul > li::before {
 
     background-color: #08f;
     border-radius: 100%;
-    opacity: 50%;
+    opacity: 0.5;
 
     filter: drop-shadow(0em 0em 0.25em #08f);
 }

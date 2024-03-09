@@ -77,180 +77,247 @@ export default class App extends util.Target {
             }
             const eTitleCard = document.getElementById("title-card");
             if (eTitleCard) {
-                eTitleCard.innerHTML = "";
-                const autocomplete = false;
-                const newline = true;
-                const tShift = -1000;
-                const tPause = 250;
-                const tTag = 250;
-                const tContent1 = 750;
-                const tContent2 = 1500;
-                const tCursor = 750;
-                const eCursor = document.createElement("span");
-                eTitleCard.appendChild(eCursor);
-                eCursor.classList.add("cursor");
-                const elems = [
-                    {
-                        t: 0, l: tTag, at: 0,
-                        i: 0,
-                        type: "tag",
-                        text: "h1", wraps: ["<", ">"],
+                let progressing = false;
+                const animation = () => {
+                    eTitleCard.innerHTML = "";
+                    const autocomplete = false;
+                    const newline = true;
+                    const tShift = -1000;
+                    const tPause = 250;
+                    const tTag = 250;
+                    const tContent1 = 750;
+                    const tContent2 = 1500;
+                    const tCursor = 750;
+                    const eCursor = document.createElement("span");
+                    eTitleCard.appendChild(eCursor);
+                    eCursor.classList.add("cursor");
+                    const elems = [
+                        {
+                            t: 0, l: tTag, at: 0,
+                            i: 0,
+                            type: "tag",
+                            text: "h1", wraps: ["<", ">"],
 
-                        br: newline,
+                            br: newline,
 
-                        init: elem => {
-                            elem.style.filter = "blur(0.025em)";
+                            init: elem => {
+                                elem.style.filter = "blur(0.025em)";
+                            },
                         },
-                    },
-                    {
-                        t: tTag+tPause, l: tContent1, at: autocomplete ? 1 : 2,
-                        i: newline ? 1 : 0,
-                        type: "content",
-                        text: "Jeffrey Fan", size: "4em",
+                        {
+                            t: tTag+tPause, l: tContent1, at: autocomplete ? 1 : 2,
+                            i: newline ? 1 : 0,
+                            type: "content",
+                            text: "Jeffrey Fan", size: "4em",
 
-                        br: newline,
-                    },
-                    {
-                        t: autocomplete ? tTag : (tTag+tPause+tContent1+tPause),
-                        l: autocomplete ? 0 : tTag,
-                        at: autocomplete ? 1 : 2,
-
-                        i: 0,
-                        type: "tag",
-                        text: "h1", wraps: ["</", ">"],
-
-                        br: true,
-                    },
-                    {
-                        t: tTag+tPause+tContent1+tPause + (autocomplete ? 0 : (tTag+tPause)),
-                        l: tTag,
-                        at: 3,
-
-                        i: 0,
-                        type: "tag",
-                        text: "p", wraps: ["<", ">"],
-
-                        br: newline,
-                    },
-                    {
-                        t: tTag+tPause+tContent1+tPause + (autocomplete ? 0 : (tTag+tPause)) + tTag+tPause,
-                        l: tContent2,
-                        at: 4,
-
-                        i: newline ? 1 : 0,
-                        type: "content",
-                        text: "Fellow developer, designer", size: "1em",
-
-                        br: newline,
-
-                        init: elem => {
-                            elem.style.color = "#defc";
-                            elem.style.letterSpacing = "0.1em";
-                            elem.style.fontWeight = 400;
+                            br: newline,
                         },
-                    },
-                    {
-                        t: tTag+tPause+tContent1+tPause + (autocomplete ? 0 : (tTag+tPause)) + (autocomplete ? tTag : (tTag+tPause+tContent2+tPause)),
-                        l: tTag,
-                        at: autocomplete ? 4 : 5,
+                        {
+                            t: autocomplete ? tTag : (tTag+tPause+tContent1+tPause),
+                            l: autocomplete ? 0 : tTag,
+                            at: autocomplete ? 1 : 2,
 
-                        i: 0,
-                        type: "tag",
-                        text: "p", wraps: ["</", ">"],
+                            i: 0,
+                            type: "tag",
+                            text: "h1", wraps: ["</", ">"],
 
-                        br: true,
-
-                        init: elem => {
-                            elem.style.filter = "blur(0.025em)";
+                            br: true,
                         },
-                    },
-                ];
-                const cursor = autocomplete ?
-                    [
-                        { t: 0, at: 1 },
-                        { t: tTag, at: 0 },
-                        { t: tTag+tPause, at: 1 },
-                        { t: tTag+tPause+tContent1+tPause, at: 3 },
-                        { t: tTag+tPause+tContent1+tPause+tTag+tPause, at: 4 },
-                    ] : [
-                        { t: 0, at: 1000 },
+                        {
+                            t: tTag+tPause+tContent1+tPause + (autocomplete ? 0 : (tTag+tPause)),
+                            l: tTag,
+                            at: 3,
+
+                            i: 0,
+                            type: "tag",
+                            text: "p", wraps: ["<", ">"],
+
+                            br: newline,
+                        },
+                        {
+                            t: tTag+tPause+tContent1+tPause + (autocomplete ? 0 : (tTag+tPause)) + tTag+tPause,
+                            l: tContent2,
+                            at: 4,
+
+                            i: newline ? 1 : 0,
+                            type: "content",
+                            text: "Fellow developer, designer", size: "1em",
+
+                            br: newline,
+
+                            init: elem => {
+                                elem.style.color = "#defc";
+                                elem.style.letterSpacing = "0.1em";
+                                elem.style.fontWeight = 400;
+                            },
+                        },
+                        {
+                            t: tTag+tPause+tContent1+tPause + (autocomplete ? 0 : (tTag+tPause)) + (autocomplete ? tTag : (tTag+tPause+tContent2+tPause)),
+                            l: tTag,
+                            at: autocomplete ? 4 : 5,
+
+                            i: 0,
+                            type: "tag",
+                            text: "p", wraps: ["</", ">"],
+
+                            br: true,
+
+                            init: elem => {
+                                elem.style.filter = "blur(0.025em)";
+                            },
+                        },
                     ];
-                const tStart = util.getTime();
-                const update = delta => {
-                    const tNow = util.getTime();
-                    const t = (tNow-tStart + tShift) / 1;
-                    const tStop = autocomplete ?
-                        (tPause+tTag+tPause+tContent1+tPause+tTag+tPause+tContent2+10*tPause) :
-                        (tPause+tTag+tPause+tContent1+tPause+tTag+tPause+tTag+tPause+tContent2+tPause+tTag+10*tPause);
-                    elems.forEach(data => {
-                        if (t < data.t) return;
-                        if (!data.elem) {
-                            data.elem = document.createElement("span");
-                            data.elem.style.setProperty("--i", data.i+0);
-                            if (data.type == "tag") data.elem.classList.add("tag");
-                            if (data.type == "content") data.elem.style.fontSize = data.size;
-                            if (data.init) data.init(data.elem);
-                            let at = data.at;
-                            const children = Array.from(eTitleCard.children).filter(elem => (!(elem instanceof HTMLBRElement) && !elem.classList.contains("cursor")));
-                            if (at < 0 || at >= children.length) {
-                                eTitleCard.appendChild(data.elem);
-                                if (data.br) eTitleCard.appendChild(document.createElement("br"));
-                            } else {
-                                const before = children[at];
-                                eTitleCard.insertBefore(data.elem, before);
-                                if (data.br) eTitleCard.insertBefore(document.createElement("br"), before);
+                    const cursor = autocomplete ?
+                        [
+                            { t: 0, at: 1 },
+                            { t: tTag, at: 0 },
+                            { t: tTag+tPause, at: 1 },
+                            { t: tTag+tPause+tContent1+tPause, at: 3 },
+                            { t: tTag+tPause+tContent1+tPause+tTag+tPause, at: 4 },
+                        ] : [
+                            { t: 0, at: 1000 },
+                        ];
+                    const tStart = util.getTime();
+                    const update = delta => {
+                        progressing = true;
+                        const tNow = util.getTime();
+                        const t = (tNow-tStart + tShift) / 1;
+                        const tStop = autocomplete ?
+                            (tPause+tTag+tPause+tContent1+tPause+tTag+tPause+tContent2+10*tPause) :
+                            (tPause+tTag+tPause+tContent1+tPause+tTag+tPause+tTag+tPause+tContent2+tPause+tTag+10*tPause);
+                        elems.forEach(data => {
+                            if (t < data.t) return;
+                            if (!data.elem) {
+                                data.elem = document.createElement("span");
+                                data.elem.style.setProperty("--i", data.i+0);
+                                if (data.type == "tag") data.elem.classList.add("tag");
+                                if (data.type == "content") data.elem.style.fontSize = data.size;
+                                if (data.init) data.init(data.elem);
+                                let at = data.at;
+                                const children = Array.from(eTitleCard.children).filter(elem => (!(elem instanceof HTMLBRElement) && !elem.classList.contains("cursor")));
+                                if (at < 0 || at >= children.length) {
+                                    eTitleCard.appendChild(data.elem);
+                                    if (data.br) eTitleCard.appendChild(document.createElement("br"));
+                                } else {
+                                    const before = children[at];
+                                    eTitleCard.insertBefore(data.elem, before);
+                                    if (data.br) eTitleCard.insertBefore(document.createElement("br"), before);
+                                }
                             }
-                        }
-                        const text = String((data.type == "tag") ? data.wraps[0]+data.text+data.wraps[1] : data.text);
-                        const p = Math.min(1, Math.max(0, (t-data.t)/data.l));
-                        const i = Math.round(p*text.length);
-                        if (data.type == "tag") {
-                            data.elem.innerHTML = "";
-                            data.elem.appendChild(document.createTextNode(text.substring(
-                                0,
-                                Math.min(i, data.wraps[0].length),
-                            )));
-                            data.elem.appendChild(document.createElement("span"));
-                            data.elem.lastChild.classList.add("tag");
-                            data.elem.lastChild.textContent = text.substring(
-                                data.wraps[0].length,
-                                Math.min(data.wraps[0].length+data.text.length, Math.max(data.wraps[0].length, i)),
-                            );
-                            data.elem.appendChild(document.createTextNode(text.substring(
-                                data.wraps[0].length+data.text.length,
-                                Math.max(data.wraps[0].length+data.text.length, i),
-                            )));
-                            return;
-                        }
-                        data.elem.textContent = text.substring(0, i);
-                    });
-                    const p = (((t/tCursor)%1)+1)%1;
-                    eCursor.style.opacity = (p < 0.5) ? util.lerp(1, 0.75, p/0.5) : 0;
-                    let at = 0;
-                    cursor.forEach(data => {
-                        if (t < data.t) return;
-                        at = data.at;
-                    });
-                    const children = Array.from(eTitleCard.children).filter(elem => (!(elem instanceof HTMLBRElement) && !elem.classList.contains("cursor")));
-                    eCursor.remove();
-                    if (at < 0 || at >= children.length) {
-                        if (children.at(-1) && children.at(-1).nextSibling) {
-                            eTitleCard.insertBefore(eCursor, children.at(-1).nextSibling);
-                            eCursor.style.fontSize = children.at(-1).classList.contains("tag") ? "1em" : elems.find(data => data.elem == children.at(-1)).size;
+                            const text = String((data.type == "tag") ? data.wraps[0]+data.text+data.wraps[1] : data.text);
+                            const p = Math.min(1, Math.max(0, (t-data.t)/data.l));
+                            const i = Math.round(p*text.length);
+                            if (data.type == "tag") {
+                                data.elem.innerHTML = "";
+                                data.elem.appendChild(document.createTextNode(text.substring(
+                                    0,
+                                    Math.min(i, data.wraps[0].length),
+                                )));
+                                data.elem.appendChild(document.createElement("span"));
+                                data.elem.lastChild.classList.add("tag");
+                                data.elem.lastChild.textContent = text.substring(
+                                    data.wraps[0].length,
+                                    Math.min(data.wraps[0].length+data.text.length, Math.max(data.wraps[0].length, i)),
+                                );
+                                data.elem.appendChild(document.createTextNode(text.substring(
+                                    data.wraps[0].length+data.text.length,
+                                    Math.max(data.wraps[0].length+data.text.length, i),
+                                )));
+                                return;
+                            }
+                            data.elem.textContent = text.substring(0, i);
+                        });
+                        const p = (((t/tCursor)%1)+1)%1;
+                        eCursor.style.opacity = (p < 0.5) ? util.lerp(1, 0.75, p/0.5) : 0;
+                        let at = 0;
+                        cursor.forEach(data => {
+                            if (t < data.t) return;
+                            at = data.at;
+                        });
+                        const children = Array.from(eTitleCard.children).filter(elem => (!(elem instanceof HTMLBRElement) && !elem.classList.contains("cursor")));
+                        eCursor.remove();
+                        if (at < 0 || at >= children.length) {
+                            if (children.at(-1) && children.at(-1).nextSibling) {
+                                eTitleCard.insertBefore(eCursor, children.at(-1).nextSibling);
+                                eCursor.style.fontSize = children.at(-1).classList.contains("tag") ? "1em" : elems.find(data => data.elem == children.at(-1)).size;
+                            } else {
+                                eTitleCard.appendChild(eCursor);
+                                eCursor.style.fontSize = "1em";
+                            }
                         } else {
-                            eTitleCard.appendChild(eCursor);
-                            eCursor.style.fontSize = "1em";
+                            eTitleCard.insertBefore(eCursor, children[at].nextSibling);
+                            eCursor.style.fontSize = children[at].classList.contains("tag") ? "1em" : elems.find(data => data.elem == children[at]).size;
                         }
-                    } else {
-                        eTitleCard.insertBefore(eCursor, children[at].nextSibling);
-                        eCursor.style.fontSize = children[at].classList.contains("tag") ? "1em" : elems.find(data => data.elem == children[at]).size;
+                        if (t <= tStop) return;
+                        progressing = false;
+                        this.remHandler("update", update);
+                        eCursor.remove();
+                    };
+                    this.addHandler("update", update);
+                };
+                animation();
+            }
+            const p = 0.15;
+            Array.from(document.querySelectorAll("body > article")).forEach(elem => {
+                const update = delta => {
+                    Array.from(elem.querySelectorAll("section.timeline")).forEach(sect => {
+                        const sectArr = Array.from(sect.querySelectorAll("section"));
+                        sectArr.forEach(sect => {
+                            let r = sect.getBoundingClientRect();
+                            if (
+                                (r.top > window.innerHeight*(1-p)) ||
+                                (r.bottom < window.innerHeight*p)
+                            ) {
+                                sect.style.setProperty("--y", ((r.top+r.height/2) < (window.innerHeight/2)) ? -1 : +1);
+                                sect.classList.remove("this");
+                                return;
+                            }
+                            sect.classList.add("this");
+                        });
+                    });
+                    let r = elem.getBoundingClientRect();
+                    if (
+                        (r.top > window.innerHeight*(1-p)) ||
+                        (r.bottom < window.innerHeight*p)
+                    ) {
+                        elem.style.setProperty("--y", ((r.top+r.height/2) < (window.innerHeight/2)) ? -1 : +1);
+                        let cancel = false;
+                        Array.from(elem.querySelectorAll("section.list")).forEach(sect => {
+                            cancel = true;
+                            const aArr = Array.from(sect.querySelectorAll("a"));
+                            aArr.forEach((a, i) => {
+                                if (a._idOut) return;
+                                if (a._idIn) {
+                                    clearTimeout(a._idIn);
+                                    delete a._idIn;
+                                }
+                                a._idOut = setTimeout(() => {
+                                    a.classList.remove("this");
+                                }, 100*(aArr.length-1-i));
+                            });
+                        });
+                        if (!cancel) elem.classList.remove("this");
+                        return;
                     }
-                    if (t <= tStop) return;
-                    this.remHandler("update", update);
-                    eCursor.remove();
+                    let cancel = false;
+                    Array.from(elem.querySelectorAll("section.list")).forEach(sect => {
+                        cancel = true;
+                        const aArr = Array.from(sect.querySelectorAll("a"));
+                        aArr.forEach((a, i) => {
+                            if (a._idIn) return;
+                            if (a._idOut) {
+                                clearTimeout(a._idOut);
+                                delete a._idOut;
+                            }
+                            a._idIn = setTimeout(() => {
+                                a.classList.add("this");
+                            }, 100*i);
+                        });
+                    });
+                    if (!cancel) elem.classList.add("this");
                 };
                 this.addHandler("update", update);
-            }
+            });
         });
     }
 
