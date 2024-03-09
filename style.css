@@ -1,0 +1,552 @@
+@property --color {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #000;
+}
+@property --size {
+    syntax: "<percentage>";
+    inherits: true;
+    initial-value: 0%;
+}
+
+/* html {
+    filter: brightness(1.5);
+} */
+html, body {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    overflow: hidden;
+}
+body {
+    margin: 0em;
+    overflow: auto;
+    scroll-behavior: smooth;
+
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+
+    color: inherit;
+
+    font-family: inherit;
+    font-weight: inherit;
+}
+
+::selection {
+    background-color: #08f4;
+}
+
+a:not([override]) {
+    color: #08f;
+
+    filter: drop-shadow(0em 0em 0em #fff0);
+
+    text-decoration: none;
+
+    cursor: pointer;
+
+    transition: color 0.25s, filter 0.25s;
+}
+a:not([override]):not(:disabled):hover {
+    color: #fff;
+
+    filter: drop-shadow(0em 0em 0.5em #fff);
+}
+
+button[special] {
+    --color: #08f;
+    --size: 0%;
+
+    position: relative;
+
+    padding: 1em 2em;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    gap: 1em;
+
+    background: linear-gradient(135deg, var(--color) 0%, var(--color) var(--size), #0000 var(--size), #0000 100%);
+    color: var(--color);
+    border: 0.1rem solid var(--color);
+    outline: none;
+    border-radius: 0.5rem;
+
+    filter: drop-shadow(0em 0em 0em var(--color));
+
+    letter-spacing: 0.1em;
+    font-size: inherit;
+
+    cursor: pointer;
+
+    transition: --color 0.25s, --size 0.25s, color 0.25s, filter 0.25s;
+}
+button[special]:not([cool]):not(:disabled):hover {
+    --color: #fff;
+
+    filter: drop-shadow(0em 0em 1em var(--color));
+}
+button[special][cool]:not(:disabled):hover {
+    --color: #08f;
+    --size: 100%;
+
+    color: #fff;
+
+    filter: drop-shadow(0em 0em 1em var(--color));
+}
+
+body {
+    padding: 4rem max(4rem, calc((100vw - 60rem) / 2));
+    padding-bottom: 25rem;
+
+    overscroll-behavior: none;
+
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    background: linear-gradient(-15deg, #08f3, #0000), #000820;
+}
+body::-webkit-scrollbar {
+    width: 0.5rem;
+}
+body::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+body::-webkit-scrollbar-thumb {
+    background-color: #8bf4;
+    border-radius: 0.5rem 0rem 0rem 0.5rem;
+}
+
+body > canvas {
+    z-index: -1;
+
+    position: absolute;
+    top: 0%;
+    left: 0%;
+}
+
+body > header {
+    z-index: 1;
+
+    position: absolute;
+    bottom: 3rem;
+    left: min(4rem, calc(max(4rem, calc((100vw - 60rem) / 2)) / 2));
+    transform: translateX(-50%);
+
+    height: 5rem;
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    align-items: flex-start;
+    align-content: center;
+    gap: 0.5em;
+
+    font-size: 1.5em;
+
+    pointer-events: none;
+}
+body > header::before,
+body > header::after {
+    content: "";
+
+    position: absolute;
+    left: 50%;
+
+    width: 0.1rem;
+
+    background-color: #8bf4;
+}
+body > header::before {
+    bottom: -3rem;
+    transform: translateX(-50%);
+
+    height: 2rem;
+}
+body > header::after {
+    top: -1rem;
+    transform: translate(-50%, -100%);
+
+    height: 100vh;
+}
+body > header > a {
+    color: #bdfa !important;
+
+    pointer-events: all;
+}
+body > header > a:hover {
+    color: #fff !important;
+}
+
+body > .window {
+    margin: 0em -4rem;
+    min-height: 23rem;
+    
+    color: #fff;
+
+    font-size: 0.75em;
+    font-weight: 600;
+}
+body > .window * {
+    margin: 0em;
+}
+body > .window span:not(.cursor) {
+    --i: 0;
+
+    margin-left: calc(var(--i) * 2rem) !important;
+}
+body > .window span:not(.cursor):not(.tag) {
+    filter: drop-shadow(0em 0em 0.25em #bdf);
+}
+body > .window span:not(.cursor).tag {
+    margin: 0em 0.25em;
+
+    color: #def4;
+
+    letter-spacing: 0.1em;
+    font-family: monospace;
+    font-weight: 400;
+}
+body > .window span:not(.cursor).tag > span:not(.cursor).tag {
+    margin: 0em;
+
+    color: #def6;
+    
+    font-size: 1em;
+}
+body > .window span.cursor {
+    transform: translateY(-0.4em);
+
+    width: 0.1rem;
+    height: 1em;
+    margin: -0.5em 0em;
+    margin-right: -0.1rem;
+
+    display: inline-block;
+
+    background-color: #fff;
+
+    user-select: none;
+    pointer-events: none;
+}
+body > p {
+    max-width: min(100%, 50rem);
+
+    color: #bdfa;
+
+    line-height: 1.5em;
+    font-size: 1.25em;
+}
+body > address {
+    color: #bdf8;
+}
+body > nav {
+    padding-top: 3rem;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+    gap: 1rem;
+}
+body > nav a {
+    filter: none !important;
+
+    text-decoration: none;
+}
+body > article {
+    --y: 0;
+
+    transform: translateY(calc(2rem * var(--y)));
+
+    margin-top: 10rem;
+
+    opacity: 0;
+
+    font-size: 1.1rem;
+
+    transition: transform 0.25s, opacity 0.25s;
+}
+body > article.this {
+    transform: translateY(0rem);
+
+    opacity: 1;
+}
+body > article.conjoin {
+    margin-top: 1rem;
+}
+body > article > h3 {
+    margin: 1em 0em;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    align-content: center;
+
+    color: #fff;
+
+    letter-spacing: 0.1rem;
+    font-size: 1.5em;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+body > article > h3::before,
+body > article > h3::after {
+    height: 0.1rem;
+
+    display: inline-block;
+
+    background-color: #8bf4;
+}
+body > article > h3::after {
+    content: "";
+
+    width: 100%;
+    margin-left: 1em;
+}
+body > article > h3.center::before {
+    content: "";
+
+    width: 50%;
+    margin-right: 1em;
+}
+body > article > h3.center::after {
+    width: 50%;
+}
+body > article > h3 > * {
+    min-width: max-content;
+}
+body > article > h3 > span:first-child {
+    margin-right: 0.5em;
+
+    color: #08f;
+
+    filter: drop-shadow(0em 0em 0.5em #08f);
+
+    font-family: monospace;
+    font-weight: 500;
+}
+body > article > h3 > span:not(:first-child) {
+    filter: drop-shadow(0em 0em 0.5em #fff);
+}
+body > article section {
+    color: #bdfa;
+
+    line-height: 1.5em;
+}
+body > article section.row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+    gap: 2em;
+}
+body > article section.col {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+    gap: 2em;
+}
+body > article section.picture > div {
+    position: relative;
+
+    width: auto;
+    height: auto;
+    overflow: hidden;
+
+    background-color: #08fa;
+    outline: 0.1rem solid #08fa;
+    border-radius: 0.5rem;
+
+    filter: drop-shadow(0.5rem 0.5rem 1rem #0008);
+
+    line-height: 0em;
+}
+body > article section.picture > div > img {
+    width: 100%;
+    height: auto;
+
+    opacity: 0.85;
+
+    filter: grayscale(1);
+    mix-blend-mode: multiply;
+}
+body > article section.picture > div > img:nth-child(2) {
+    position: absolute;
+    top: 0%;
+    left: 0%;
+
+    opacity: 0;
+
+    mix-blend-mode: normal;
+
+    transition: opacity 0.25s, filter 0.25s;
+}
+body > article section.picture > div:hover > img:nth-child(2) {
+    opacity: 0.75;
+
+    filter: grayscale(0);
+}
+body > article section.picture > p {
+    margin-top: 1em;
+
+    color: #08f8;
+
+    font-style: italic;
+    font-size: 0.85em;
+}
+body > article section.list {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    gap: 1em;
+}
+body > article section.list a {
+    transform: translateY(calc(2rem * var(--y)));
+
+    opacity: 0;
+
+    filter: none !important;
+
+    text-decoration: none;
+
+    transition: transform 0.25s, opacity 0.25s;
+}
+body > article section.list a.this {
+    transform: translateY(0rem);
+
+    opacity: 1;
+}
+body > article section.timeline {
+    position: relative;
+
+    padding: 0.5rem 0rem;
+    padding-left: 3rem;
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+    gap: 1rem;
+}
+body > article section.timeline::before {
+    content: "";
+
+    position: absolute;
+    top: -0.5rem;
+    left: 1.5rem;
+    transform: translateX(-50%);
+
+    width: 0.1rem;
+    height: calc(100% + 1rem);
+
+    background-color: #8bf4;
+}
+body > article section.timeline > section {
+    position: relative;
+    transform: translateY(calc(2rem * var(--y)));
+
+    width: min(100%, 35rem);
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+    gap: 0.5em;
+
+    opacity: 0;
+
+    transition: transform 0.25s, opacity 0.25s;
+}
+body > article section.timeline > section.this {
+    transform: translateY(0rem);
+
+    opacity: 1;
+}
+body > article section.timeline > section::before {
+    content: "";
+
+    position: absolute;
+    top: 0.75rem;
+    left: -1.5rem;
+    transform: translate(-50%, -50%);
+
+    width: 0.5rem;
+    aspect-ratio: 1 / 1;
+
+    background-color: #fff;
+    border-radius: 100%;
+
+    filter: drop-shadow(0em 0em 0.25em #fff);
+}
+body > article section.timeline > section > h1 {
+    margin: 0em;
+
+    color: #defc;
+
+    font-size: 1.25em;
+    font-weight: 100;
+}
+body > article section.timeline > section > h1 > span {
+    filter: drop-shadow(0em 0em 0.25em #def8);
+}
+body > article section.timeline > section > h1 > * {
+    font-weight: 500;
+}
+body > article section.timeline > section > h3 {
+    margin: 0em;
+
+    font-family: monospace;
+    font-size: 1em;
+}
+body > article section.timeline > section > ul {
+    margin: 0em;
+    padding-left: 1.5rem;
+
+    list-style: none;
+}
+body > article section.timeline > section > ul > li {
+    position: relative;
+
+    margin-top: 0.5em;
+}
+body > article section.timeline > section > ul > li::before {
+    content: "";
+
+    position: absolute;
+    top: 0.5rem;
+    left: -1em;
+    transform: translateX(-50%);
+
+    width: 0.5rem;
+    aspect-ratio: 1 / 1;
+
+    background-color: #08f;
+    border-radius: 100%;
+    opacity: 0.5;
+
+    filter: drop-shadow(0em 0em 0.25em #08f);
+}
