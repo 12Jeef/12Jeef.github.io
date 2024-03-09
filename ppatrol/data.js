@@ -366,13 +366,13 @@ export class Match extends util.Target {
         data = util.ensure(data, "obj");
         let i = 0, buff = new Buffer([]);
         {
-            // id: 7
-            let id = util.ensure(data.id, "int")+1;
+            // id: 8
+            let id = util.ensure(data.id, "int")+128;
             // no max required
-            id = Math.min(2**7-1, Math.max(0, id));
+            id = Math.min(2**8-1, Math.max(0, id));
             // writing
-            buff.write(i, 7, id);
-            i += 7;
+            buff.write(i, 8, id);
+            i += 8;
         }
         {
             // n_scouter: 8
@@ -674,8 +674,8 @@ export class Match extends util.Target {
         let data = {};
         let i = 0, buff = Buffer.fromStr(s);
         {
-            data.id = buff.read(i, 7)-1;
-            i += 7;
+            data.id = buff.read(i, 8)-1;
+            i += 8;
         }
         {
             let n = buff.read(i, 8), scouter = "";
