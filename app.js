@@ -27,6 +27,34 @@ export default class App extends util.Target {
             }, 10);
         });
 
+        Array.from(document.querySelectorAll("article section.nav")).forEach(sect => {
+            const buttonArr = Array.from(sect.querySelectorAll(":scope > nav > button"));
+            const sectArr = Array.from(sect.querySelectorAll(":scope > section > section"));
+            buttonArr.forEach((button, i) => {
+                button.addEventListener("click", e => {
+                    buttonArr.forEach(button => button.classList.remove("active"));
+                    button.classList.add("active");
+                    sectArr.forEach(sect => {
+                        if (sect.id == button.id+"-content")
+                            sect.classList.add("this");
+                        else sect.classList.remove("this");
+                    });
+                });
+                if (i > 0) return;
+                button.click();
+            });
+            const superSect = sect;
+            sectArr.forEach(sect => {
+                const update = () => {
+                    if (!sect.classList.contains("this")) return;
+                    console.log(sect.id, sect.scrollHeight);
+                    superSect.style.setProperty("--h", sect.scrollHeight+"px");
+                };
+                new ResizeObserver(update).observe(sect);
+                new MutationObserver(update).observe(sect, { attributes: ["class"] });
+            });
+        });
+
         this.addHandler("setup", () => {
             const canvas = document.getElementById("canvas");
             if (canvas && canvas.getContext) {
@@ -41,6 +69,9 @@ export default class App extends util.Target {
                     r: Math.random(),
                 });
                 const update = delta => {
+                    let p = (document.body.scrollTop < window.innerHeight*0.25) ? 0 : (document.body.scrollTop > window.innerHeight*0.75) ? 1 : ((document.body.scrollTop-window.innerHeight*0.25)/(window.innerHeight*0.5));
+                    ctx.canvas.style.opacity = util.lerp(1, 0.5, p);
+                    ctx.canvas.style.filter = "blur("+util.lerp(0, 0.25, p)+"rem)";
                     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
                     const scale = (ctx.canvas.height/q) / h;
                     stars.forEach(star => {
@@ -67,12 +98,12 @@ export default class App extends util.Target {
                 const resize = () => {
                     q = window.devicePixelRatio;
                     ctx.canvas.style.width = window.innerWidth+"px";
-                    ctx.canvas.style.heght = window.innerHeight+"px";
+                    ctx.canvas.style.height = window.innerHeight+"px";
                     ctx.canvas.width = window.innerWidth*q;
                     ctx.canvas.height = window.innerHeight*q;
                     update(0);
                 };
-                new ResizeObserver(resize).observe(document.body);
+                window.addEventListener("resize", resize);
                 resize();
             }
             const eTitleCard = document.getElementById("title-card");
@@ -257,9 +288,38 @@ export default class App extends util.Target {
                 };
                 animation();
             }
-            const p = 0.15;
+            const p = 0.1;
             Array.from(document.querySelectorAll("body > article")).forEach(elem => {
                 const update = delta => {
+                    let forceShow = false;
+                    Array.from(elem.querySelectorAll("section.list")).forEach(sect => {
+                        // forceShow = true;
+                        const aArr = Array.from(sect.querySelectorAll("a"));
+                        let reqs = [];
+                        aArr.forEach(a => {
+                            let r = a.getBoundingClientRect();
+                            if (
+                                (r.top > window.innerHeight*(1-p)) ||
+                                (r.bottom < window.innerHeight*p)
+                            ) {
+                                sect.style.setProperty("--y", ((r.top+r.height/2) < (window.innerHeight/2)) ? -1 : +1);
+                                if (a._idIn) {
+                                    clearTimeout(a._idIn);
+                                    delete a._idIn;
+                                }
+                                if (a._idOut) return;
+                                reqs.push(i => (a._idOut = setTimeout(() => a.classList.remove("this"), 100*i)));
+                                return;
+                            }
+                            if (a._idOut) {
+                                clearTimeout(a._idOut);
+                                delete a._idOut;
+                            }
+                            if (a._idIn) return;
+                            reqs.push(i => (a._idIn = setTimeout(() => a.classList.add("this"), 100*i)));
+                        });
+                        reqs.forEach((req, i) => req(i));
+                    });
                     Array.from(elem.querySelectorAll("section.timeline")).forEach(sect => {
                         const sectArr = Array.from(sect.querySelectorAll("section"));
                         sectArr.forEach(sect => {
@@ -275,46 +335,42 @@ export default class App extends util.Target {
                             sect.classList.add("this");
                         });
                     });
+                    Array.from(elem.querySelectorAll("section.nav")).forEach(sect => {
+                        const buttonArr = Array.from(sect.querySelectorAll(":scope > nav > button"));
+                        let reqs = [];
+                        buttonArr.forEach(button => {
+                            let r = button.getBoundingClientRect();
+                            if (
+                                (r.top > window.innerHeight*(1-p)) ||
+                                (r.bottom < window.innerHeight*p)
+                            ) {
+                                sect.style.setProperty("--y", ((r.top+r.height/2) < (window.innerHeight/2)) ? -1 : +1);
+                                if (button._idIn) {
+                                    clearTimeout(button._idIn);
+                                    delete button._idIn;
+                                }
+                                if (button._idOut) return;
+                                reqs.push(i => (button._idOut = setTimeout(() => button.classList.remove("this"), 100*i)));
+                                return;
+                            }
+                            if (button._idOut) {
+                                clearTimeout(button._idOut);
+                                delete button._idOut;
+                            }
+                            if (button._idIn) return;
+                            reqs.push(i => (button._idIn = setTimeout(() => button.classList.add("this"), 100*i)));
+                        });
+                        reqs.forEach((req, i) => req(i));
+                    });
                     let r = elem.getBoundingClientRect();
                     if (
                         (r.top > window.innerHeight*(1-p)) ||
                         (r.bottom < window.innerHeight*p)
                     ) {
                         elem.style.setProperty("--y", ((r.top+r.height/2) < (window.innerHeight/2)) ? -1 : +1);
-                        let cancel = false;
-                        Array.from(elem.querySelectorAll("section.list")).forEach(sect => {
-                            cancel = true;
-                            const aArr = Array.from(sect.querySelectorAll("a"));
-                            aArr.forEach((a, i) => {
-                                if (a._idOut) return;
-                                if (a._idIn) {
-                                    clearTimeout(a._idIn);
-                                    delete a._idIn;
-                                }
-                                a._idOut = setTimeout(() => {
-                                    a.classList.remove("this");
-                                }, 100*(aArr.length-1-i));
-                            });
-                        });
-                        if (!cancel) elem.classList.remove("this");
-                        return;
+                        if (!forceShow) return elem.classList.remove("this");
                     }
-                    let cancel = false;
-                    Array.from(elem.querySelectorAll("section.list")).forEach(sect => {
-                        cancel = true;
-                        const aArr = Array.from(sect.querySelectorAll("a"));
-                        aArr.forEach((a, i) => {
-                            if (a._idIn) return;
-                            if (a._idOut) {
-                                clearTimeout(a._idOut);
-                                delete a._idOut;
-                            }
-                            a._idIn = setTimeout(() => {
-                                a.classList.add("this");
-                            }, 100*i);
-                        });
-                    });
-                    if (!cancel) elem.classList.add("this");
+                    elem.classList.add("this");
                 };
                 this.addHandler("update", update);
             });
