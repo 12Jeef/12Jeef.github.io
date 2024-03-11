@@ -215,11 +215,11 @@ export class Match extends util.Target {
         this.change("id", this.id, this.#id=v);
     }
     isNormal() { return !this.isPractice() && !this.isElim(); }
-    isPractice() { return this.id == -1; }
-    isElim() { return this.id < -1; }
+    isPractice() { return this.id == 0; }
+    isElim() { return this.id < 0; }
     get elimId() {
         if (!this.isElim()) return null;
-        return -this.id-2;
+        return -this.id;
     }
 
     get robot() { return this.#robot; }

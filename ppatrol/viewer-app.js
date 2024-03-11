@@ -286,7 +286,7 @@ export default class App extends util.Target {
 
     get qual() { return this.#qual; }
     set qual(v) {
-        v = (v == null) ? null : Math.max(0, util.ensure(v, "int"));
+        v = (v == null) ? null : Math.max(1, util.ensure(v, "int"));
         if (this.qual == v) return;
         this.change("qual", this.qual, this.#qual=v);
         this.saveQual();
@@ -442,16 +442,12 @@ export default class App extends util.Target {
             return getBufferStr(match);
         };
         const getSkipped = match => {
-            // return false;
             let k = getBufferStr(match);
-            // if (match.id < 0)
-                // return !this.hasSkippedMatch(k);
-                // return true;
             return this.hasSkippedMatch(k);
         };
 
         const getTBAMatch = match => {
-            if ((match.id+1) in matches) return matches[match.id+1];
+            if (match.id in matches) return matches[match.id];
             return null;
         };
         const getTBAScored = match => {
@@ -764,7 +760,7 @@ export default class App extends util.Target {
                 if (match.robot != team) return false;
                 if (getSkipped(match)) return false;
                 return true;
-            });
+            }).sort(sortMatch);
             const comps = matches.map(match => computeFullMatch(match));
 
             let preloaded = {
@@ -946,14 +942,14 @@ export default class App extends util.Target {
                 scores: scores,
                 endgame: endgame,
                 score: auto.score+teleop.score+endgame.score,
-                notes: matches.map(match => { return { from: match.scouter, note: match.notes }; }).filter(note => note.note.length > 0),
+                notes: matches.map(match => { return { id: match.id, from: match.scouter, note: match.notes }; }).filter(note => note.note.length > 0),
             };
         };
         const computeFullTeam = team => {
             let data = computeTeam(team);
             let disablePeriods = [];
             let cyclePeriods = [];
-            matchesScouted.forEach(match => {
+            matchesScouted.sort(sortMatch).forEach(match => {
                 if (match.robot != team) return;
                 if (getSkipped(match)) return;
                 disablePeriods.push(...getDisablePeriods(match).map(period => period.len));
@@ -1342,9 +1338,9 @@ export default class App extends util.Target {
                     }
                     if (i == 0) {
                         if (j == 1) {
-                            dat.textContent = (match.id == -1) ? "Practice" : (match.id < -1) ? "Elim#"+(-match.id-1) : match.id+1;
-                            if (match.id == -1) dat.classList.add("practice");
-                            if (match.id < -1) dat.classList.add("elim");
+                            dat.textContent = (match.id == 0) ? "Practice" : (match.id < 0) ? "Elim#"+(-match.id) : match.id;
+                            if (match.id == 0) dat.classList.add("practice");
+                            if (match.id < 0) dat.classList.add("elim");
                         } else if (j == 2) {
                             dat.textContent = match.robot;
                         } else if (j == 3) {
@@ -1368,7 +1364,7 @@ export default class App extends util.Target {
                         } else if (j == 11) {
                             dat.textContent = "See Match Analytics";
                             dat.addEventListener("click", e => {
-                                if (match.id < 0) return;
+                                if (match.id <= 0) return;
                                 eNavButtons["match-analytics"].click();
                                 this.qual = match.id;
                             });
@@ -1380,9 +1376,9 @@ export default class App extends util.Target {
                     }
                     if (i == 1) {
                         if (j == 1) {
-                            dat.textContent = (match.id == -1) ? "Practice" : (match.id < -1) ? "Elim#"+(-match.id-1) : match.id+1;
-                            if (match.id == -1) dat.classList.add("practice");
-                            if (match.id < -1) dat.classList.add("elim");
+                            dat.textContent = (match.id == 0) ? "Practice" : (match.id < 0) ? "Elim#"+(-match.id) : match.id;
+                            if (match.id == 0) dat.classList.add("practice");
+                            if (match.id < 0) dat.classList.add("elim");
                         } else if (j == 2) {
                             dat.textContent = match.robot;
                         } else if (j == 3) {
@@ -1421,7 +1417,7 @@ export default class App extends util.Target {
                         } else if (j == 3) {
                             dat.textContent = "See Match Analytics";
                             dat.addEventListener("click", e => {
-                                if (match.id < 0) return;
+                                if (match.id <= 0) return;
                                 eNavButtons["match-analytics"].click();
                                 this.qual = match.id;
                             });
@@ -1738,6 +1734,20 @@ export default class App extends util.Target {
             return elems;
         };
 
+        const sortMatch = (a, b) => {
+            if (a.id == 0 && b.id == 0) return a.robot-b.robot;
+            if (a.id == 0) return -1;
+            if (b.id == 0) return +1;
+            if (a.id < 0 && b.id < 0) {
+                if (a.id != b.id) return b.id-a.id;
+                return a.robot-b.robot;
+            }
+            if (a.id < 0) return +1;
+            if (b.id < 0) return -1;
+            if (a.id != b.id) return a.id-b.id;
+            return getRobotI(a)-getRobotI(b);
+        };
+
         let heatmapNodes = [];
         let canvasNodes = [];
         let fieldTS = 0;
@@ -1768,8 +1778,11 @@ export default class App extends util.Target {
                     heatmap.addData({
                         x: Math.round(node.x*scale),
                         y: Math.round(node.y*scale),
+                        value: 1,
                     });
                 });
+                heatmap.setDataMin(0);
+                heatmap.setDataMax(5);
             });
             const ctx = this.eFieldCanvas.getContext("2d");
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -2170,7 +2183,7 @@ export default class App extends util.Target {
                                         dat.textContent = "See Analytics";
                                         dat.addEventListener("click", e => {
                                             eNavButtons["match-analytics"].click();
-                                            this.qual = match.match_number-1;
+                                            this.qual = match.match_number;
                                         });
                                     }
                                     continue;
@@ -2329,24 +2342,7 @@ export default class App extends util.Target {
             this.eMasterListPage = document.getElementById("master-list-page");
             this.addHandler("post-refresh", () => {
                 this.eMasterListPage.innerHTML = "";
-                matchesScouted.sort((a, b) => {
-                    if (a.id == -1 && b.id == -1) return a.robot-b.robot;
-                    if (a.id == -1) return -1;
-                    if (b.id == -1) return +1;
-                    if (a.id < -1 && b.id < -1) {
-                        if (a.id != b.id) return b.id-a.id;
-                        return a.robot-b.robot;
-                    }
-                    if (a.id < -1) return +1;
-                    if (b.id < -1) return -1;
-                    if (a.id != b.id) return a.id-b.id;
-                    return getRobotI(a)-getRobotI(b);
-                    // if (a.id < 0 && b.id < 0) return a.robot-b.robot;
-                    // if (a.id < 0) return -1;
-                    // if (b.id < 0) return +1;
-                    // if (a.id != b.id) return a.id-b.id;
-                    // return getRobotI(a)-getRobotI(b);
-                }).forEach(match => this.eMasterListPage.appendChild(makeMatchListing(match)));
+                matchesScouted.sort(sortMatch).forEach(match => this.eMasterListPage.appendChild(makeMatchListing(match)));
             });
 
             this.eTeamAnalyticsTeam = document.getElementById("team-analytics-team");
@@ -2659,6 +2655,11 @@ export default class App extends util.Target {
                     let dat;
                     dat = document.createElement("td");
                     row.appendChild(dat);
+                    dat.textContent = (note.id == 0) ? "Practice" : (note.id < 0) ? "Elim#"+(-note.id) : note.id;
+                    if (note.id == 0) dat.classList.add("practice");
+                    if (note.id < 0) dat.classList.add("elim");
+                    dat = document.createElement("td");
+                    row.appendChild(dat);
                     dat.innerHTML = "<span>@</span>";
                     dat.appendChild(document.createTextNode(note.from));
                     dat = document.createElement("td");
@@ -2684,7 +2685,7 @@ export default class App extends util.Target {
             const updateTeamAnalyticsMatches = (c, f, t) => {
                 if (c != null && !["team"].includes(c)) return;
                 Array.from(this.eTeamAnalyticsMatches.querySelectorAll(":scope > table")).forEach(elem => elem.remove());
-                matchesScouted.sort((a, b) => a.id-b.id).forEach(match => {
+                matchesScouted.sort(sortMatch).forEach(match => {
                     if (match.robot != this.team) return;
                     if (getSkipped(match)) return;
                     this.eTeamAnalyticsMatches.appendChild(makeMatchListing(match));
@@ -2701,8 +2702,8 @@ export default class App extends util.Target {
                 let tbamatch = null;
                 ignore = true;
                 if (this.hasQual()) {
-                    if ((this.qual+1) in matches) {
-                        tbamatch = matches[this.qual+1];
+                    if (this.qual in matches) {
+                        tbamatch = matches[this.qual];
                         this.teams = [
                             ...tbamatch.alliances.red.team_keys.map(key => parseInt(key.substring(3))),
                             ...tbamatch.alliances.blue.team_keys.map(key => parseInt(key.substring(3))),
@@ -2752,7 +2753,7 @@ export default class App extends util.Target {
                             if (j >= 0) dat.colSpan = 2;
                             dat.innerHTML = "<button></button><div><input placeholder='Enter #' autocapitalize='false' autocomplete='off' spellcheck='false'><div></div></div>";
                             let btn = dat.children[0], dropdown = dat.children[1], input = dropdown.children[0], content = dropdown.children[1];
-                            btn.textContent = (j < 0) ? this.hasQual() ? (this.qual+1) : "Custom" : (theTeams[j] == null) ? "None" : theTeams[j];
+                            btn.textContent = (j < 0) ? this.hasQual() ? this.qual : "Custom" : (theTeams[j] == null) ? "None" : theTeams[j];
                             const f = e => {
                                 if (btn.contains(e.target)) return;
                                 if (dropdown.contains(e.target)) return;
@@ -2779,7 +2780,7 @@ export default class App extends util.Target {
                                 if (e.code != "Enter" && e.code != "Return") return;
                                 btn.click();
                                 if (j < 0) {
-                                    this.qual = util.ensure(parseInt(input.value)-1, "int", null);
+                                    this.qual = util.ensure(parseInt(input.value), "int", null);
                                     return;
                                 }
                                 this.qual = null;
@@ -2799,7 +2800,7 @@ export default class App extends util.Target {
                                     content.lastChild.addEventListener("click", e => {
                                         btn.click();
                                         if (j < 0) {
-                                            this.qual = util.ensure(parseInt(k)-1, "int", null);
+                                            this.qual = util.ensure(parseInt(k), "int", null);
                                             return;
                                         }
                                         this.qual = null;
@@ -3621,7 +3622,15 @@ export default class App extends util.Target {
                         return match;
                     });
                     localStorage.setItem("matches-scouted", JSON.stringify(matchesScouted));
-                    matchesScouted.sort((a, b) => a.id-b.id);
+                    // console.log(JSON.stringify(JSON.parse(JSON.stringify(matchesScouted)).map(match => {
+                    //     match.id++;
+                    //     return match;
+                    // }).reduce((matchesScouted, match) => {
+                    //     matchesScouted[match._t] = match;
+                    //     delete match._t;
+                    //     return matchesScouted;
+                    // }, {}), null, "  "));
+                    matchesScouted.sort(sortMatch);
                 },
                 async () => {
                     try {

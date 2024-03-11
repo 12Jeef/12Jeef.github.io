@@ -953,10 +953,17 @@
 
     font-style: italic;
 }
-#team-analytics-page > div.info > div > div > table tr.note td:first-child {
+#team-analytics-page > div.info > div > div > table tr.note td:nth-child(1),
+#team-analytics-page > div.info > div > div > table tr.note td:nth-child(2) {
     min-width: 15em;
 }
-#team-analytics-page > div.info > div > div > table tr.note td:first-child > span {
+#team-analytics-page > div.info > div > div > table tr.note td:nth-child(1).practice {
+    color: var(--r4);
+}
+#team-analytics-page > div.info > div > div > table tr.note td:nth-child(1).elim {
+    color: var(--g4);
+}
+#team-analytics-page > div.info > div > div > table tr.note td:nth-child(2) > span {
     color: var(--a);
 }
 #team-analytics-page > div.info > div > div > table tr.note td:last-child {

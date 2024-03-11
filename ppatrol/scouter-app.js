@@ -522,18 +522,18 @@ export default class App extends util.Target {
                         });
                         this.addHandler("pull", () => {
                             let newMatches = [
-                                new App.Match(-1),
+                                new App.Match(0),
                                 ...matches.filter(match => match.comp_level == "qm").sort((a, b) => a.match_number-b.match_number).map(match => {
                                     return new App.Match(
-                                        match.match_number-1,
+                                        match.match_number,
                                         match.alliances.red.team_keys.map(key => parseInt(key.substring(3))),
                                         match.alliances.blue.team_keys.map(key => parseInt(key.substring(3))),
                                         null,
                                     );
                                 }),
-                                ...Array.from(new Array(14).keys()).map(i => new App.Match(-2-i)),
+                                ...Array.from(new Array(14).keys()).map(i => new App.Match(-i-1)),
                             ];
-                            if (newMatches.length <= 1) newMatches.push(new App.Match(0, [1111, 2222, 3333], [4444, 5555, 6666]));
+                            if (newMatches.length <= 1) newMatches.push(new App.Match(1, [1111, 2222, 3333], [4444, 5555, 6666]));
                             let oldMatches = this.matches;
                             let theMatches = [];
                             newMatches.forEach(match => {
@@ -1371,7 +1371,7 @@ export default class App extends util.Target {
         if (this.hasMatch()) this.match.clearLinkedHandlers(this, "change");
         this.change("match", this.match, this.#match=v);
         if (this.hasMatch()) this.match.addLinkedHandler(this, "change", (c, f, t) => this.change("match."+c, f, t));
-        this.eMatch.textContent = this.hasMatch() ? this.match.isPractice() ? "Practice" : this.match.isElim() ? "E"+(this.match.elimId+1) : "Q"+(this.match.id+1) : "";
+        this.eMatch.textContent = this.hasMatch() ? this.match.isPractice() ? "Practice" : this.match.isElim() ? "E"+this.match.elimId : "Q"+this.match.id : "";
     }
 }
 App.Match = class AppMatch extends util.Target {
@@ -1417,7 +1417,7 @@ App.Match = class AppMatch extends util.Target {
 
             this.eListItem.style.opacity = this.match.hasFinishTime() ? "50%" : "";
 
-            this.eItemId.textContent = this.match.isPractice() ? "Practice Match" : this.match.isElim() ? "Elim Match #"+(this.match.elimId+1) : (this.match.id+1);
+            this.eItemId.textContent = this.match.isPractice() ? "Practice Match" : this.match.isElim() ? "Elim Match #"+this.match.elimId : this.match.id;
             this.eItemId.style.textAlign = !this.match.isNormal() ? "center" : "";
             this.eItemTeams.style.display = !this.match.isNormal() ? "none" : "";
 
