@@ -101,6 +101,9 @@ button[fail]:disabled {
 #header > h2.time {
     font-family: monospace;
 }
+#header > h3 > span {
+    opacity: 50%;
+}
 #header > * {
     min-width: max-content;
 }

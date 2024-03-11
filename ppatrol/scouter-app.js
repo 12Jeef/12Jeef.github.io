@@ -1379,10 +1379,23 @@ export default class App extends util.Target {
     set match(v) {
         v = (v instanceof Match) ? v : null;
         if (this.match == v) return;
+        const update = () => {
+            this.eMatch.innerHTML = "";
+            if (!this.hasMatch()) return;
+            this.eMatch.appendChild(document.createTextNode(this.match.isPractice() ? "Practice" : this.match.isElim() ? "E"+this.match.elimId : "Q"+this.match.id));
+            this.eMatch.appendChild(document.createElement("span"));
+            if (this.match.hasRobot()) {
+                this.eMatch.lastChild.textContent = "@";
+                this.eMatch.appendChild(document.createTextNode(this.match.robot));
+            }
+        };
         if (this.hasMatch()) this.match.clearLinkedHandlers(this, "change");
         this.change("match", this.match, this.#match=v);
-        if (this.hasMatch()) this.match.addLinkedHandler(this, "change", (c, f, t) => this.change("match."+c, f, t));
-        this.eMatch.textContent = this.hasMatch() ? this.match.isPractice() ? "Practice" : this.match.isElim() ? "E"+this.match.elimId : "Q"+this.match.id : "";
+        if (this.hasMatch()) this.match.addLinkedHandler(this, "change", (c, f, t) => {
+            update();
+            this.change("match."+c, f, t);
+        });
+        update();
     }
 }
 App.Match = class AppMatch extends util.Target {
