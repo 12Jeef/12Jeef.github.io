@@ -292,7 +292,7 @@ export default class App extends util.Target {
             Array.from(document.querySelectorAll("body > article")).forEach(elem => {
                 const update = delta => {
                     let forceShow = false;
-                    Array.from(elem.querySelectorAll("section.list")).forEach(sect => {
+                    Array.from(elem.querySelectorAll("section.list:not(:has(section.item))")).forEach(sect => {
                         // forceShow = true;
                         const aArr = Array.from(sect.querySelectorAll("a"));
                         let reqs = [];
@@ -319,6 +319,21 @@ export default class App extends util.Target {
                             reqs.push(i => (a._idIn = setTimeout(() => a.classList.add("this"), 100*i)));
                         });
                         reqs.forEach((req, i) => req(i));
+                    });
+                    Array.from(elem.querySelectorAll("section.list:has(section.item)")).forEach(sect => {
+                        const sectArr = Array.from(sect.querySelectorAll("section.item"));
+                        sectArr.forEach(sect => {
+                            let r = sect.getBoundingClientRect();
+                            if (
+                                (r.top > window.innerHeight*(1-p)) ||
+                                (r.bottom < window.innerHeight*p)
+                            ) {
+                                sect.style.setProperty("--y", ((r.top+r.height/2) < (window.innerHeight/2)) ? -1 : +1);
+                                sect.classList.remove("this");
+                                return;
+                            }
+                            sect.classList.add("this");
+                        });
                     });
                     Array.from(elem.querySelectorAll("section.timeline")).forEach(sect => {
                         const sectArr = Array.from(sect.querySelectorAll("section"));

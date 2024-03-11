@@ -24,8 +24,8 @@
     <body>
         <canvas id="canvas"></canvas>
         <header>
-            <a target="_blank" href="https://github.com/12Jeef"><ion-icon name="logo-github"></ion-icon></a>
-            <a target="_blank" href="https://www.linkedin.com/in/jeffrey-fan-5b4769284/"><ion-icon name="logo-linkedin"></ion-icon></a>
+            <a target="_blank" href="https://github.com/12Jeef"><ion-icon src="./assets/icons/github.svg"></ion-icon></a>
+            <a target="_blank" href="https://www.linkedin.com/in/jeffrey-fan-5b4769284/"><ion-icon src="./assets/icons/linkedin.svg"></ion-icon></a>
         </header>
         <div class="window">
             <h1><span class="tag" style="--i:0;filter:blur(0.05em);">&lt;<span class="tag">body</span>&gt;</span></h1><br>
@@ -60,7 +60,6 @@
                 </section>
                 <section class="picture">
                     <div>
-                        <img src="./assets/picture.png">
                         <img src="./assets/picture.png">
                     </div>
                     <p>My hand-drawn profile picture for most accounts</p>
@@ -131,7 +130,55 @@
                 </section>
             </section>
         </article>
-        <!-- <article id="projects"></article> -->
+        <article id="projects">
+            <h3><span>03</span><span>Projects</span></h3>
+            <section class="list">
+                <section class="item">
+                    <div class="display">
+                        <div></div>
+                    </div>
+                    <div class="content">
+                        <h1><a target="_blank" href="https://github.com/team6036/peninsulaportal">PeninsulaPortal</a></h1>
+                        <p class="main">A complete FRC robot diagnostic and debugger, path generator, and competition pit display. Sleek, navigable design focused on user experience. Coming soon in 2024</p>
+                        <p><span>VanillaJS</span><span>Node.js</span><span>Electron.js</span><span>UI/UX</span></p>
+                        <p>
+                            <a target="_blank" href="https://github.com/team6036/peninsulaportal"><button><ion-icon src="./assets/icons/github.svg"></ion-icon></button></a>
+                            <a target="_blank" href="https://github.com/team6036/peninsulaportal/releases/latest"><button><ion-icon src="./assets/icons/download.svg"></ion-icon></button></a>
+                        </p>
+                    </div>
+                </section>
+                <section class="item" flip>
+                    <div class="display">
+                        <div>
+                            <img src="./assets/projects/noteblast.png">
+                        </div>
+                    </div>
+                    <div class="content">
+                        <h1><a target="_blank" href="https://play.noteblast.org/">NoteBlast</a></h1>
+                        <p class="main">A sight-reading rhythm game to help musicians practice! Comes with a built-in <i>free</i> tuner to provide feedback on the accuracy of your instrument</p>
+                        <p><span>VanillaJS</span><span>Algorithm</span><span>UI/UX</span></p>
+                        <p>
+                            <a target="_blank" href="https://github.com/Noteblast/noteblast"><button><ion-icon src="./assets/icons/github.svg"></ion-icon></button></a>
+                            <a target="_blank" href="https://play.noteblast.org/"><button><ion-icon src="./assets/icons/open.svg"></ion-icon></button></a>
+                        </p>
+                    </div>
+                </section>
+                <section class="item">
+                    <div class="display">
+                        <div>
+                            <img style="width:50%;filter:brightness(2);" src="./assets/projects/transfection1.png">
+                            <img style="width:50%;filter:brightness(2);" src="./assets/projects/transfection2.png">
+                        </div>
+                    </div>
+                    <div class="content">
+                        <h1><a>Transfection Counter</a></h1>
+                        <p class="main">Though not currently uploaded anywhere, this transfection counter algorithm calculates the number of transfected cells and transfection efficiency in immuno-fluorescent stains</p>
+                        <p><span>Python</span><span>PyGame</span><span>Algorithm</span></p>
+                        <p></p>
+                    </div>
+                </section>
+            </section>
+        </article>
         <article id="awards" class="this">
             <h3 class="center"><span>04</span><span>Awards</span></h3>
             <section class="list" style="padding-left:1rem;padding-right:1rem;">
