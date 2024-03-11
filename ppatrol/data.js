@@ -558,7 +558,8 @@ export class Match extends util.Target {
                 ground = 1
                 speaker = 2
                 amp = 3
-                climb = 4 // bruh jus 1 more than 2^2
+                hoard = 4
+                climb = 5
             */
             while (n-- > 0) {
                 let frame = util.ensure(frames.shift(), "obj");
@@ -567,7 +568,7 @@ export class Match extends util.Target {
                 // no max required
                 ts = Math.min(2**12-1, Math.max(0, ts));
                 // type: 3
-                let type = ["source", "ground", "speaker", "amp", "climb"].indexOf(frame.type);
+                let type = ["source", "ground", "speaker", "amp", "hoard", "climb"].indexOf(frame.type);
                 if (type < 0) return "TELEOP_FRAME_TYPE_ERR";
                 // writing
                 buff
@@ -600,6 +601,7 @@ export class Match extends util.Target {
                     ;
                     i += 11+10+1;
                 } else if (type == 4) {
+                } else if (type == 5) {
                     // ASSUMING
                     /*
                         0 = none
@@ -749,7 +751,7 @@ export class Match extends util.Target {
                 let type = buff.read(i+12, 3);
                 let frame = {
                     ts: ts,
-                    type: ["source", "ground", "speaker", "amp", "climb"][type],
+                    type: ["source", "ground", "speaker", "amp", "hoard", "climb"][type],
                 };
                 i += 12+3;
                 if (type == 2) {
@@ -759,6 +761,8 @@ export class Match extends util.Target {
                     frame.state = { at: new V(x, y), value: !!value };
                     i += 11+10+1;
                 } else if (type == 4) {
+                    frame.state = null;
+                } else if (type == 5) {
                     frame.state = buff.read(i, 2);
                     i += 2;
                 } else {

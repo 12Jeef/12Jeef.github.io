@@ -640,12 +640,23 @@ export default class App extends util.Target {
             });
             return data;
         };
+        const computeTeleopHoards = match => {
+            let data = { times: [], total: 0 };
+            match.teleopFrames.forEach(frame => {
+                if (frame.type != "hoard") return;
+                data.times.push(frame.ts);
+                data.total++;
+            });
+            return data;
+        };
         const computeTeleop = match => {
             let pickups = computeTeleopPickups(match);
             let scores = computeTeleopScores(match);
+            let hoards = computeTeleopHoards(match);
             return {
                 pickups: pickups,
                 scores: scores,
+                hoards: hoards,
                 score: scores.score,
             };
         };
@@ -1041,6 +1052,10 @@ export default class App extends util.Target {
                     elem.innerHTML = "<span></span><span></span><span></span>";
                     elem.children[0].textContent = util.formatTime(frame.ts);
                     elem.children[1].setAttribute(frame.type, "");
+                    if (frame.type == "hoard") {
+                        elem.children[2].textContent = "Hoard";
+                        return;
+                    }
                     if (frame.type == "climb") {
                         elem.children[2].textContent = ["None", "Park", "Onstage"][frame.state];
                         return;
@@ -1516,9 +1531,9 @@ export default class App extends util.Target {
             match.teleopFrames.forEach(frame => {
                 items.push({
                     type: "kf",
-                    subtype: (frame.type == "climb") ? "climb" : (frame.type == "source" || frame.type == "ground") ? "pickup" : "score",
-                    html: "<ion-icon name='"+((frame.type == "climb") ? "airplane" : (frame.type == "source" || frame.type == "ground") ? "arrow-up" : "arrow-down")+"'></ion-icon>"+((frame.type == "climb") ? "NPO"[frame.state] : frame.type[0].toUpperCase()),
-                    state: (frame.type == "climb") ? null : (frame.type == "speaker") ? frame.state.value : frame.state,
+                    subtype: (frame.type == "hoard") ? "hoard" : (frame.type == "climb") ? "climb" : (frame.type == "source" || frame.type == "ground") ? "pickup" : "score",
+                    html: "<ion-icon name='"+((frame.type == "hoard") ? "bag" : (frame.type == "climb") ? "airplane" : (frame.type == "source" || frame.type == "ground") ? "arrow-up" : "arrow-down")+"'></ion-icon>"+((frame.type == "hoard") ? "H" : (frame.type == "climb") ? "NPO"[frame.state] : frame.type[0].toUpperCase()),
+                    state: (frame.type == "hoard" || frame.type == "climb") ? null : (frame.type == "speaker") ? frame.state.value : frame.state,
                     t: frame.ts,
                 });
             });
