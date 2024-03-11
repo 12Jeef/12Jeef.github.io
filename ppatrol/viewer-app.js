@@ -328,12 +328,12 @@ export default class App extends util.Target {
     loadTeams() {
         let teams = null;
         try {
-            teams = JSON.parse(localStorage.getItem("teams"));
+            teams = JSON.parse(localStorage.getItem("_teams"));
         } catch (e) {}
         this.teams = teams;
     }
     saveTeams() {
-        localStorage.setItem("teams", JSON.stringify(this.teams));
+        localStorage.setItem("_teams", JSON.stringify(this.teams));
     }
 
     #simulated;
@@ -386,18 +386,18 @@ export default class App extends util.Target {
             else this.post("unlock");
         });
         this.#matchesSkipped = new Set();
-        this.loadMatchesSkipped();
         this.#team = null;
-        this.loadTeam();
         this.#hotswaps = {};
-        this.loadHotswaps();
         this.#qual = null;
-        this.loadQual();
         this.#teams = new Array(6).fill(null);
-        this.loadTeams();
         this.#simulated = true;
-        this.loadSimulated();
         this.#path = "";
+        this.loadMatchesSkipped();
+        this.loadTeam();
+        this.loadHotswaps();
+        this.loadQual();
+        this.loadTeams();
+        this.loadSimulated();
         this.loadPath();
 
         window.app = this;
@@ -849,6 +849,11 @@ export default class App extends util.Target {
                         fails: comps.map(comp => comp.teleop.scores.amp.fail),
                         scores: comps.map(comp => comp.teleop.scores.amp.score),
                     },
+                },
+                hoards: {
+                    times: comps.map(comp => comp.teleop.hoards.times).flatten(),
+                    totals: comps.map(comp => comp.teleop.hoards.total),
+                    total: median(comps.map(comp => comp.teleop.hoards.total)),
                 },
             };
 
@@ -1557,33 +1562,44 @@ export default class App extends util.Target {
             row = document.createElement("tr");
             elem.appendChild(row);
             row.innerHTML = "<td>Cycle Time:</td><td></td>";
+            row.children[0].colSpan = 2;
             row.children[0].style.fontSize = "0.75em";
             row.children[1].textContent = Math.round(comp.cycle/10)/100;
             let notes = document.createElement("td");
             row.insertBefore(notes, row.firstChild);
-            notes.rowSpan = 5;
-            notes.colSpan = 11;
+            notes.rowSpan = 6;
+            notes.colSpan = 10;
             notes.textContent = match.notes;
             row = document.createElement("tr");
             elem.appendChild(row);
             row.innerHTML = "<td>Auto Score:</td><td></td>";
+            row.children[0].colSpan = 2;
             row.children[0].style.fontSize = "0.75em";
             row.children[1].textContent = comp.auto.score;
             row = document.createElement("tr");
             elem.appendChild(row);
             row.innerHTML = "<td>Teleop Score:</td><td></td>";
+            row.children[0].colSpan = 2;
             row.children[0].style.fontSize = "0.75em";
             row.children[1].textContent = comp.teleop.score;
             row = document.createElement("tr");
             elem.appendChild(row);
             row.innerHTML = "<td>Endgame Score:</td><td></td>";
+            row.children[0].colSpan = 2;
             row.children[0].style.fontSize = "0.75em";
             row.children[1].textContent = comp.endgame.score;
             row = document.createElement("tr");
             elem.appendChild(row);
             row.innerHTML = "<td>Total Score:</td><td></td>";
+            row.children[0].colSpan = 2;
             row.children[0].style.fontSize = "0.75em";
             row.children[1].textContent = comp.score;
+            row = document.createElement("tr");
+            elem.appendChild(row);
+            row.innerHTML = "<td>#Hoards:</td><td></td>";
+            row.children[0].colSpan = 2;
+            row.children[0].style.fontSize = "0.75em";
+            row.children[1].textContent = comp.teleop.hoards.total;
 
             return elem;
         };
@@ -2555,14 +2571,14 @@ export default class App extends util.Target {
                     }
                 }
                 this.eTeamAnalyticsMiscTable.innerHTML = "";
-                for (let i = 0; i < 4; i++) {
+                for (let i = 0; i < 5; i++) {
                     let row = document.createElement("tr");
                     this.eTeamAnalyticsMiscTable.appendChild(row);
                     for (let j = 0; j < 2; j++) {
                         let dat = document.createElement("td");
                         row.appendChild(dat);
                         if (j <= 0) {
-                            dat.textContent = ["Disable time (s)", "Cycle time (s)", "Preload Chance", "Trap Chance"][i];
+                            dat.textContent = ["Disable time (s)", "Cycle time (s)", "Preload Chance", "Trap Chance", "#Hoards"][i];
                             continue;
                         }
                         if (i == 0 || i == 1) {
@@ -2572,6 +2588,10 @@ export default class App extends util.Target {
                         if (i == 2 || i == 3) {
                             let o = [comp.preloaded, comp.endgame.trap][i-2];
                             dat.textContent = ((o.percent == null) ? 0 : (Math.round(o.percent*10000)/100))+"%";
+                            continue;
+                        }
+                        if (i == 4) {
+                            dat.textContent = comp.teleop.hoards.total;
                             continue;
                         }
                     }
@@ -2732,7 +2752,9 @@ export default class App extends util.Target {
                 let theTeams = this.teams;
                 this.eMatchAnalyticsTable.innerHTML = "";
                 const comps = theTeams.map(team => computeFullTeam(team));
-                for (let i = 0; i < 32; i++) {
+                let totalScoreHeaders = [null, null];
+                let totalScores = [null, null];
+                for (let i = 0; i < 33; i++) {
                     let row = document.createElement("tr");
                     this.eMatchAnalyticsTable.appendChild(row);
                     if (i == 0) {
@@ -2827,12 +2849,13 @@ export default class App extends util.Target {
                         }
                         continue;
                     }
-                    if (i == 5 || i == 12 || i == 19) {
+                    const headers = [5, 12, 20];
+                    if (headers.includes(i)) {
                         row.appendChild(document.createElement("td"));
                         row.appendChild(document.createElement("td"));
                         row.lastChild.colSpan = 12;
                         row.lastChild.classList.add("header");
-                        row.lastChild.textContent = { 5: "Auto", 12: "Teleop", 19: "Endgame" }[i];
+                        row.lastChild.textContent = ["Auto", "Teleop", "Endgame"][headers.indexOf(i)];
                         continue;
                     }
                     if (i >= 2 && i <= 4) {
@@ -2868,7 +2891,7 @@ export default class App extends util.Target {
                         }
                         continue;
                     }
-                    if (i == 9) {
+                    if (i == 6) {
                         for (let j = -1; j < 6; j++) {
                             let dat = document.createElement("td");
                             row.appendChild(dat);
@@ -2895,11 +2918,30 @@ export default class App extends util.Target {
                         }
                         continue;
                     }
+                    if (i == 13) {
+                        for (let j = -1; j < 6; j++) {
+                            let dat = document.createElement("td");
+                            row.appendChild(dat);
+                            if (j % 3 == 2) dat.classList.add("border");
+                            if (j >= 0) dat.colSpan = 2;
+                            if (j < 0) {
+                                dat.textContent = "#Hoards";
+                                continue;
+                            }
+                            if (!this.simulated) {
+                                dat.textContent = "N/A";
+                                continue;
+                            }
+                            const comp = comps[j];
+                            dat.textContent = comp.teleop.hoards.total;
+                        }
+                        continue;
+                    }
                     let ii;
-                    ii = (i >= 6 && i <= 8) ? 0 : (i >= 13 && i <= 16) ? 1 : -1;
+                    ii = (i >= 7 && i <= 9) ? 0 : (i >= 14 && i <= 17) ? 1 : -1;
                     if (ii >= 0) {
                         row.classList.add("dats");
-                        let jj = i - [6, 13][ii];
+                        let jj = i - [7, 14][ii];
                         let special = [
                             [false, true, true],
                             [false, false, true, true],
@@ -2980,10 +3022,10 @@ export default class App extends util.Target {
                         }
                         continue;
                     }
-                    ii = (i >= 10 && i <= 11) ? 0 : (i >= 17 && i <= 18) ? 1 : (i >= 25 && i <= 26) ? 2 : -1;
+                    ii = (i >= 10 && i <= 11) ? 0 : (i >= 18 && i <= 19) ? 1 : (i >= 26 && i <= 27) ? 2 : -1;
                     if (ii >= 0) {
                         row.classList.add("dats");
-                        let jj = i - [10, 17, 25][ii];
+                        let jj = i - [10, 18, 26][ii];
                         if (jj > 0) row.classList.add("special");
                         if (!this.simulated) {
                             if (jj <= 0) {
@@ -3025,12 +3067,12 @@ export default class App extends util.Target {
                         }
                         continue;
                     }
-                    if ([20, 21, 22].includes(i)) {
+                    if ([21, 22, 23].includes(i)) {
                         if (!this.simulated) {
                             row.remove();
                             continue;
                         }
-                        let ii = i-20;
+                        let ii = i-21;
                         row.classList.add("dats");
                         row.classList.add("override");
                         for (let j = -1; j < 12; j++) {
@@ -3057,7 +3099,7 @@ export default class App extends util.Target {
                         }
                         continue;
                     }
-                    if (i == 23) {
+                    if (i == 24) {
                         if (this.simulated) {
                             row.remove();
                             continue;
@@ -3105,7 +3147,7 @@ export default class App extends util.Target {
                         }
                         continue;
                     }
-                    if (i == 24) {
+                    if (i == 25) {
                         for (let j = -1; j < 6; j++) {
                             let dat = document.createElement("td");
                             row.appendChild(dat);
@@ -3132,9 +3174,9 @@ export default class App extends util.Target {
                         }
                         continue;
                     }
-                    if (i == 27) {
+                    if (i == 28) {
                         for (let j = -1; j < 2; j++) {
-                            let dat = document.createElement("td");
+                            let dat = totalScoreHeaders[j] = document.createElement("td");
                             row.appendChild(dat);
                             if (j >= 0) dat.colSpan = 6;
                             if (j < 0) {
@@ -3147,8 +3189,8 @@ export default class App extends util.Target {
                         }
                         continue;
                     }
-                    if ([28, 29, 30, 31].includes(i)) {
-                        let ii = i-28;
+                    if ([29, 30, 31, 32].includes(i)) {
+                        let ii = i-29;
                         row.classList.add("dats");
                         if (ii >= 3) row.classList.add("special");
                         for (let j = -1; j < 4; j++) {
@@ -3210,10 +3252,17 @@ export default class App extends util.Target {
                                     ][ii];
                                 }
                             }
-                            dat.textContent = score;
+                            dat.textContent = totalScores[k] = score;
                         }
                         continue;
                     }
+                }
+                if (totalScores[0] > totalScores[1]) {
+                    totalScoreHeaders[0].style.backgroundColor = "var(--r4)";
+                    totalScoreHeaders[0].style.outline = "0.1rem solid var(--fg)";
+                } else if (totalScores[1] > totalScores[0]) {
+                    totalScoreHeaders[1].style.backgroundColor = "var(--b4)";
+                    totalScoreHeaders[1].style.outline = "0.1rem solid var(--fg)";
                 }
             };
             this.addHandler("post-refresh", updateMatchAnalyticsTable);
