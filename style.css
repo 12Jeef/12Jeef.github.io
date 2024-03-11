@@ -1123,8 +1123,7 @@ body > article section.nav > section > section.this {
     filter: blur(0rem);
 }
 body > article section.single {
-    padding: 10rem 15rem;
-    padding-bottom: 12.5rem;
+    padding: 12.5rem 15rem;
 
     display: flex;
     flex-direction: column;
@@ -1146,9 +1145,30 @@ body > article section.single > h1 {
     font-size: 1.5em;
 }
 body > article section.single > .icon {
-    --color: var(--fg3);
-    
+    --color: var(--fg2);
+
     align-self: center;
 
-    font-size: 3em;
+    font-size: 1em;
+}
+body > footer {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    align-content: center;
+    gap: 0.25rem;
+
+    color: var(--fg3);
+
+    font-family: monospace;
+}
+body > footer * {
+    color: inherit !important;
+}
+body > footer > p {
+    margin: 0em;
+
+    font-size: 0.75em;
 }
