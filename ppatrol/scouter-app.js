@@ -448,9 +448,7 @@ export default class App extends util.Target {
                         //     this.flipY = this.eSettingFlippedY.checked;
                         // });
                         this.eSettingLeftRed.addEventListener("change", e => {
-                            if (this.flipX && this.flipY)
-                                this.flipX = this.flipY = false;
-                            else this.flipX = this.flipY = true;
+                            this.leftRed = !this.leftRed;
                         });
 
                         this.eSettingIds.forEach((elem, id) => {
@@ -1130,7 +1128,7 @@ export default class App extends util.Target {
 
                         // this.eSettingFlippedX.checked = this.flipX;
                         // this.eSettingFlippedY.checked = this.flipY;
-                        this.eSettingLeftRed.checked = this.flipX && this.flipY;
+                        this.eSettingLeftRed.checked = this.leftRed;
                     },
                     navigator: () => {
                         startTime = null;
@@ -1320,6 +1318,10 @@ export default class App extends util.Target {
         localStorage.setItem("flipX", JSON.stringify(this.flipX));
         localStorage.setItem("flipY", JSON.stringify(this.flipY));
     }
+    get leftRed() { return this.flipX && this.flipY; }
+    set leftRed(v) { this.flipX = this.flipY = !!v; }
+    get leftBlue() { return !this.flipX && !this.flipY; }
+    set leftBlue(v) { this.flipX = this.flipY = !v; }
 
     get matches() { return this.#matches; }
     set matches(v) {
