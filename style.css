@@ -113,9 +113,54 @@ button[special][cool]:not(:disabled):hover {
     color: var(--fg);
 }
 
+.icon {
+    --color: var(--fg2);
+
+    position: relative;
+
+    min-width: 1em;
+    max-width: 1em;
+    min-height: 1em;
+    max-height: 1em;
+}
+.icon::before {
+    content: "";
+
+    position: absolute;
+    bottom: 0%;
+    left: 0%;
+    right: 0%;
+
+    height: 50%;
+    
+    background-color: var(--color);
+    border-radius: 1em 1em 0em 0em;
+}
+.icon::after {
+    content: "";
+
+    position: absolute;
+    top: 0%;
+    left: 20%;
+    right: 20%;
+
+    height: 40%;
+
+    background-color: var(--color);
+
+    clip-path: polygon(
+        0% 0%,
+        25% 50%,
+        50% 0%,
+        75% 50%,
+        100% 0%,
+        100% 100%,
+        0% 100%
+    );
+}
+
 body {
     padding: 4rem max(4rem, calc((100vw - 60rem) / 2));
-    padding-bottom: 25rem;
 
     overscroll-behavior: none;
 
@@ -149,8 +194,6 @@ body > header {
     top: 3rem;
     right: min(4rem, calc(max(4rem, calc((100vw - 60rem) / 2)) / 2));
     transform: translateX(50%);
-
-    height: 5rem;
 
     display: flex;
     flex-direction: column;
@@ -373,6 +416,18 @@ body > article section {
 
     line-height: 1.5em;
 }
+@media (max-width:60rem) {
+    body > article section.about {
+        flex-direction: column-reverse !important;
+        gap: 0.5rem !important;
+    }
+    body > article section.about section.picture {
+        align-self: center;
+    }
+    body > article section.about section.picture div {
+        max-width: 20rem;
+    }
+}
 body > article section.row {
     display: flex;
     flex-direction: row;
@@ -436,7 +491,7 @@ body > article section.list {
     align-content: center;
     gap: 1em;
 }
-body > article section.list:not(:has(section.item)) a {
+body > article section.list.normal a {
     transform: translateY(calc(2rem * var(--y))) scale(1.1);
 
     opacity: 0;
@@ -449,7 +504,7 @@ body > article section.list:not(:has(section.item)) a {
 
     transition: transform var(--t), opacity var(--t), visibility var(--t), filter var(--t);
 }
-body > article section.list:not(:has(section.item)) a.this {
+body > article section.list.normal a.this {
     transform: translateY(0rem) scale(1);
 
     opacity: 1;
@@ -457,7 +512,7 @@ body > article section.list:not(:has(section.item)) a.this {
 
     filter: blur(0rem);
 }
-body > article section.list:not(:has(section.item)) button {
+body > article section.list.normal button {
     padding: 0.75em 1.25em;
 
     font-size: 1em;
@@ -468,38 +523,56 @@ body > article section.list:not(:has(section.item)) button {
 
     transition: background-color var(--t), color var(--t);
 }
-body > article section.list:not(:has(section.item)) button:hover {
+body > article section.list.normal button:hover {
     background-color: var(--fg3);
     color: var(--fg);
 }
-body > article section.list:not(:has(section.item)) button > span {
+body > article section.list.normal button > span {
     color: var(--fg3);
 
     transition: color var(--t);
 }
-body > article section.list:not(:has(section.item)) button:hover > span {
+body > article section.list.normal button:hover > span {
     color: var(--fg2);
 }
-body > article section.list:has(section.item) {
+body > article section.list.big-items section.item,
+body > article section.list.small-items section.item {
+    transform: translateY(calc(2rem * var(--y))) scale(1.1);
+
+    opacity: 0;
+    visibility: hidden;
+
+    filter: blur(0.5rem);
+
+    transition: transform var(--t), opacity var(--t), visibility var(--t), filter var(--t);
+}
+body > article section.list.big-items section.item.this,
+body > article section.list.small-items section.item.this {
+    transform: translateY(0rem) scale(1);
+
+    opacity: 1;
+    visibility: inherit;
+
+    filter: blur(0rem);
+}
+body > article section.list.big-items {
     padding: 3rem 0rem;
 
     flex-direction: column;
     align-items: stretch;
     gap: 5rem;
 
-    transition: padding 0.25s, gap 0.25s;
+    transition: padding var(--t), gap var(--t);
 }
 @media (max-width:60rem) {
-    body > article section.list:has(section.item) {
+    body > article section.list.big-items {
         padding: 0rem;
 
         gap: 1rem;
     }
 }
-body > article section.list section.item {
+body > article section.list.big-items section.item {
     --overlap: 20%;
-
-    transform: translateY(calc(2rem * var(--y))) scale(1.1);
 
     width: 100%;
 
@@ -509,26 +582,11 @@ body > article section.list section.item {
     justify-content: flex-start;
     align-items: stretch;
     align-content: center;
-
-    opacity: 0;
-    visibility: hidden;
-
-    filter: blur(0.5rem);
-
-    transition: transform 0.25s, opacity 0.25s, visibility 0.25s, filter 0.25s;
 }
-body > article section.list section.item[flip] {
+body > article section.list.big-items section.item[flip] {
     flex-direction: row-reverse;
 }
-body > article section.list section.item.this {
-    transform: translateY(0rem) scale(1);
-
-    opacity: 1;
-    visibility: inherit;
-
-    filter: blur(0rem);
-}
-body > article section.list section.item > div {
+body > article section.list.big-items section.item > div {
     width: calc(50% + (var(--overlap) / 2));
 
     display: flex;
@@ -539,41 +597,41 @@ body > article section.list section.item > div {
     align-content: center;
     gap: 0.5rem;
 
-    transition: width 0.25s;
+    transition: width var(--t);
 }
 @media (max-width:60rem) {
-    body > article section.list section.item > div {
+    body > article section.list.big-items section.item > div {
         width: 100%;
     }
 }
-body > article section.list section.item > div.display {
+body > article section.list.big-items section.item > div.display {
     flex-direction: row;
 
-    transition: margin 0.25s;
+    transition: margin var(--t);
 }
-body > article section.list section.item:not([flip]) > div.display {
+body > article section.list.big-items section.item:not([flip]) > div.display {
     margin-left: 0%;
     margin-right: calc(-1 * var(--overlap));
 
     justify-content: flex-start;
 }
-body > article section.list section.item[flip] > div.display {
+body > article section.list.big-items section.item[flip] > div.display {
     margin-left: calc(-1 * var(--overlap));
     margin-right: 0%;
 
     justify-content: flex-end;
 }
 @media (max-width:60rem) {
-    body > article section.list section.item:not([flip]) > div.display {
+    body > article section.list.big-items section.item:not([flip]) > div.display {
         margin-left: 0%;
         margin-right: -100%;
     }
-    body > article section.list section.item[flip] > div.display {
+    body > article section.list.big-items section.item[flip] > div.display {
         margin-left: -100%;
         margin-right: 0%;
     }
 }
-body > article section.list section.item > div.display > div {
+body > article section.list.big-items section.item > div.display > div {
     transform: scale(1);
 
     min-width: max-content;
@@ -590,12 +648,12 @@ body > article section.list section.item > div.display > div {
     background-color: var(--bg);
     border-radius: 0.5rem;
 
-    transition: transform 0.25s;
+    transition: transform var(--t);
 }
-body > article section.list section.item > div.display > div:hover {
+body > article section.list.big-items section.item > div.display > div:hover {
     transform: scale(1.05);
 }
-body > article section.list section.item > div.display > div:empty {
+body > article section.list.big-items section.item > div.display > div:empty {
     width: 100%;
     padding: 3rem;
 
@@ -608,24 +666,24 @@ body > article section.list section.item > div.display > div:empty {
 
     color: var(--fg3);
 }
-body > article section.list section.item > div.display > div:empty::before {
+body > article section.list.big-items section.item > div.display > div:empty::before {
     content: "Image coming soon!";
 
     font-style: italic;
     text-align: left;
 }
-body > article section.list section.item[flip] > div.display > div:empty {
+body > article section.list.big-items section.item[flip] > div.display > div:empty {
     text-align: right;
 }
 @media (max-width:60rem) {
-    body > article section.list section.item > div.display > div {
+    body > article section.list.big-items section.item > div.display > div {
         min-width: 100%;
     }
-    body > article section.list section.item > div.display > div:empty {
+    body > article section.list.big-items section.item > div.display > div:empty {
         justify-content: flex-end;
     }
 }
-body > article section.list section.item > div.display > div > img {
+body > article section.list.big-items section.item > div.display > div > img {
     width: auto;
     height: 100%;
 
@@ -633,13 +691,13 @@ body > article section.list section.item > div.display > div > img {
 
     filter: grayscale(0);
 
-    transition: opacity 0.25s, filter 0.25s;
+    transition: opacity var(--t), filter var(--t);
 }
-body > article section.list section.item > div.display > div:hover > img {
+body > article section.list.big-items section.item > div.display > div:hover > img {
     opacity: 1;
 }
 @media (max-width:60rem) {
-    body > article section.list section.item > div.display > div > img {
+    body > article section.list.big-items section.item > div.display > div > img {
         width: 100%;
         height: auto;
 
@@ -648,7 +706,7 @@ body > article section.list section.item > div.display > div:hover > img {
         filter: grayscale(0.5);
     }
 }
-body > article section.list section.item > div.content {
+body > article section.list.big-items section.item > div.content {
     z-index: 1;
 
     padding: 2rem 0rem;
@@ -661,40 +719,51 @@ body > article section.list section.item > div.content {
     align-content: center;
     gap: 1rem;
 
-    transition: padding 0.25s;
+    transition: padding var(--t);
 }
 @media (max-width:60rem) {
-    body > article section.list section.item > div.content {
+    body > article section.list.big-items section.item > div.content {
         padding: 2rem;
     }
 }
-body > article section.list section.item > div.content,
-body > article section.list section.item > div.content * {
+body > article section.list.big-items section.item > div.content,
+body > article section.list.big-items section.item > div.content * {
     margin: 0em;
 
     text-align: right;
 }
-body > article section.list section.item[flip] > div.content,
-body > article section.list section.item[flip] > div.content * {
+body > article section.list.big-items section.item[flip] > div.content,
+body > article section.list.big-items section.item[flip] > div.content * {
     text-align: left;
 }
-body > article section.list section.item > div.content > h1 {
+body > article section.list.big-items section.item > div.content > h1 {
     color: var(--fg);
 
     filter: drop-shadow(0em 0em 0.5em var(--fg));
 
     font-size: 1.5em;
+
+    transition: color var(--t), filter var(--t);
 }
-body > article section.list section.item > div.content > h1 * {
+body > article section.list.big-items section.item > div.content > h1:has(a:hover) {
+    color: var(--a);
+
+    filter: drop-shadow(0em 0em 0.5em var(--a));
+}
+body > article section.list.big-items section.item > div.content > h1 * {
     color: inherit !important;
+
+    filter: none !important;
+
+    transition: none !important;
 }
-body > article section.list section.item > div.content > p.main {
+body > article section.list.big-items section.item > div.content > p.main {
     padding: 1em;
 
     background-color: var(--bg2);
     border-radius: 0.5rem;
 }
-body > article section.list section.item > div.content > p:not(.main) {
+body > article section.list.big-items section.item > div.content > p:not(.main) {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
@@ -706,15 +775,15 @@ body > article section.list section.item > div.content > p:not(.main) {
     font-family: monospace;
     font-size: 0.75em;
 }
-body > article section.list section.item[flip] > div.content > p:not(.main) {
+body > article section.list.big-items section.item[flip] > div.content > p:not(.main) {
     justify-content: flex-start;
 }
-body > article section.list section.item > div.content > p:not(.main):has(button) {
+body > article section.list.big-items section.item > div.content > p:not(.main):has(button) {
     gap: 0.5em;
 
     font-size: 1.5em;
 }
-body > article section.list section.item > div.content > p:not(.main):has(button) button {
+body > article section.list.big-items section.item > div.content > p:not(.main):has(button) button {
     padding: 0em;
 
     background-color: transparent;
@@ -722,10 +791,97 @@ body > article section.list section.item > div.content > p:not(.main):has(button
 
     font-size: 1em;
 
-    transition: color 0.25s;
+    transition: color var(--t);
 }
-body > article section.list section.item > div.content > p:not(.main):has(button) button:hover {
+body > article section.list.big-items section.item > div.content > p:not(.main):has(button) button:hover {
     color: var(--fg);
+}
+body > article section.list.small-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    justify-items: stretch;
+    align-items: stretch;
+}
+body > article section.list.small-items section.item {
+    padding: 2rem;
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+
+    background-color: var(--bg2);
+    border-radius: 0.5rem;
+}
+body > article section.list.small-items section.item > header {
+    margin: 2rem 0rem;
+    margin-top: 0.5rem;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    align-content: center;
+    gap: 0.5rem;
+}
+body > article section.list.small-items section.item > header > ion-icon {
+    transform: scale(3);
+
+    min-width: 1em;
+
+    color: var(--a);
+
+    filter: drop-shadow(0em 0em 0.25em var(--a));
+
+    font-size: 1.5em;
+}
+body > article section.list.small-items section.item > header > span {
+    width: 100%;
+}
+body > article section.list.small-items section.item > header button {
+    min-width: 1em;
+    padding: 0em;
+
+    background-color: transparent;
+    color: var(--fg2);
+
+    font-size: 1.5em;
+
+    transition: color var(--t);
+}
+body > article section.list.small-items section.item > header button:hover {
+    color: var(--fg);
+}
+body > article section.list.small-items section.item > h1 {
+    margin: 0em;
+
+    color: var(--fg);
+
+    font-size: 1.25em;
+}
+body > article section.list.small-items section.item > p {
+    font-size: 0.75em;
+    line-height: 1.5em;
+}
+body > article section.list.small-items section.item > p.main {
+    height: 100%;
+}
+body > article section.list.small-items section.item > p:not(.main) {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    align-content: center;
+    gap: 1.5em;
+
+    font-family: monospace;
+}
+body > article section.list.small-items section.item > p:last-child {
+    margin-bottom: 0rem;
 }
 body > article section.timeline {
     position: relative;
@@ -965,4 +1121,34 @@ body > article section.nav > section > section.this {
     visibility: inherit;
 
     filter: blur(0rem);
+}
+body > article section.single {
+    padding: 10rem 15rem;
+    padding-bottom: 12.5rem;
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+}
+body > article section.single > * {
+    margin: 0.5em 0em;
+
+    text-align: center;
+}
+body > article section.single > h1 {
+    color: var(--fg);
+
+    filter: drop-shadow(0em 0em 0.5em var(--fg));
+
+    font-size: 1.5em;
+}
+body > article section.single > .icon {
+    --color: var(--fg3);
+    
+    align-self: center;
+
+    font-size: 3em;
 }
