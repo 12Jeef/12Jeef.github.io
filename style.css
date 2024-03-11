@@ -447,8 +447,10 @@ body > article section.col {
     gap: 2em;
 }
 body > article section.picture > div {
+    --angle: 3deg;
+
     position: relative;
-    transform: scale(1);
+    transform: perspective(20rem) rotateY(0deg) rotateX(0deg) scale(1);
 
     width: auto;
     height: auto;
@@ -462,7 +464,10 @@ body > article section.picture > div {
     transition: transform var(--t);
 }
 body > article section.picture > div:hover {
-    transform: scale(1.05);
+    transform: perspective(20rem) rotateY(var(--angle)) rotateX(var(--angle)) scale(1.05);
+}
+body > article section.picture[flip] > div:hover {
+    transform: perspective(20rem) rotateY(calc(-1 * var(--angle))) rotateX(var(--angle)) scale(1.05);
 }
 body > article section.picture > div > img {
     width: 100%;
@@ -632,7 +637,10 @@ body > article section.list.big-items section.item[flip] > div.display {
     }
 }
 body > article section.list.big-items section.item > div.display > div {
-    transform: scale(1);
+    --angle: 3deg;
+    --move: 0.5rem;
+
+    transform: perspective(20rem) rotateY(0deg) rotateX(0deg) scale(1) translate(0rem, 0rem);
 
     min-width: max-content;
     max-height: 20rem;
@@ -651,7 +659,10 @@ body > article section.list.big-items section.item > div.display > div {
     transition: transform var(--t);
 }
 body > article section.list.big-items section.item > div.display > div:hover {
-    transform: scale(1.05);
+    transform: perspective(20rem) rotateY(var(--angle)) rotateX(var(--angle)) scale(1.05) translate(var(--move), calc(-1 * var(--move)));
+}
+body > article section.list.big-items section.item[flip] > div.display > div:hover {
+    transform: perspective(20rem) rotateY(calc(-1 * var(--angle))) rotateX(var(--angle)) scale(1.05) translate(calc(-1 * var(--move)), calc(-1 * var(--move)));
 }
 body > article section.list.big-items section.item > div.display > div:empty {
     width: 100%;
@@ -762,6 +773,8 @@ body > article section.list.big-items section.item > div.content > p.main {
 
     background-color: var(--bg2);
     border-radius: 0.5rem;
+
+    filter: drop-shadow(0em 0.5em 0.5em #0008);
 }
 body > article section.list.big-items section.item > div.content > p:not(.main) {
     display: flex;
