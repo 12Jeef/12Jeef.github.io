@@ -156,7 +156,6 @@ const pitQueries = {
 
 export default class App extends util.Target {
     #lock;
-
     get locked() { return this.#lock.state; }
     set locked(v) { this.#lock.state = !!v; }
     get unlocked() { return !this.locked; }
@@ -167,7 +166,6 @@ export default class App extends util.Target {
     whenUnlocked() { return this.#lock.whenFalse(); }
 
     #matchesSkipped;
-
     get matchesSkipped() { return [...this.#matchesSkipped]; }
     set matchesSkipped(v) {
         v = util.ensure(v, "arr");
@@ -211,6 +209,52 @@ export default class App extends util.Target {
     }
     saveMatchesSkipped() {
         localStorage.setItem("matches-skipped", JSON.stringify(this.matchesSkipped));
+    }
+
+    #matchSkips;
+    get matchSkips() { return [...this.#matchSkips]; }
+    set matchSkips(v) {
+        v = util.ensure(v, "arr");
+        this.clearMatchSkips();
+        this.addMatchSkip(v);
+    }
+    clearMatchSkips() {
+        let skips = this.matchSkips;
+        this.remMatchSkip(skips);
+        return skips;
+    }
+    hasMatchSkip(k) { return this.#matchSkips.has(String(k)); }
+    addMatchSkip(...ks) {
+        let r = util.Target.resultingForEach(ks, k => {
+            k = String(k);
+            if (this.hasMatchSkip(k)) return false;
+            this.#matchSkips.add(k);
+            this.change("addMatchSkip", null, k);
+            return k;
+        });
+        this.saveMatchSkips();
+        return r;
+    }
+    remMatchSkip(...ks) {
+        let r = util.Target.resultingForEach(ks, k => {
+            k = String(k);
+            if (!this.hasMatchSkip(k)) return false;
+            this.#matchSkips.delete(k);
+            this.change("remMatchSkip", k, null);
+            return k;
+        });
+        this.saveMatchSkips();
+        return r;
+    }
+    loadMatchSkips() {
+        let skips = null;
+        try {
+            skips = JSON.parse(localStorage.getItem("match-skips"));
+        } catch (e) {}
+        this.matchSkips = skips;
+    }
+    saveMatchSkips() {
+        localStorage.setItem("match-skips", JSON.stringify(this.matchSkips));
     }
 
     #team;
@@ -349,7 +393,7 @@ export default class App extends util.Target {
         let simulated = null;
         try {
             simulated = JSON.parse(localStorage.getItem("simulated"));
-        } catch (e) {}
+        } catch (e) { simulated = true; }
         this.simulated = simulated;
     }
     saveSimulated() {
@@ -386,6 +430,7 @@ export default class App extends util.Target {
             else this.post("unlock");
         });
         this.#matchesSkipped = new Set();
+        this.#matchSkips = new Set();
         this.#team = null;
         this.#hotswaps = {};
         this.#qual = null;
@@ -393,6 +438,7 @@ export default class App extends util.Target {
         this.#simulated = true;
         this.#path = "";
         this.loadMatchesSkipped();
+        this.loadMatchSkips();
         this.loadTeam();
         this.loadHotswaps();
         this.loadQual();
@@ -443,7 +489,14 @@ export default class App extends util.Target {
         };
         const getSkipped = match => {
             let k = getBufferStr(match);
-            return this.hasSkippedMatch(k);
+            let v = this.hasSkippedMatch(k);
+            if (match.id == 0)
+                if (this.hasMatchSkip("practice")) v = !v;
+            if (match.id < 0)
+                if (this.hasMatchSkip("elim")) v = !v;
+            if (match.id > 0)
+                if (this.hasMatchSkip("normal")) v = !v;
+            return v;
         };
 
         const getTBAMatch = match => {
@@ -2372,8 +2425,25 @@ export default class App extends util.Target {
 
             this.eMasterListPage = document.getElementById("master-list-page");
             this.addHandler("post-refresh", () => {
-                this.eMasterListPage.innerHTML = "";
-                matchesScouted.sort(sortMatch).forEach(match => this.eMasterListPage.appendChild(makeMatchListing(match)));
+                Array.from(this.eMasterListPage.querySelectorAll("table")).forEach(elem => elem.remove());
+                for (let i = 0; i < 1; i++) matchesScouted.sort(sortMatch).forEach(match => this.eMasterListPage.appendChild(makeMatchListing(match)));
+            });
+            ["practice", "elim", "normal"].forEach(id => {
+                const btn = document.getElementById("listing-include-"+id);
+                if (!btn) return;
+                btn.addEventListener("click", e => {
+                    if (this.hasMatchSkip(id))
+                        this.remMatchSkip(id);
+                    else this.addMatchSkip(id);
+                });
+                const update = () => {
+                    if (this.hasMatchSkip(id))
+                        btn.classList.remove("this");
+                    else btn.classList.add("this");
+                };
+                this.addHandler("change-addMatchSkip", update);
+                this.addHandler("change-remMatchSkip", update);
+                update();
             });
 
             this.eTeamAnalyticsTeam = document.getElementById("team-analytics-team");

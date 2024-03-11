@@ -740,20 +740,43 @@
     align-items: stretch;
     align-content: center;
     gap: 0em;
-
-    border-top: 0.1rem solid var(--v8);
 }
-#master-list-page:empty {
-    padding: 1rem;
+#master-list-page > header {
+    z-index: 1;
 
-    border: none;
+    position: sticky;
+    top: 0rem;
+
+    padding: 0.25rem;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    align-content: center;
+    gap: 0.5rem;
+
+    background-color: var(--bg);
+    border-bottom: 0.1rem solid var(--v8);
 }
-#master-list-page:empty::before {
-    content: "No data found";
+#master-list-page > header * {
+    margin: 0em;
+}
+#master-list-page > header > button {
+    padding: 0.5em 1em;
 
-    color: var(--v8);
-
-    font-style: italic;
+    background-color: var(--v2);
+}
+#master-list-page > header > button:hover {
+    background-color: var(--v4);
+}
+#master-list-page > header > button:active {
+    background-color: var(--fg);
+    color: var(--bg) !important;
+}
+#master-list-page > header > button.this {
+    outline: 0.1rem solid var(--fg);
 }
 
 #team-analytics-page {
@@ -866,7 +889,7 @@
     flex-direction: row;
     flex-wrap: nowrap;
     justify-content: flex-start;
-    align-items: flex-start;
+    align-items: stretch;
     align-content: center;
     gap: 0.5em;
 }
@@ -953,15 +976,17 @@
 
     font-style: italic;
 }
-#team-analytics-page > div.info > div > div > table tr.note td:nth-child(1),
-#team-analytics-page > div.info > div > div > table tr.note td:nth-child(2) {
-    min-width: 15em;
+#team-analytics-page > div.info > div > div > table tr.note td:nth-child(1) {
+    min-width: 7.5em;
 }
 #team-analytics-page > div.info > div > div > table tr.note td:nth-child(1).practice {
     color: var(--r4);
 }
 #team-analytics-page > div.info > div > div > table tr.note td:nth-child(1).elim {
     color: var(--g4);
+}
+#team-analytics-page > div.info > div > div > table tr.note td:nth-child(2) {
+    min-width: 15em;
 }
 #team-analytics-page > div.info > div > div > table tr.note td:nth-child(2) > span {
     color: var(--a);
