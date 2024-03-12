@@ -2582,6 +2582,7 @@ export default class App extends util.Target {
             this.eTeamAnalyticsMiscTable = document.getElementById("team-analytics-misc-table");
             this.eTeamAnalyticsAPITable = document.getElementById("team-analytics-api-table");
             this.eTeamAnalyticsNotesTable = document.getElementById("team-analytics-notes-table");
+            this.eTeamAnalyticsPitData = document.getElementById("team-analytics-pit-data");
             const updateTeamAnalyticsTables = () => {
                 const comp = computeFullTeam(this.team);
                 [this.eTeamAnalyticsAutoTable, this.eTeamAnalyticsTeleopTable, this.eTeamAnalyticsTotalTable].forEach((elem, ii) => {
@@ -2815,12 +2816,6 @@ export default class App extends util.Target {
                     row.appendChild(dat);
                     dat.textContent = note.note;
                 });
-            };
-            this.addHandler("post-refresh", updateTeamAnalyticsTables);
-            this.addHandler("change", updateTeamAnalyticsTables);
-            this.eTeamAnalyticsPitData = document.getElementById("team-analytics-pit-data");
-            const updateTeamAnalyticsPitData = (c, f, t) => {
-                if (c != null && !["team"].includes(c)) return;
                 this.eTeamAnalyticsPitData.innerHTML = "";
                 for (let t in pitData) {
                     let data = pitData[t];
@@ -2828,8 +2823,60 @@ export default class App extends util.Target {
                     makePitDataListing(data).forEach(elem => this.eTeamAnalyticsPitData.appendChild(elem));
                 }
             };
-            this.addHandler("post-refresh", updateTeamAnalyticsPitData);
-            this.addHandler("change", updateTeamAnalyticsPitData);
+            this.addHandler("post-refresh", updateTeamAnalyticsTables);
+            this.addHandler("change", updateTeamAnalyticsTables);
+            this.eTeamAnalyticsGraph = document.getElementById("team-analytics-graph");
+            const updateTeamAnalyticsGraph = () => {
+                this.eTeamAnalyticsGraph.innerHTML = "<div class='legend'></div><div class='content'><div class='side'></div><div class='bottom'></div></div>";
+                const legend = this.eTeamAnalyticsGraph.children[0];
+                for (let i = 0; i < 2; i++) {
+                    let elem = document.createElement("div");
+                    legend.appendChild(elem);
+                    elem.innerHTML = "<div></div><div></div>";
+                    elem.children[0].style.backgroundColor = ["#f00", "#0f0"][i];
+                    elem.children[1].textContent = ["# Teleop Speaker", "# Teleop Amp"][i];
+                }
+                const graph = this.eTeamAnalyticsGraph.children[1];
+                const side = graph.children[0];
+                const bottom = graph.children[1];
+                const matches = matchesScouted.filter(match => {
+                    if (match.robot != this.team) return false;
+                    if (getSkipped(match)) return false;
+                    return true;
+                }).sort(sortMatch);
+                const values = matches.map(match => {
+                    const comp = computeFullMatch(match);
+                    return {
+                        match: match,
+                        vals: [comp.teleop.scores.speaker.success, comp.teleop.scores.amp.success],
+                    };
+                });
+                const allValues = values.map(data => data.vals).flatten();
+                const mx = Math.max(...allValues)+1, mn = Math.min(...allValues)-1;
+                for (let i = mn+1; i <= mx-1; i++) {
+                    let elem = document.createElement("div");
+                    side.appendChild(elem);
+                    elem.style.bottom = ((mx-mn > 0) ? ((i-mn)/(mx-mn)) : 0.5)*100+"%";
+                    elem.textContent = i;
+                }
+                values.forEach((data, i) => {
+                    const { match, vals } = data;
+                    let elem = document.createElement("div");
+                    bottom.appendChild(elem);
+                    elem.style.left = ((values.length > 1) ? (i/(values.length-1)) : 0.5)*100+"%";
+                    elem.textContent = (match.id == 0) ? "P" : (match.id < 0) ? "E"+(-match.id) : match.id;
+                    vals.forEach((val, j) => {
+                        let elem = document.createElement("div");
+                        graph.appendChild(elem);
+                        elem.classList.add("point");
+                        elem.style.left = ((values.length > 1) ? (i/(values.length-1)) : 0.5)*100+"%";
+                        elem.style.bottom = ((mx-mn > 0) ? (val/(mx-mn)) : 0.5)*100+"%";
+                        elem.style.backgroundColor = ["#f00", "#0f0"][j];
+                    });
+                });
+            };
+            this.addHandler("post-refresh", updateTeamAnalyticsGraph);
+            this.addHandler("change", updateTeamAnalyticsGraph);
             this.eTeamAnalyticsMatches = document.getElementById("team-analytics-matches");
             const updateTeamAnalyticsMatches = (c, f, t) => {
                 if (c != null && !["team"].includes(c)) return;
