@@ -3617,7 +3617,7 @@ export default class App extends util.Target {
                 let value = this.eAPIInput.value;
                 if (value.endsWith("\n")) value += " ";
                 this.eAPIDisplayContent.innerHTML = "\n"+value.replaceAll("&", "&amp;").replaceAll("<", "&lt;");
-                Prism.highlightElement(this.eAPIDisplayContent);
+                // Prism.highlightElement(this.eAPIDisplayContent);
             };
             this.eAPIInput.addEventListener("input", updateAPIDisplay);
             this.eAPIInput.addEventListener("keydown", e => {

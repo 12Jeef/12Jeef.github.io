@@ -1624,8 +1624,9 @@
 #api-page > textarea {
     z-index: 1;
 
-    color: transparent;
-    caret-color: var(--fg);
+    /* color: transparent;
+    caret-color: var(--fg); */
+    color: var(--fg);
 
     resize: none;
 }
