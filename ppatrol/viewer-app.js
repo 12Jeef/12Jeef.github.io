@@ -3397,6 +3397,7 @@ export default class App extends util.Target {
             this.addHandler("post-refresh", updatePitDataPage);
 
             this.ePickListPage = document.getElementById("pick-list-page");
+            this.ePickListDownload = document.getElementById("pick-list-download");
             this.ePickListTable = document.getElementById("pick-list-table");
             const updatePickListTable = (c, f, t) => {
                 if (c != null && !["pickSort", "pickSortReverse"].includes(c)) return;
@@ -3513,11 +3514,14 @@ export default class App extends util.Target {
                     this.ePickListTable.children[0].appendChild(entryrow.row);
                     entryrow.row.children[0].textContent = i+1;
                 });
-                let r = csv.map(entry => entry.map(v => {
+                csv = csv.map(entry => entry.map(v => {
                     v = String(v).replaceAll("\"", "\"\"").replaceAll(",", "-");
                     return v;
                 }).join(", ")).join("\n");
-                console.log(r);
+                const blob = new Blob([csv], { type: "text/csv" });
+                const url = URL.createObjectURL(blob);
+                this.ePickListDownload.href = url;
+                this.ePickListDownload.download = "picklist.csv";
             };
             this.addHandler("post-refresh", updatePickListTable);
             this.addHandler("change", updatePickListTable);

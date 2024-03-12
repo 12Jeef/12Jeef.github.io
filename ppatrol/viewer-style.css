@@ -1315,6 +1315,11 @@
 #pick-list-page {
     overflow: auto;
 }
+#pick-list-page > a {
+    align-self: flex-start;
+    
+    color: var(--a);
+}
 #pick-list-page > table {
     margin: 0em;
 
