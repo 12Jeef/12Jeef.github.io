@@ -2852,25 +2852,25 @@ export default class App extends util.Target {
                     };
                 });
                 const allValues = values.map(data => data.vals).flatten();
-                const mx = Math.max(...allValues)+1, mn = Math.min(...allValues)-1;
+                const mx = Math.max(...allValues), mn = Math.min(...allValues);
                 for (let i = mn+1; i <= mx-1; i++) {
                     let elem = document.createElement("div");
                     side.appendChild(elem);
-                    elem.style.bottom = ((mx-mn > 0) ? ((i-mn)/(mx-mn)) : 0.5)*100+"%";
+                    elem.style.bottom = ((i-mn+1)/(mx-mn+2))*100+"%";
                     elem.textContent = i;
                 }
                 values.forEach((data, i) => {
                     const { match, vals } = data;
                     let elem = document.createElement("div");
                     bottom.appendChild(elem);
-                    elem.style.left = ((values.length > 1) ? (i/(values.length-1)) : 0.5)*100+"%";
+                    elem.style.left = ((i+1)/(values.length+1))*100+"%";
                     elem.textContent = (match.id == 0) ? "P" : (match.id < 0) ? "E"+(-match.id) : match.id;
                     vals.forEach((val, j) => {
                         let elem = document.createElement("div");
                         graph.appendChild(elem);
                         elem.classList.add("point");
-                        elem.style.left = ((values.length > 1) ? (i/(values.length-1)) : 0.5)*100+"%";
-                        elem.style.bottom = ((mx-mn > 0) ? (val/(mx-mn)) : 0.5)*100+"%";
+                        elem.style.left = ((i+1)/(values.length+1))*100+"%";
+                        elem.style.bottom = ((val-mn+1)/(mx-mn+2))*100+"%";
                         elem.style.backgroundColor = ["#f00", "#0f0"][j];
                     });
                 });
