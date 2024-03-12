@@ -156,6 +156,7 @@ const pitQueries = {
 
 export default class App extends util.Target {
     #lock;
+
     get locked() { return this.#lock.state; }
     set locked(v) { this.#lock.state = !!v; }
     get unlocked() { return !this.locked; }
@@ -166,6 +167,7 @@ export default class App extends util.Target {
     whenUnlocked() { return this.#lock.whenFalse(); }
 
     #matchesSkipped;
+
     get matchesSkipped() { return [...this.#matchesSkipped]; }
     set matchesSkipped(v) {
         v = util.ensure(v, "arr");
@@ -212,6 +214,7 @@ export default class App extends util.Target {
     }
 
     #matchSkips;
+
     get matchSkips() { return [...this.#matchSkips]; }
     set matchSkips(v) {
         v = util.ensure(v, "arr");
@@ -258,6 +261,7 @@ export default class App extends util.Target {
     }
 
     #team;
+
     get team() { return this.#team; }
     set team(v) {
         v = (v == null) ? null : Math.max(0, util.ensure(v, "int"));
@@ -278,6 +282,7 @@ export default class App extends util.Target {
     }
 
     #hotswaps;
+
     get hotswaps() {
         let hotswaps = {};
         for (let i in this.#hotswaps)
@@ -400,6 +405,46 @@ export default class App extends util.Target {
         localStorage.setItem("simulated", JSON.stringify(this.simulated));
     }
 
+    #pickSort;
+    
+    get pickSort() { return this.#pickSort; }
+    set pickSort(v) {
+        v = util.ensure(v, "int");
+        if (this.pickSort == v) return;
+        this.change("pickSort", this.pickSort, this.#pickSort=v);
+        this.savePickSort();
+    }
+    loadPickSort() {
+        let pickSort = null;
+        try {
+            pickSort = JSON.parse(localStorage.getItem("pick-sort"));
+        } catch (e) {}
+        this.pickSort = pickSort;
+    }
+    savePickSort() {
+        localStorage.setItem("pick-sort", JSON.stringify(this.pickSort));
+    }
+
+    #pickSortReverse;
+    
+    get pickSortReverse() { return this.#pickSortReverse; }
+    set pickSortReverse(v) {
+        v = !!v;
+        if (this.pickSortReverse == v) return;
+        this.change("pickSortReverse", this.pickSortReverse, this.#pickSortReverse=v);
+        this.savePickSortReverse();
+    }
+    loadPickSortReverse() {
+        let pickSortReverse = null;
+        try {
+            pickSortReverse = JSON.parse(localStorage.getItem("pick-sort-reverse"));
+        } catch (e) {}
+        this.pickSortReverse = pickSortReverse;
+    }
+    savePickSortReverse() {
+        localStorage.setItem("pick-sort-reverse", JSON.stringify(this.pickSortReverse));
+    }
+
     #path;
 
     get path() { return this.#path; }
@@ -436,6 +481,8 @@ export default class App extends util.Target {
         this.#qual = null;
         this.#teams = new Array(6).fill(null);
         this.#simulated = true;
+        this.#pickSort = 0;
+        this.#pickSortReverse = false;
         this.#path = "";
         this.loadMatchesSkipped();
         this.loadMatchSkips();
@@ -444,6 +491,8 @@ export default class App extends util.Target {
         this.loadQual();
         this.loadTeams();
         this.loadSimulated();
+        this.loadPickSort();
+        this.loadPickSortReverse();
         this.loadPath();
 
         window.app = this;
@@ -480,7 +529,6 @@ export default class App extends util.Target {
         let teams = [];
         let matchesScouted = [];
         let pitData = {};
-        let pickList = [];
 
         const getBufferStr = match => {
             if ("k" in match) return match.k;
@@ -1960,8 +2008,6 @@ export default class App extends util.Target {
                 this.eServerConfigEventEdit.disabled = true;
                 this.eServerConfigAccessPwdEdit.disabled = true;
 
-                this.ePickListAdd.disabled = true;
-
                 this.eAPISave.disabled = true;
             });
             this.addHandler("unlock", () => {
@@ -1970,8 +2016,6 @@ export default class App extends util.Target {
                 this.eServerConfigAPIKeyEdit.disabled = false;
                 this.eServerConfigEventEdit.disabled = false;
                 this.eServerConfigAccessPwdEdit.disabled = false;
-
-                this.ePickListAdd.disabled = false;
 
                 this.eAPISave.disabled = false;
             });
@@ -3353,155 +3397,64 @@ export default class App extends util.Target {
             this.addHandler("post-refresh", updatePitDataPage);
 
             this.ePickListPage = document.getElementById("pick-list-page");
-            const getIndex = y => {
-                let rows = Array.from(this.ePickListTable.querySelectorAll("tr.item"));
-                for (let i = 0; i < rows.length; i++) {
-                    let r = rows[i].getBoundingClientRect();
-                    if (y < r.top+r.height/2) return i;
-                }
-                return rows.length;
-            };
-            let line = document.createElement("tr");
-            line.classList.add("line");
-            line.innerHTML = "<td colspan='8'></td>";
-            let pickList2 = [];
-            this.addHandler("post-refresh", () => (pickList2 = [...pickList]));
-            setInterval(() => {
-                if (this.locked) return;
-                if (pickList.length == pickList2.length) {
-                    let diff = false;
-                    for (let i = 0; i < pickList.length; i++) {
-                        if (pickList[i] == pickList2[i]) continue;
-                        diff = true;
-                        break;
-                    }
-                    if (!diff) return;
-                }
-                postPickList();
-            }, 5*1000);
-            const postPickList = async () => {                
-                await this.whenUnlocked();
-                this.lock();
-
-                try {
-                    console.log("📝:🔑 pick-list: PYAW");
-                    let resp = await fetch("https://ppatrol.pythonanywhere.com/data/pickList", {
-                        method: "POST",
-                        mode: "cors",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Password": pwd,
-                        },
-                        body: JSON.stringify({
-                            v: pickList,
-                        }),
-                    });
-                    if (resp.status != 200) throw resp.status;
-                } catch (e) {
-                    console.log("📝:🔑 pick-list: PYAW ERR", e);
-                }
-
-                this.unlock();
-
-                this.refresh();
-            };
-            const dragIn = e => {
-                e.preventDefault();
-                line.remove();
-                let i = getIndex(e.pageY);
-                if (i+1 < this.ePickListTable.children[0].children.length)
-                    this.ePickListTable.children[0].insertBefore(line, this.ePickListTable.children[0].children[i+1]);
-                else this.ePickListTable.children[0].appendChild(line);
-            };
-            const dragOut = e => {
-                e.preventDefault();
-                line.remove();
-            };
-            const drop = e => {
-                e.preventDefault();
-                let team = util.ensure(parseInt(e.dataTransfer.getData("text/plain")), "int");
-                setTimeout(() => {
-                    pickList.splice(pickList.indexOf(team), 1);
-                    let i = getIndex(e.pageY);
-                    pickList.splice(i, 0, team);
-                    dragOut(e);
-                    updatePickListTable();
-                }, 100);
-            };
-            this.ePickListPage.addEventListener("dragenter", dragIn);
-            this.ePickListPage.addEventListener("dragover", dragIn);
-            this.ePickListPage.addEventListener("dragleave", dragOut);
-            this.ePickListPage.addEventListener("dragend", dragOut);
-            this.ePickListPage.addEventListener("drop", drop);
-            this.ePickListAdd = document.getElementById("pick-list-add");
-            this.ePickListAdd.addEventListener("click", e => {
-                let teams = prompt("Team(s):");
-                if (teams == null) return;
-                teams = teams.split(",").map(team => util.ensure(parseInt(team.trim()), "int"));
-                if (this.locked) return;
-                pickList.unshift(...teams);
-                updatePickListTable();
-            });
             this.ePickListTable = document.getElementById("pick-list-table");
-            let ids = new Set();
-            const updatePickListTable = () => {
-                [...ids].forEach(id => {
-                    clearTimeout(id);
-                    ids.delete(id);
-                });
-                Array.from(this.ePickListTable.querySelectorAll("tr.item")).forEach(elem => elem.remove());
-                let csv = [["Team", "Auto Score", "Teleop Score", "Endgame Score", "Total Score", "Notes"]];
-                pickList.forEach((team, k) => {
+            const updatePickListTable = (c, f, t) => {
+                if (c != null && !["pickSort", "pickSortReverse"].includes(c)) return;
+                Array.from(this.ePickListTable.querySelectorAll("tr")).forEach(elem => elem.remove());
+                let csv = [];
+                let entry = [];
+                csv.push(entry);
+                let row = document.createElement("tr");
+                this.ePickListTable.children[0].appendChild(row);
+                for (let i = 0; i < 10; i++) {
+                    let dat = document.createElement("th");
+                    row.appendChild(dat);
+                    if (i == 0) continue;
+                    dat.textContent = [
+                        "Team",
+                        "Scouted",
+                        "Auto Score",
+                        "#Speaker",
+                        "#Amp",
+                        "#Hoard",
+                        "EG Score",
+                        "Total Score",
+                        "Notes",
+                    ][i-1];
+                    dat.addEventListener("click", e => {
+                        if ([1, 8].includes(i-1)) return;
+                        this.pickSort = i-1;
+                    });
+                    dat.appendChild(document.createElement("ion-icon"));
+                    dat.lastChild.style.visibility = (this.pickSort == i-1) ? "" : "hidden";
+                    dat.lastChild.name = this.pickSortReverse ? "chevron-up" : "chevron-down";
+                    dat.lastChild.addEventListener("click", e => {
+                        e.stopPropagation();
+                        this.pickSortReverse = !this.pickSortReverse;
+                    });
+                    if (i >= 3 && i <= 8)
+                        dat.classList.add([
+                            "score",
+                            "number",
+                            "number",
+                            "number",
+                            "score",
+                            "score",
+                        ][i-3]);
+                    entry.push(dat.textContent);
+                }
+                let entryrows = [];
+                teams.map(team => team.team_number).forEach((team, k) => {
                     let entry = [];
-                    csv.push(entry);
                     const comp = computeFullTeam(team);
                     const scouted = computeScouted(team);
                     let row = document.createElement("tr");
-                    this.ePickListTable.children[0].appendChild(row);
                     row.classList.add("item");
-                    row.draggable = true;
-                    row.addEventListener("dragstart", e => {
-                        if (!this.ePickListTable.contains(row)) return;
-                        let id = setTimeout(() => {
-                            ids.delete(id);
-                            row.remove();
-                        }, 50);
-                        ids.add(id);
-                        e.dataTransfer.setData("text/plain", String(team));
-                    });
-                    row.addEventListener("dragend", e => {
-                        let id = setTimeout(() => {
-                            if (this.ePickListTable.contains(row)) return;
-                            ids.delete(id);
-                            if (k+2 < this.ePickListTable.children[0].children.length)
-                                this.ePickListTable.children[0].insertBefore(row, this.ePickListTable.children[k+2]);
-                            else this.ePickListTable.children[0].appendChild(row);
-                        }, 50);
-                        ids.add(id);
-                    });
-                    for (let i = 0; i < 8; i++) {
+                    entryrows.push({ entry: entry, row: row });
+                    for (let i = 0; i < 10; i++) {
                         let dat = document.createElement("td");
                         row.appendChild(dat);
-                        if (i == 0) {
-                            dat.innerHTML = "<span></span><button><ion-icon name='close'></ion-icon></button><button><ion-icon name='pencil'></ion-icon></button>";
-                            dat.children[0].textContent = k+1;
-                            dat.children[1].addEventListener("click", e => {
-                                const ans = confirm(`Are you sure you want to remove this team (#${team} in place ${k+1}) from your pick list?`);
-                                if (!ans) return;
-                                if (this.locked) return;
-                                pickList.splice(pickList.indexOf(team), 1);
-                                updatePickListTable();
-                            });
-                            dat.children[2].addEventListener("click", e => {
-                                let t = prompt(`Replace this team (#${team} in place ${k+1}) with team:`);
-                                if (t == null) return;
-                                t = util.ensure(parseInt(t), "int");
-                                if (this.locked) return;
-                                pickList[pickList.indexOf(team)] = t;
-                                updatePickListTable();
-                            });
-                            continue;
-                        }
+                        if (i == 0) continue;
                         if (i == 1) {
                             entry.push(team);
                             dat.textContent = team;
@@ -3514,26 +3467,51 @@ export default class App extends util.Target {
                         if (i == 2) {
                             dat.innerHTML = new Array(3).fill("<span></span>").join("<span>/</span>");
                             for (let j = 0; j < dat.children.length; j += 2) dat.children[j].textContent = scouted[["scouted", "total", "extra"][j/2]];
+                            entry.push(dat.textContent);
                             continue;
                         }
-                        if (i >= 3 && i <= 6) {
+                        if (i >= 3 && i <= 8) {
                             let v = [
                                 comp.auto.score,
-                                comp.teleop.score,
-                                // comp.teleop.scores.success,
+                                // comp.teleop.score,
+                                comp.teleop.scores.speaker.success,
+                                comp.teleop.scores.amp.success,
+                                comp.teleop.hoards.total,
                                 comp.endgame.score,
                                 comp.score,
                             ][i-3];
                             dat.textContent = v;
+                            dat.classList.add([
+                                "score",
+                                "number",
+                                "number",
+                                "number",
+                                "score",
+                                "score",
+                            ][i-3]);
+                            entry.push(v);
                             continue;
                         }
-                        if (i == 7) {
+                        if (i == 9) {
                             dat.innerHTML = new Array(comp.notes.length).fill("<span></span>").join("<span></span>");
                             entry.push(comp.notes.map(note => note.note).join("    /    "));
                             for (let j = 0; j < dat.children.length; j += 2) dat.children[j].textContent = comp.notes[j/2].note;
+                            entry.push(dat.textContent);
                             continue;
                         }
                     }
+                });
+                entryrows.sort((a, b) => {
+                    a = a.entry;
+                    b = b.entry;
+                    a = a[this.pickSort];
+                    b = b[this.pickSort];
+                    return (a-b) * (this.pickSortReverse ? -1 : 1);
+                });
+                entryrows.forEach((entryrow, i) => {
+                    csv.push(entryrow.entry);
+                    this.ePickListTable.children[0].appendChild(entryrow.row);
+                    entryrow.row.children[0].textContent = i+1;
                 });
                 let r = csv.map(entry => entry.map(v => {
                     v = String(v).replaceAll("\"", "\"\"").replaceAll(",", "-");
@@ -3542,6 +3520,7 @@ export default class App extends util.Target {
                 console.log(r);
             };
             this.addHandler("post-refresh", updatePickListTable);
+            this.addHandler("change", updatePickListTable);
 
             this.eAPISave = document.getElementById("api-save");
             this.eAPISave.addEventListener("click", async e => {
@@ -3794,34 +3773,6 @@ export default class App extends util.Target {
                     pitData = util.ensure(pitData, "obj");
                     localStorage.setItem("pit", JSON.stringify(pitData));
                 },
-                async () => {
-                    try {
-                        console.log("🛜 pick-list: PYAW");
-                        let resp = await fetch("https://ppatrol.pythonanywhere.com/data/pickList", {
-                            method: "GET",
-                            mode: "cors",
-                            headers: {
-                                "Password": pwd,
-                            },
-                        });
-                        if (resp.status != 200) throw resp.status;
-                        resp = await resp.text();
-                        // console.log("🛜 pick-list: PYAW = "+resp);
-                        pickList = JSON.parse(resp);
-                    } catch (e) {
-                        console.log("🛜 pick-list: PYAW ERR", e);
-                        try {
-                            // throw "LS IGNORE";
-                            console.log("🛜 pick-list: LS");
-                            pickList = JSON.parse(localStorage.getItem("pick-list"));
-                        } catch (e) {
-                            console.log("🛜 pick-list: LS ERR", e);
-                            pickList = null;
-                        }
-                    }
-                    pickList = util.ensure(pickList, "arr").map(v => util.ensure(v, "int"));
-                    localStorage.setItem("pick-list", JSON.stringify(pickList));
-                },
             ].map(f => f()));
             await Promise.all([
                 async () => {
@@ -3951,8 +3902,6 @@ export default class App extends util.Target {
                     localStorage.setItem("teams", JSON.stringify(teams));
                 },
             ].map(f => f()));
-
-            pickList = teams.map(team => team.team_number);
 
             if (0) {
                 let c = [];

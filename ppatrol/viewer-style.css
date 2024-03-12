@@ -1320,18 +1320,6 @@
 
     border-spacing: 0em;
 }
-#pick-list-page > table tr.line {
-    height: 0.5em;
-
-    background-color: var(--a);
-}
-#pick-list-page > table tr.line td {
-    width: auto;
-
-    display: table-cell;
-
-    border-top: 0.1rem solid var(--v8);
-}
 #pick-list-page > table tr.item {
     height: 5em;
 
@@ -1378,7 +1366,26 @@
 }
 #pick-list-page > table td.score,
 #pick-list-page > table th.score {
-    min-width: 10em;
+    min-width: 8em;
+}
+#pick-list-page > table td.number,
+#pick-list-page > table th.number {
+    min-width: 6em;
+}
+#pick-list-page > table th.number {
+    font-size: 0.75em;
+}
+#pick-list-page > table th > ion-icon {
+    margin-left: 0.25rem;
+
+    color: var(--va);
+
+    font-size: 1rem;
+
+    cursor: pointer;
+}
+#pick-list-page > table th > ion-icon:hover {
+    color: var(--fg);
 }
 #pick-list-page > table td:nth-child(3) > span:nth-child(2),
 #pick-list-page > table td:nth-child(3) > span:nth-child(4) {
