@@ -1290,7 +1290,8 @@ export default class App extends util.Target {
 
                                 try {
                                     console.log("📝:📀 matches: PYAW");
-                                    let resp = await fetch("https://ppatrol.pythonanywhere.com/data/matches/"+match._t, {
+                                    if (eventKey == null) throw "event-key";
+                                    let resp = await fetch("https://ppatrol.pythonanywhere.com/data/"+eventKey+"/matches/"+match._t, {
                                         method: "DELETE",
                                         mode: "cors",
                                         headers: {
@@ -2245,7 +2246,8 @@ export default class App extends util.Target {
 
                 try {
                     console.log("📝:🔑 scouters: PYAW");
-                    let resp = await fetch("https://ppatrol.pythonanywhere.com/data/scouters", {
+                    if (eventKey == null) throw "event-key";
+                    let resp = await fetch("https://ppatrol.pythonanywhere.com/data/"+eventKey+"/scouters", {
                         method: "POST",
                         mode: "cors",
                         headers: {
@@ -3726,10 +3728,13 @@ export default class App extends util.Target {
                     eventKey = (eventKey == null) ? null : String(eventKey);
                     localStorage.setItem("event-key", JSON.stringify(eventKey));
                 },
+            ].map(f => f()));
+            await Promise.all([
                 async () => {
                     try {
                         console.log("🛜 scouters: PYAW");
-                        let resp = await fetch("https://ppatrol.pythonanywhere.com/data/scouters", {
+                        if (eventKey == null) throw "event-key";
+                        let resp = await fetch("https://ppatrol.pythonanywhere.com/data/"+eventKey+"/scouters", {
                             method: "GET",
                             mode: "cors",
                             headers: {
@@ -3757,7 +3762,8 @@ export default class App extends util.Target {
                 async () => {
                     try {
                         console.log("🛜 matches-scouted: PYAW");
-                        let resp = await fetch("https://ppatrol.pythonanywhere.com/data/matches", {
+                        if (eventKey == null) throw "event-key";
+                        let resp = await fetch("https://ppatrol.pythonanywhere.com/data/"+eventKey+"/matches", {
                             method: "GET",
                             mode: "cors",
                             headers: {
@@ -3799,7 +3805,8 @@ export default class App extends util.Target {
                 async () => {
                     try {
                         console.log("🛜 pit: PYAW");
-                        let resp = await fetch("https://ppatrol.pythonanywhere.com/data/pit", {
+                        if (eventKey == null) throw "event-key";
+                        let resp = await fetch("https://ppatrol.pythonanywhere.com/data/"+eventKey+"/pit", {
                             method: "GET",
                             mode: "cors",
                             headers: {
@@ -3824,8 +3831,6 @@ export default class App extends util.Target {
                     pitData = util.ensure(pitData, "obj");
                     localStorage.setItem("pit", JSON.stringify(pitData));
                 },
-            ].map(f => f()));
-            await Promise.all([
                 async () => {
                     try {
                         console.log("🛜 event: TBA");

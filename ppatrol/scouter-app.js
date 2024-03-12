@@ -131,10 +131,13 @@ export default class App extends util.Target {
                         eventKey = (eventKey == null) ? null : String(eventKey);
                         localStorage.setItem("event-key", JSON.stringify(eventKey));
                     },
+                ].map(f => f()));
+                await Promise.all([
                     async () => {
                         try {
                             console.log("🛜 scouters: PYAW");
-                            let resp = await fetch("https://ppatrol.pythonanywhere.com/data/scouters", {
+                            if (eventKey == null) throw "event-key";
+                            let resp = await fetch("https://ppatrol.pythonanywhere.com/data/"+eventKey+"/scouters", {
                                 method: "GET",
                                 mode: "cors",
                                 headers: {
@@ -158,8 +161,6 @@ export default class App extends util.Target {
                         scouters = util.ensure(scouters, "arr").map(scouter => util.ensure(scouter, "obj"));
                         localStorage.setItem("scouters", JSON.stringify(scouters));
                     },
-                ].map(f => f()));
-                await Promise.all([
                     async () => {
                         try {
                             console.log("🛜 event: TBA");

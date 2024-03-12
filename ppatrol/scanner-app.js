@@ -65,20 +65,38 @@ export default class App extends util.Target {
                     this.stopScanning();
                     this.ePrompt.classList.add("this");
                     let data = Match.fromBufferStr(text);
+                    this.eFinish.disabled = true;
+                    try {
+                        let resp;
+                        resp = await fetch("https://ppatrol.pythonanywhere.com/data/eventKey", {
+                            method: "GET",
+                            mode: "cors",
+                            headers: {
+                                "Password": pwd,
+                            },
+                        });
+                        if (resp.status != 200) throw resp.status;
+                        resp = await resp.text();
+                        const eventKey = JSON.parse(resp);
+                        resp = await fetch("https://ppatrol.pythonanywhere.com/data/"+eventKey+"/matches/"+util.getTime(), {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Password": pwd,
+                            },
+                            body: JSON.stringify({
+                                v: data,
+                            }),
+                        });
+                        if (resp.status != 200) throw resp.status;
+                        console.log(await resp.text());
+                    } catch (e) {
+                        this.eContent.textContent = util.stringifyError(e);
+                        this.eFinish.disabled = false;
+                        return;
+                    }
                     let textData = JSON.stringify(data, null, "  ");
                     this.eContent.textContent = textData;
-                    this.eFinish.disabled = true;
-                    let resp = await fetch("https://ppatrol.pythonanywhere.com/data/matches/"+util.getTime(), {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Password": pwd,
-                        },
-                        body: JSON.stringify({
-                            v: data,
-                        }),
-                    });
-                    console.log(await resp.text());
                     this.eFinish.disabled = false;
                 },
                 () => {},
