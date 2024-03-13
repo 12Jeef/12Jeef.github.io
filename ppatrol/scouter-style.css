@@ -137,7 +137,8 @@ button[fail]:disabled {
 }
 #settings > #setting-event {
     width: 100%;
-    padding: 20px;
+    margin: 0px;
+    padding: 10px;
 
     background-color: var(--a);
     color: #fff;
@@ -164,7 +165,7 @@ button[fail]:disabled {
     position: relative;
 
     width: 100%;
-    padding: 20px;
+    padding: 10px;
 
     display: flex;
     flex-direction: column;
@@ -221,6 +222,9 @@ button[fail]:disabled {
 
     opacity: 0%;
 }
+#settings > .field > div > h1 {
+    margin: 0px;
+}
 #settings > .field > div > h1::before {
     text-decoration: line-through;
 }
@@ -239,6 +243,9 @@ button[fail]:disabled {
     background-color: transparent;
     color: var(--fg);
 }
+#settings > #setting-left > h1 {
+    margin: 0px;
+}
 #settings > #setting-left > h1::before {
     content: "Blue";
 }
@@ -246,6 +253,7 @@ button[fail]:disabled {
     content: "Red";
 }
 #settings > button {
+    margin-top: 15px;
     padding: 0.5em;
 
     gap: 0.5em;

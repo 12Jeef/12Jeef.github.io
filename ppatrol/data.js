@@ -311,8 +311,8 @@ export class Match extends util.Target {
         console.log("notes = "+JSON.stringify(this.notes));
     }
 
-    toBufferStr(scouter) {
-        return Match.toBufferStr({
+    toObj(scouter) {
+        return {
             id: this.id,
             scouter: String(scouter),
             robot: this.robot,
@@ -334,10 +334,13 @@ export class Match extends util.Target {
             finishTime: this.finishTime,
 
             notes: this.notes,
-        });
+        };
     }
-    fromBufferStr(s) {
-        let data = Match.fromBufferStr(s);
+    toBufferStr(scouter) {
+        return Match.toBufferStr(this.toObj(scouter));
+    }
+    fromObj(data) {
+        data = util.ensure(data, "obj");
 
         this.id = data.id;
         this.robot = data.robot;
@@ -361,6 +364,9 @@ export class Match extends util.Target {
         this.notes = data.notes;
         
         return this;
+    }
+    fromBufferStr(s) {
+        return this.fromObj(Match.fromBufferStr(s));
     }
     static toBufferStr(data) {
         data = util.ensure(data, "obj");

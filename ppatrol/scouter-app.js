@@ -313,6 +313,7 @@ export default class App extends util.Target {
             this.eSettingLeftRed = document.getElementById("setting-left-red");
             this.eSettingIds = Array.from(document.querySelectorAll(".setting-id"));
             this.eSettingPwdEdit = document.getElementById("setting-pwd-edit");
+            this.eSettingResetData = document.getElementById("setting-reset-data");
 
             this.eNavigatorPage = document.getElementById("navigator");
 
@@ -466,6 +467,40 @@ export default class App extends util.Target {
                             if (v.length <= 0) v = null;
                             localStorage.setItem("pwd", pwd = v);
                             pull();
+                        });
+
+                        this.eSettingResetData.addEventListener("click", async e => {
+                            this.ePrompt.classList.add("this");
+                            let clear = await new Promise((res, rej) => {
+                                this.ePromptTitle.textContent = "Are you sure?";
+                                this.ePromptInput.style.display = "none";
+                                this.ePromptButtons.style.display = "";
+                                const onFinish = () => {
+                                    this.ePrompt.classList.remove("this");
+                                    this.ePromptClose.removeEventListener("click", onClose);
+                                    this.ePromptYes.removeEventListener("click", onYes);
+                                    this.ePromptNo.removeEventListener("click", onNo);
+                                };
+                                const onClose = () => {
+                                    res(false);
+                                    onFinish();
+                                };
+                                const onYes = () => {
+                                    res(true);
+                                    onFinish();
+                                };
+                                const onNo = () => {
+                                    res(false);
+                                    onFinish();
+                                };
+                                this.ePromptClose.addEventListener("click", onClose);
+                                this.ePromptYes.addEventListener("click", onYes);
+                                this.ePromptNo.addEventListener("click", onNo);
+                            });
+                            if (!clear) return;
+                            localStorage.removeItem("matches-scouted");
+                            this.updateMatches();
+                            this.page = "navigator";
                         });
 
                         this.addHandler("change-id", () => {
@@ -1022,6 +1057,7 @@ export default class App extends util.Target {
                                     this.ePromptNo.removeEventListener("click", onNo);
                                 };
                                 const onClose = () => {
+                                    res(false);
                                     onFinish();
                                 };
                                 const onYes = () => {
@@ -1372,7 +1408,15 @@ export default class App extends util.Target {
         return r;
     }
     updateMatches() {
+        let matchesScouted = null;
+        try {
+            matchesScouted = JSON.parse(localStorage.getItem("matches-scouted"));
+        } catch (e) {}
+        matchesScouted = util.ensure(matchesScouted, "obj");
         this.matches.forEach(match => {
+            if (match.match.id in matchesScouted)
+                match.match.fromObj(matchesScouted[match.match.id]);
+            else match.match.reset();
             if (!match.match.isNormal()) return;
             match.match.robot = (this.id > 0 && this.id <= 3) ? match.red[this.id-1] : (this.id > 3 && this.id <= 6) ? match.blue[this.id-4] : null;
         });
@@ -1394,10 +1438,19 @@ export default class App extends util.Target {
         };
         if (this.hasMatch()) this.match.clearLinkedHandlers(this, "change");
         this.change("match", this.match, this.#match=v);
-        if (this.hasMatch()) this.match.addLinkedHandler(this, "change", (c, f, t) => {
-            update();
-            this.change("match."+c, f, t);
-        });
+        if (this.hasMatch()) {
+            this.match.addLinkedHandler(this, "change", (c, f, t) => {
+                update();
+                let matchesScouted = null;
+                try {
+                    matchesScouted = JSON.parse(localStorage.getItem("matches-scouted"));
+                } catch (e) {}
+                matchesScouted = util.ensure(matchesScouted, "obj");
+                matchesScouted[this.match.id] = this.match.toObj(this.scouter);
+                localStorage.setItem("matches-scouted", JSON.stringify(matchesScouted));
+                this.change("match."+c, f, t);
+            });
+        }
         update();
     }
 }
