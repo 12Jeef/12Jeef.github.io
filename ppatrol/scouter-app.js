@@ -1387,6 +1387,7 @@ export default class App extends util.Target {
             if (!(match instanceof App.Match)) return false;
             if (this.hasMatch(match)) return false;
             this.#matches.push(match);
+            console.log(match.match.id);
             if (!match.match.isPractice()) this.eNavigatorList.appendChild(match.eListItem);
             match.addLinkedHandler(this, "trigger", e => {
                 this.match = match.match;
@@ -1405,6 +1406,7 @@ export default class App extends util.Target {
             if (!(match instanceof App.Match)) return false;
             if (!this.hasMatch(match)) return false;
             this.#matches.splice(this.#matches.indexOf(match), 1);
+            console.log(match.match.id);
             if (!match.match.isPractice()) this.eNavigatorList.removeChild(match.eListItem);
             match.clearLinkedHandlers(this, "trigger");
             this.change("remMatch", match, null);
