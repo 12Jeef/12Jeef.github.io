@@ -284,7 +284,8 @@ export default class App extends util.Target {
             this.eOverlay = document.getElementById("overlay");
             const checkFullscreen = () => {
                 if (fullscreenWanted) {
-                    if (isFullscreen()) this.eOverlay.classList.remove("this");
+                    if (isFullscreen())
+                        this.eOverlay.classList.remove("this");
                     else this.eOverlay.classList.add("this");
                 } else this.eOverlay.classList.remove("this");
             }
@@ -506,7 +507,8 @@ export default class App extends util.Target {
                         this.addHandler("change-id", () => {
                             this.eSettingIds.forEach((elem, id) => {
                                 id++;
-                                if (this.id == id) elem.classList.add("this");
+                                if (this.id == id)
+                                    elem.classList.add("this");
                                 else elem.classList.remove("this");
                             });
                         });
@@ -973,10 +975,12 @@ export default class App extends util.Target {
                         new ResizeObserver(updateRobot).observe(this.eTeleopField);
                         state.addHandler("change-type", () => {
                             let type = state.type;
-                            if (type) this.eTeleopModal.classList.add("this");
+                            if (type)
+                                this.eTeleopModal.classList.add("this");
                             else this.eTeleopModal.classList.remove("this");
                             if (!type) return;
-                            if (type == "speaker") this.eTeleopModal.classList.add("field");
+                            if (type == "speaker")
+                                this.eTeleopModal.classList.add("field");
                             else this.eTeleopModal.classList.remove("field");
                             this.eTeleopType.textContent = { source: "Pickup: Source", ground: "Pickup: Ground", speaker: "Score: Speaker", amp: "Score: Amp" }[type];
                         });
@@ -1013,7 +1017,8 @@ export default class App extends util.Target {
                                 });
                             this.eEndgamePos.value = pos;
                             this.eEndgamePosSelectors.forEach((elem, i) => {
-                                if (i == pos) elem.classList.add("this");
+                                if (i == pos)
+                                    elem.classList.add("this");
                                 else elem.classList.remove("this");
                             });
                             this.eEndgameHarmonied.disabled = pos < 2;
@@ -1276,7 +1281,8 @@ export default class App extends util.Target {
         if (!(v in this.pages)) return;
         this.change("page", this.page, this.#page=v);
         for (let id in this.pages) {
-            if (id == this.page) this.pages[id].classList.add("this");
+            if (id == this.page)
+                this.pages[id].classList.add("this");
             else this.pages[id].classList.remove("this");
         }
     }
