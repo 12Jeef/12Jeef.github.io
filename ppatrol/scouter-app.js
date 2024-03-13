@@ -499,7 +499,7 @@ export default class App extends util.Target {
                                 this.ePromptNo.addEventListener("click", onNo);
                             });
                             if (!clear) return;
-                            localStorage.removeItem("matches-scouted");
+                            localStorage.removeItem("_matches-scouted");
                             this.updateMatches();
                             this.page = "navigator";
                         });
@@ -1387,7 +1387,7 @@ export default class App extends util.Target {
             if (!(match instanceof App.Match)) return false;
             if (this.hasMatch(match)) return false;
             this.#matches.push(match);
-            console.log(match.match.id);
+            // console.log(match.match.id);
             if (!match.match.isPractice()) this.eNavigatorList.appendChild(match.eListItem);
             match.addLinkedHandler(this, "trigger", e => {
                 this.match = match.match;
@@ -1406,7 +1406,7 @@ export default class App extends util.Target {
             if (!(match instanceof App.Match)) return false;
             if (!this.hasMatch(match)) return false;
             this.#matches.splice(this.#matches.indexOf(match), 1);
-            console.log(match.match.id);
+            // console.log(match.match.id);
             if (!match.match.isPractice()) this.eNavigatorList.removeChild(match.eListItem);
             match.clearLinkedHandlers(this, "trigger");
             this.change("remMatch", match, null);
@@ -1418,7 +1418,7 @@ export default class App extends util.Target {
     updateMatches() {
         let matchesScouted = null;
         try {
-            matchesScouted = JSON.parse(localStorage.getItem("matches-scouted"));
+            matchesScouted = JSON.parse(localStorage.getItem("_matches-scouted"));
         } catch (e) {}
         matchesScouted = util.ensure(matchesScouted, "obj");
         this.matches.forEach(match => {
@@ -1451,11 +1451,11 @@ export default class App extends util.Target {
                 update();
                 let matchesScouted = null;
                 try {
-                    matchesScouted = JSON.parse(localStorage.getItem("matches-scouted"));
+                    matchesScouted = JSON.parse(localStorage.getItem("_matches-scouted"));
                 } catch (e) {}
                 matchesScouted = util.ensure(matchesScouted, "obj");
                 matchesScouted[this.match.id] = this.match.toObj(this.scouter);
-                localStorage.setItem("matches-scouted", JSON.stringify(matchesScouted));
+                localStorage.setItem("_matches-scouted", JSON.stringify(matchesScouted));
                 this.change("match."+c, f, t);
             });
         }
