@@ -2714,7 +2714,7 @@ export default class App extends util.Target {
                     }
                 }
                 this.eTeamAnalyticsAPITable.innerHTML = "";
-                for (let i = 0; i < 4; i++) {
+                for (let i = 0; i < 5; i++) {
                     let row = document.createElement("tr");
                     this.eTeamAnalyticsAPITable.appendChild(row);
                     for (let j = 0; j < 2; j++) {
@@ -2736,7 +2736,7 @@ export default class App extends util.Target {
                         dat.style.color = "var(--a)";
                         dat.style.textDecoration = "underline";
                         dat.style.cursor = "pointer";
-                        dat.textContent = "Show Scoring Maps";
+                        dat.textContent = ["Show Scoring Maps", "Show All Scoring"][i-3];
                         dat.addEventListener("click", e => {
                             heatmapNodes = [];
                             canvasNodes = [];
@@ -2772,7 +2772,7 @@ export default class App extends util.Target {
                                     { color: new util.Color(0, 255, 0), nodes: [] },
                                 ];
                                 matchesScouted.filter(match => {
-                                    if (match.robot != this.team) return;
+                                    if (i == 3 && match.robot != this.team) return;
                                     if (getSkipped(match)) return;
                                     match.teleopFrames.forEach(frame => {
                                         if (frame.type != "speaker") return;
