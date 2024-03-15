@@ -1422,8 +1422,9 @@ export default class App extends util.Target {
         } catch (e) {}
         matchesScouted = util.ensure(matchesScouted, "obj");
         this.matches.forEach(match => {
-            if (match.match.id in matchesScouted)
-                match.match.fromObj(matchesScouted[match.match.id]);
+            if (match.match != this.match)
+                if (match.match.id in matchesScouted)
+                    match.match.fromObj(matchesScouted[match.match.id]);
             if (!match.match.isNormal()) return;
             match.match.robot = (this.id > 0 && this.id <= 3) ? match.red[this.id-1] : (this.id > 3 && this.id <= 6) ? match.blue[this.id-4] : null;
         });
