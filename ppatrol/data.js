@@ -349,18 +349,12 @@ export class Match extends util.Target {
         this.pos = data.pos;
         this.preloaded = data.preloaded;
 
-        this.globalFrames = util.ensure(data.globalFrames, "arr")
-            .map(frame => util.ensure(frame, "obj"))
-            .map(frame => new Match.Frame(frame.ts, frame.type, frame.state));
+        this.globalFrames.fromObj(data.globalFrames);
 
-        this.autoFrames = util.ensure(data.autoFrames, "arr")
-            .map(frame => util.ensure(frame, "obj"))
-            .map(frame => new Match.Frame(frame.ts, frame.type, frame.state));
+        this.autoFrames.fromObj(data.autoFrames);
 
         this.teleopTime = data.teleopTime;
-        this.teleopFrames = util.ensure(data.teleopFrames, "arr")
-            .map(frame => util.ensure(frame, "obj"))
-            .map(frame => new Match.Frame(frame.ts, frame.type, frame.state));
+        this.teleopFrames.fromObj(data.teleopFrames);
 
         this.endgameTrap = data.endgameTrap;
         this.endgameHarmony = data.endgameHarmony;
@@ -879,6 +873,11 @@ Match.Frames = class MatchFrames extends util.Target {
     toObj() {
         return this.frames.map(frame => frame.toObj());
     }
+    fromObj(data) {
+        data = util.ensure(data, "arr");
+        this.frames = data.map(frame => Match.Frame.fromObj(frame));
+        return this;
+    }
 };
 Match.Frame = class MatchFrame extends util.Target {
     #ts;
@@ -904,5 +903,9 @@ Match.Frame = class MatchFrame extends util.Target {
             type: this.type,
             state: this.state,
         };
+    }
+    static fromObj(data) {
+        data = util.ensure(data, "obj");
+        return new Match.Frame(data.ts, data.type, data.state);
     }
 };
