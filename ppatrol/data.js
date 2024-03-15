@@ -349,12 +349,12 @@ export class Match extends util.Target {
         this.pos = data.pos;
         this.preloaded = data.preloaded;
 
-        this.globalFrames.fromObj(data.globalFrames);
+        this.globalFrames = data.globalFrames;
 
-        this.autoFrames.fromObj(data.autoFrames);
+        this.autoFrames = data.autoFrames;
 
         this.teleopTime = data.teleopTime;
-        this.teleopFrames.fromObj(data.teleopFrames);
+        this.teleopFrames = data.teleopFrames;
 
         this.endgameTrap = data.endgameTrap;
         this.endgameHarmony = data.endgameHarmony;
@@ -833,7 +833,7 @@ Match.Frames = class MatchFrames extends util.Target {
     }
     add(...frames) {
         return util.Target.resultingForEach(frames, frame => {
-            if (!(frame instanceof Match.Frame)) return false;
+            if (!(frame instanceof Match.Frame)) frame = Match.Frame.fromObj(frame);
             if (this.has(frame)) return false;
             if (this.#frames.length == 0) this.#frames.push(frame);
             else if (this.#frames.length == 1) {
@@ -861,7 +861,7 @@ Match.Frames = class MatchFrames extends util.Target {
     }
     rem(...frames) {
         return util.Target.resultingForEach(frames, frame => {
-            if (!(frame instanceof Match.Frame)) return false;
+            if (!(frame instanceof Match.Frame)) frame = Match.Frame.fromObj(frame);
             if (!this.has(frame)) return false;
             this.#frames.splice(this.#frames.indexOf(frame), 1);
             this.change("rem", frame, null);
@@ -874,8 +874,7 @@ Match.Frames = class MatchFrames extends util.Target {
         return this.frames.map(frame => frame.toObj());
     }
     fromObj(data) {
-        data = util.ensure(data, "arr");
-        this.frames = data.map(frame => Match.Frame.fromObj(frame));
+        this.frames = data;
         return this;
     }
 };
