@@ -349,12 +349,18 @@ export class Match extends util.Target {
         this.pos = data.pos;
         this.preloaded = data.preloaded;
 
-        this.globalFrames = data.globalFrames;
+        this.globalFrames = util.ensure(data.globalFrames, "arr")
+            .map(frame => util.ensure(frame, "obj"))
+            .map(frame => new Match.Frame(frame.ts, frame.type, frame.state));
 
-        this.autoFrames = data.autoFrames;
+        this.autoFrames = util.ensure(data.autoFrames, "arr")
+            .map(frame => util.ensure(frame, "obj"))
+            .map(frame => new Match.Frame(frame.ts, frame.type, frame.state));
 
         this.teleopTime = data.teleopTime;
-        this.teleopFrames = data.teleopFrames;
+        this.teleopFrames = util.ensure(data.teleopFrames, "arr")
+            .map(frame => util.ensure(frame, "obj"))
+            .map(frame => new Match.Frame(frame.ts, frame.type, frame.state));
 
         this.endgameTrap = data.endgameTrap;
         this.endgameHarmony = data.endgameHarmony;

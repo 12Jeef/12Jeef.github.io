@@ -1219,8 +1219,8 @@ export default class App extends util.Target {
                     },
                     finish: () => {
                         let data = this.hasMatch() ? this.match.toBufferStr(this.scouter) : "NO_MATCH_ERR";
-                        console.log(data);
-                        console.log(Match.fromBufferStr(data));
+                        // console.log(data);
+                        // console.log(Match.fromBufferStr(data));
                         new QRious({
                             element: this.eFinishCodeCanvas,
                             value: data,
@@ -1422,9 +1422,10 @@ export default class App extends util.Target {
         } catch (e) {}
         matchesScouted = util.ensure(matchesScouted, "obj");
         this.matches.forEach(match => {
-            if (match.match != this.match)
-                if (match.match.id in matchesScouted)
-                    match.match.fromObj(matchesScouted[match.match.id]);
+            if (match.match.id in matchesScouted) {
+                console.log("*** loading "+match.match.id+" from LS", matchesScouted[match.match.id]);
+                match.match.fromObj(matchesScouted[match.match.id]);
+            }
             if (!match.match.isNormal()) return;
             match.match.robot = (this.id > 0 && this.id <= 3) ? match.red[this.id-1] : (this.id > 3 && this.id <= 6) ? match.blue[this.id-4] : null;
         });
@@ -1455,6 +1456,7 @@ export default class App extends util.Target {
                 } catch (e) {}
                 matchesScouted = util.ensure(matchesScouted, "obj");
                 matchesScouted[this.match.id] = this.match.toObj(this.scouter);
+                console.log("*** dumping "+this.match.id+" to LS", matchesScouted[this.match.id]);
                 localStorage.setItem("_matches-scouted", JSON.stringify(matchesScouted));
                 this.change("match."+c, f, t);
             });
