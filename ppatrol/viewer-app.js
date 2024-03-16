@@ -1915,7 +1915,7 @@ export default class App extends util.Target {
                     });
                 });
                 heatmap.setDataMin(0);
-                heatmap.setDataMax(5);
+                heatmap.setDataMax(10);
             });
             const ctx = this.eFieldCanvas.getContext("2d");
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
