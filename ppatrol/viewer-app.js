@@ -531,11 +531,13 @@ export default class App extends util.Target {
         let pitData = {};
 
         const getBufferStr = match => {
+            if (match.empty) return null;
             if ("k" in match) return match.k;
             match.k = Match.toBufferStr(match);
             return getBufferStr(match);
         };
         const getSkipped = match => {
+            if (match.empty) return false;
             let k = getBufferStr(match);
             let v = this.hasSkippedMatch(k);
             if (match.id == 0)
@@ -558,14 +560,16 @@ export default class App extends util.Target {
             if (!match.score_breakdown.blue) return false;
             return true;
         };
-        const getRobotI = match => {
-            let tbamatch = getTBAMatch(match);
-            if (!util.is(tbamatch, "obj")) return -1;
-            let teams = [
+        const getRobots = tbamatch => {
+            return [
                 ...tbamatch.alliances.red.team_keys.map(key => parseInt(key.substring(3))),
                 ...tbamatch.alliances.blue.team_keys.map(key => parseInt(key.substring(3))),
             ];
-            return teams.indexOf(match.robot);
+        };
+        const getRobotI = match => {
+            let tbamatch = getTBAMatch(match);
+            if (!util.is(tbamatch, "obj")) return -1;
+            return getRobots(tbamatch).indexOf(match.robot);
         };
         const getAutoMobility = match => {
             let i = getRobotI(match);
@@ -852,6 +856,7 @@ export default class App extends util.Target {
         const computeScouted = team => {
             let n1 = 0, n2 = 0, m = 0;
             matchesScouted.forEach(match => {
+                if (match.empty) return;
                 if (match.robot != team) return;
                 if (getSkipped(match)) return;
                 if (getTBAMatch(match) == null) n2++;
@@ -869,6 +874,7 @@ export default class App extends util.Target {
         };
         const computeTeam = team => {
             const matches = matchesScouted.filter(match => {
+                if (match.empty) return false;
                 if (match.robot != team) return false;
                 if (getSkipped(match)) return false;
                 return true;
@@ -1067,6 +1073,7 @@ export default class App extends util.Target {
             let disablePeriods = [];
             let cyclePeriods = [];
             matchesScouted.sort(sortMatch).forEach(match => {
+                if (match.empty) return;
                 if (match.robot != team) return;
                 if (getSkipped(match)) return;
                 disablePeriods.push(...getDisablePeriods(match).map(period => period.len));
@@ -1077,7 +1084,45 @@ export default class App extends util.Target {
             return data;
         };
 
+        const makeEmptyMatchListing = cnf => {
+            cnf = util.ensure(cnf, "obj");
+            let elem = document.createElement("table");
+            elem.classList.add("match-listing");
+            elem.classList.add("empty");
+            if (cnf.team == "r") elem.setAttribute("red", "");
+            if (cnf.team == "b") elem.setAttribute("blue", "");
+            let row = document.createElement("tr");
+            elem.appendChild(row);
+            for (let j = 0; j < 13; j++) {
+                let dat = document.createElement("td");
+                row.appendChild(dat);
+                if (j == 1) {
+                    dat.textContent = (cnf.id == 0) ? "Practice" : (cnf.id < 0) ? "Elim#"+(-cnf.id) : cnf.id;
+                    if (cnf.id == 0) dat.classList.add("practice");
+                    if (cnf.id < 0) dat.classList.add("elim");
+                } else if (j == 2) {
+                    dat.textContent = cnf.robot;
+                } else if (j == 10) {
+                    dat.textContent = "See Team Analytics";
+                    dat.addEventListener("click", e => {
+                        eNavButtons["team-analytics"].click();
+                        this.team = cnf.robot;
+                    });
+                } else if (j == 11) {
+                    dat.textContent = "See Match Analytics";
+                    dat.addEventListener("click", e => {
+                        if (cnf.id <= 0) return;
+                        eNavButtons["match-analytics"].click();
+                        this.qual = cnf.id;
+                    });
+                }
+                continue;
+            }
+            return elem;
+        };
         const makeMatchListing = match => {
+            match = util.ensure(match, "obj");
+            if (match.empty) return makeEmptyMatchListing(match);
             const k = getBufferStr(match);
             const comp = computeFullMatch(match);
             const showMap = () => {
@@ -1973,6 +2018,7 @@ export default class App extends util.Target {
                     { color: new util.Color(0, 255, 0), nodes: [] },
                 ];
                 matchesScouted.forEach(match => {
+                    if (match.empty) return;
                     if (getSkipped(match)) return;
                     match.teleopFrames.forEach(frame => {
                         if (frame.type != "speaker") return;
@@ -2772,6 +2818,7 @@ export default class App extends util.Target {
                                     { color: new util.Color(0, 255, 0), nodes: [] },
                                 ];
                                 matchesScouted.filter(match => {
+                                    if (match.empty) return;
                                     if (i == 3 && match.robot != this.team) return;
                                     if (getSkipped(match)) return;
                                     match.teleopFrames.forEach(frame => {
@@ -2842,6 +2889,7 @@ export default class App extends util.Target {
                 const side = graph.children[0];
                 const bottom = graph.children[1];
                 const matches = matchesScouted.filter(match => {
+                    if (match.empty) return false;
                     if (match.robot != this.team) return false;
                     if (getSkipped(match)) return false;
                     return true;
@@ -3761,49 +3809,6 @@ export default class App extends util.Target {
                 },
                 async () => {
                     try {
-                        console.log("🛜 matches-scouted: PYAW");
-                        if (eventKey == null) throw "event-key";
-                        let resp = await fetch("https://ppatrol.pythonanywhere.com/data/"+eventKey+"/matches", {
-                            method: "GET",
-                            mode: "cors",
-                            headers: {
-                                "Password": pwd,
-                            },
-                        });
-                        if (resp.status != 200) throw resp.status;
-                        resp = await resp.text();
-                        // console.log("🛜 matches-scouted: PYAW = "+resp);
-                        matchesScouted = JSON.parse(resp);
-                    } catch (e) {
-                        console.log("🛜 matches-scouted: PYAW ERR", e);
-                        try {
-                            // throw "LS IGNORE";
-                            console.log("🛜 matches-scouted: LS");
-                            matchesScouted = JSON.parse(localStorage.getItem("matches-scouted"));
-                        } catch (e) {
-                            console.log("🛜 matches-scouted: LS ERR", e);
-                            matchesScouted = null;
-                        }
-                    }
-                    matchesScouted = util.ensure(matchesScouted, "obj");
-                    matchesScouted = Object.keys(matchesScouted).map(t => {
-                        let match = matchesScouted[t];
-                        match._t = t;
-                        return match;
-                    });
-                    localStorage.setItem("matches-scouted", JSON.stringify(matchesScouted));
-                    // console.log(JSON.stringify(JSON.parse(JSON.stringify(matchesScouted)).map(match => {
-                    //     match.id++;
-                    //     return match;
-                    // }).reduce((matchesScouted, match) => {
-                    //     matchesScouted[match._t] = match;
-                    //     delete match._t;
-                    //     return matchesScouted;
-                    // }, {}), null, "  "));
-                    matchesScouted.sort(sortMatch);
-                },
-                async () => {
-                    try {
                         console.log("🛜 pit: PYAW");
                         if (eventKey == null) throw "event-key";
                         let resp = await fetch("https://ppatrol.pythonanywhere.com/data/"+eventKey+"/pit", {
@@ -3956,6 +3961,64 @@ export default class App extends util.Target {
                     }
                     teams = util.ensure(teams, "arr");
                     localStorage.setItem("teams", JSON.stringify(teams));
+                },
+            ].map(f => f()));
+            await Promise.all([
+                async () => {
+                    try {
+                        console.log("🛜 matches-scouted: PYAW");
+                        if (eventKey == null) throw "event-key";
+                        let resp = await fetch("https://ppatrol.pythonanywhere.com/data/"+eventKey+"/matches", {
+                            method: "GET",
+                            mode: "cors",
+                            headers: {
+                                "Password": pwd,
+                            },
+                        });
+                        if (resp.status != 200) throw resp.status;
+                        resp = await resp.text();
+                        // console.log("🛜 matches-scouted: PYAW = "+resp);
+                        matchesScouted = JSON.parse(resp);
+                    } catch (e) {
+                        console.log("🛜 matches-scouted: PYAW ERR", e);
+                        try {
+                            // throw "LS IGNORE";
+                            console.log("🛜 matches-scouted: LS");
+                            matchesScouted = JSON.parse(localStorage.getItem("matches-scouted"));
+                        } catch (e) {
+                            console.log("🛜 matches-scouted: LS ERR", e);
+                            matchesScouted = null;
+                        }
+                    }
+                    matchesScouted = util.ensure(matchesScouted, "obj");
+                    localStorage.setItem("matches-scouted", JSON.stringify(matchesScouted));
+                    matchesScouted = Object.keys(matchesScouted).map(t => {
+                        let match = matchesScouted[t];
+                        match._t = t;
+                        return match;
+                    });
+                    matchesScouted.sort(sortMatch);
+                    let wantedOrder = [];
+                    for (let id in matches) {
+                        id = parseInt(id);
+                        getRobots(matches[id]).forEach((robot, i) => wantedOrder.push([id, robot, i]));
+                    }
+                    let prevMatch = null, prevId = null, prevRobot = null;
+                    for (let i = 0; i < matchesScouted.length; i++) {
+                        if (wantedOrder.length <= 0) break;
+                        const match = matchesScouted[i];
+                        if (match.id <= 0) continue;
+                        if (match != prevMatch && match.id == prevId && match.robot == prevRobot) continue;
+                        prevMatch = match;
+                        prevId = match.id;
+                        prevRobot = match.robot;
+                        const [id, robot, j] = wantedOrder.shift();
+                        if (match.id == id && match.robot == robot) continue;
+                        matchesScouted.splice(i, 0, { empty: true, id: id, robot: robot, team: (j < 3) ? "r" : "b" });
+                    }
+                    wantedOrder.forEach(([id, robot, j]) => {
+                        matchesScouted.push({ empty: true, id: id, robot: robot, team: (j < 3) ? "r" : "b" });
+                    });
                 },
             ].map(f => f()));
 
