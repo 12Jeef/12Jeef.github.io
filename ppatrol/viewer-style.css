@@ -1682,7 +1682,7 @@ table.match-listing td {
     margin: 0em;
 }
 table.match-listing td:first-child {
-    min-width: 1.25em;
+    min-width: 1.75em;
 }
 table.match-listing td:nth-child(2) {
     min-width: 5em;
