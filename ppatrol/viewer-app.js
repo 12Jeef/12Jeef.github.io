@@ -1781,7 +1781,7 @@ export default class App extends util.Target {
             }
             return data[key];
         };
-        const makePitDataListing = (data, cnf) => {
+        const makePitDataListing = (t, data, cnf) => {
             cnf = util.ensure(cnf, "obj");
             let elems = [], elem, btn, table;
 
@@ -1878,7 +1878,6 @@ export default class App extends util.Target {
                 elem.appendChild(row);
                 row.classList.add("pit");
                 if (i <= 0) row.classList.add("t");
-                if (i >= 1) row.classList.add("b");
                 for (let j = 0; j < 4; j++) {
                     let dat = document.createElement(["th", "td"][i%2]);
                     row.appendChild(dat);
@@ -1892,6 +1891,39 @@ export default class App extends util.Target {
                     let k = ["programming-language", "auton-paths", "attitude", "pit-organization"][j];
                     dat.textContent = getPitValue(data, k);
                 }
+            }
+            for (let i = 0; i < 4; i++) {
+                let row = document.createElement("tr");
+                elem.appendChild(row);
+                row.classList.add("pit");
+                if (i % 2 == 0) row.classList.add("t");
+                if (i >= 3) row.classList.add("b");
+                let dat = document.createElement(["th", "td"][i%2]);
+                row.appendChild(dat);
+                dat.style.minWidth = dat.style.maxWidth = "calc(((100vw - 4rem) / 10) * "+10+")";
+                dat.colSpan = 5;
+                if (i % 2 == 0) {
+                    dat.textContent = ["Notes", "Images"][i/2];
+                    continue;
+                }
+                if (i == 1) {
+                    dat.textContent = getPitValue(data, "notes");
+                    continue;
+                }
+                dat.classList.add("images");
+                dat.innerHTML = "<div></div>";
+                if (!(t in images)) continue;
+                util.ensure(images[t]["robot-picture"], "arr").map(buff => {
+                    buff = String(buff);
+                    const arr = new Uint8Array(buff.length/2);
+                    for (let i = 0; i < buff.length; i += 2)
+                        arr[i/2] = util.BASE16.indexOf(buff[i])*16 + util.BASE16.indexOf(buff[i+1]);
+                    const blob = new Blob([arr], { type: "image/png" });
+                    const url = URL.createObjectURL(blob);
+                    let img = document.createElement("img");
+                    img.src = url;
+                    dat.children[0].appendChild(img);
+                });
             }
 
             let collapsed = false;
@@ -2870,7 +2902,7 @@ export default class App extends util.Target {
                 for (let t in pitData) {
                     let data = pitData[t];
                     if (getPitValue(data, "team-number") != this.team) continue;
-                    makePitDataListing(data).forEach(elem => this.eTeamAnalyticsPitData.appendChild(elem));
+                    makePitDataListing(t, data).forEach(elem => this.eTeamAnalyticsPitData.appendChild(elem));
                 }
             };
             this.addHandler("post-refresh", updateTeamAnalyticsTables);
@@ -3488,7 +3520,7 @@ export default class App extends util.Target {
                     let data = pitData[t];
                     let team = getPitValue(data, "team-number");
                     listings[team] = [];
-                    makePitDataListing(data, { collapsible: true, showTeam: true }).forEach(elem => listings[team].push(elem));
+                    makePitDataListing(t, data, { collapsible: true, showTeam: true }).forEach(elem => listings[team].push(elem));
                 }
                 Object.keys(listings).sort((a, b) => parseInt(a)-parseInt(b)).forEach(team => listings[team].forEach(elem => this.ePitDataPage.appendChild(elem)));
             };
@@ -3836,6 +3868,35 @@ export default class App extends util.Target {
                     }
                     pitData = util.ensure(pitData, "obj");
                     localStorage.setItem("pit", JSON.stringify(pitData));
+                },
+                async () => {
+                    try {
+                        console.log("🛜 images: PYAW");
+                        if (eventKey == null) throw "event-key";
+                        let resp = await fetch("https://ppatrol.pythonanywhere.com/images/"+eventKey, {
+                            method: "GET",
+                            mode: "cors",
+                            headers: {
+                                "Password": pwd,
+                            },
+                        });
+                        if (resp.status != 200) throw resp.status;
+                        resp = await resp.text();
+                        // console.log("🛜 pit: PYAW = "+resp);
+                        images = JSON.parse(resp);
+                    } catch (e) {
+                        console.log("🛜 images: PYAW ERR", e);
+                        try {
+                            // throw "LS IGNORE";
+                            console.log("🛜 images: LS");
+                            images = JSON.parse(localStorage.getItem("images"));
+                        } catch (e) {
+                            console.log("🛜 images: LS ERR", e);
+                            images = null;
+                        }
+                    }
+                    images = util.ensure(images, "obj");
+                    localStorage.setItem("images", JSON.stringify(images));
                 },
                 async () => {
                     try {

@@ -2101,3 +2101,12 @@ table tr.pit td.small[no] {
 
     font-size: 1em;
 }
+table tr.pit td.images > div {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: center;
+    align-content: center;
+    gap: 0.5em;
+}
