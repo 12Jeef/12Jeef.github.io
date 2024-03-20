@@ -529,6 +529,7 @@ export default class App extends util.Target {
         let teams = [];
         let matchesScouted = [];
         let pitData = {};
+        let images = {};
 
         const getBufferStr = match => {
             if (match.empty) return null;
@@ -3633,7 +3634,7 @@ export default class App extends util.Target {
 
                 try {
                     console.log("📝:🔑 /"+this.path+": PYAW");
-                    let resp = await fetch("https://ppatrol.pythonanywhere.com/data/"+this.path, {
+                    let resp = await fetch("https://ppatrol.pythonanywhere.com/"+this.path, {
                         method: "POST",
                         mode: "cors",
                         headers: {
@@ -3689,7 +3690,7 @@ export default class App extends util.Target {
                 let apiData = null;
                 try {
                     console.log("🛜 /"+this.path+": PYAW");
-                    let resp = await fetch("https://ppatrol.pythonanywhere.com/data/"+this.path, {
+                    let resp = await fetch("https://ppatrol.pythonanywhere.com/"+this.path, {
                         method: "GET",
                         mode: "cors",
                         headers: {
