@@ -1666,6 +1666,9 @@ table.match-listing {
     min-width: 100%;
     max-width: 100%;
 }
+table.match-listing.empty {
+    opacity: 0.75;
+}
 table.match-listing,
 table.match-listing > tr:nth-child(8) > td,
 table.match-listing > tr:nth-child(9) > td {
