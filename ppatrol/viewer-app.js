@@ -530,6 +530,7 @@ export default class App extends util.Target {
         let matchesScouted = [];
         let pitData = {};
         let images = {};
+        let imageBlobs = [];
 
         const getBufferStr = match => {
             if (match.empty) return null;
@@ -1915,11 +1916,12 @@ export default class App extends util.Target {
                 if (!(t in images)) continue;
                 util.ensure(images[t]["robot-picture"], "arr").map(buff => {
                     buff = String(buff);
-                    const arr = new Uint8Array(buff.length/2);
+                    const arr = new Int8Array(buff.length/2);
                     for (let i = 0; i < buff.length; i += 2)
-                        arr[i/2] = util.BASE16.indexOf(buff[i])*16 + util.BASE16.indexOf(buff[i+1]);
+                        arr[i/2] = util.BASE16.indexOf(buff[i])*16 + util.BASE16.indexOf(buff[i+1]) - 128;
                     const blob = new Blob([arr], { type: "image/png" });
                     const url = URL.createObjectURL(blob);
+                    imageBlobs.push(url);
                     let img = document.createElement("img");
                     img.src = url;
                     dat.children[0].appendChild(img);
@@ -3897,6 +3899,8 @@ export default class App extends util.Target {
                     }
                     images = util.ensure(images, "obj");
                     localStorage.setItem("images", JSON.stringify(images));
+                    imageBlobs.forEach(url => URL.revokeObjectURL(url));
+                    imageBlobs = [];
                 },
                 async () => {
                     try {
