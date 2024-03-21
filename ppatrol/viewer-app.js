@@ -50,7 +50,7 @@ function determineYN(text) {
 }
 function determineNumber(text) {
     text = String(text);
-    text = text.split("").filter(c => util.NUMBERS.includes(c)).join("");
+    text = text.split("").filter(c => (".-"+util.NUMBERS).includes(c)).join("");
     return parseFloat(text);
 }
 function determineText(text) {
