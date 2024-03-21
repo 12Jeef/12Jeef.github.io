@@ -3872,6 +3872,7 @@ export default class App extends util.Target {
                     localStorage.setItem("pit", JSON.stringify(pitData));
                 },
                 async () => {
+                    return;
                     try {
                         console.log("🛜 images: PYAW");
                         if (eventKey == null) throw "event-key";
