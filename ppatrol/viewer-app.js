@@ -2938,11 +2938,16 @@ export default class App extends util.Target {
                 });
                 const allValues = values.map(data => data.vals).flatten();
                 const mx = Math.max(...allValues), mn = Math.min(...allValues);
-                for (let i = mn+1; i <= mx-1; i++) {
-                    let elem = document.createElement("div");
+                for (let i = mn; i <= mx; i++) {
+                    let elem;
+                    elem = document.createElement("div");
                     side.appendChild(elem);
-                    elem.style.bottom = ((i-mn+1)/(mx-mn+2))*100+"%";
+                    elem.style.bottom = ((i-mn)/(mx-mn))*100+"%";
                     elem.textContent = i;
+                    elem = document.createElement("div");
+                    graph.appendChild(elem);
+                    elem.classList.add("line");
+                    elem.style.bottom = ((i-mn)/(mx-mn))*100+"%";
                 }
                 values.forEach((data, i) => {
                     const { match, vals } = data;
@@ -2955,7 +2960,7 @@ export default class App extends util.Target {
                         graph.appendChild(elem);
                         elem.classList.add("point");
                         elem.style.left = ((i+1)/(values.length+1))*100+"%";
-                        elem.style.bottom = ((val-mn+1)/(mx-mn+2))*100+"%";
+                        elem.style.bottom = ((val-mn)/(mx-mn))*100+"%";
                         elem.style.backgroundColor = ["#f00", "#0f0"][j];
                     });
                 });
