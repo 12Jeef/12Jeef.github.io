@@ -1431,36 +1431,36 @@
     text-align: left;
 }
 
-#pick-list-page {
+#sort-page {
     overflow: auto;
 }
-#pick-list-page > a {
+#sort-page > a {
     align-self: flex-start;
 
     color: var(--a);
 }
-#pick-list-page > table {
+#sort-page > table {
     margin: 0em;
 
     border-spacing: 0em;
 }
-#pick-list-page > table tr.item {
+#sort-page > table tr.item {
     height: 5em;
 
     background-color: var(--v2);
 }
-#pick-list-page > table tr.item td {
+#sort-page > table tr.item td {
     border-top: 0.1rem solid var(--v8);
 }
-#pick-list-page > table td,
-#pick-list-page > table th {
+#sort-page > table td,
+#sort-page > table th {
     padding: 0.25em 0.5em;
 }
-#pick-list-page > table th {
+#sort-page > table th {
     text-align: left;
 }
-#pick-list-page > table td:nth-child(1),
-#pick-list-page > table th:nth-child(1) {
+#sort-page > table td:nth-child(1),
+#sort-page > table th:nth-child(1) {
     min-width: 2em;
 
     display: flex;
@@ -1471,35 +1471,35 @@
     align-content: center;
     gap: 0.25em;
 }
-#pick-list-page > table td:nth-child(2),
-#pick-list-page > table th:nth-child(2) {
+#sort-page > table td:nth-child(2),
+#sort-page > table th:nth-child(2) {
     min-width: 5em;
 }
-#pick-list-page > table td:nth-child(2) {
+#sort-page > table td:nth-child(2) {
     text-decoration: underline;
 
     cursor: pointer;
 }
-#pick-list-page > table td:nth-child(3),
-#pick-list-page > table th:nth-child(3) {
+#sort-page > table td:nth-child(3),
+#sort-page > table th:nth-child(3) {
     min-width: 7.5em;
 }
-#pick-list-page > table td:last-child,
-#pick-list-page > table th:last-child {
+#sort-page > table td:last-child,
+#sort-page > table th:last-child {
     width: 100%;
 }
-#pick-list-page > table td.score,
-#pick-list-page > table th.score {
+#sort-page > table td.score,
+#sort-page > table th.score {
     min-width: 8em;
 }
-#pick-list-page > table td.number,
-#pick-list-page > table th.number {
+#sort-page > table td.number,
+#sort-page > table th.number {
     min-width: 6em;
 }
-#pick-list-page > table th.number {
+#sort-page > table th.number {
     font-size: 0.75em;
 }
-#pick-list-page > table th > ion-icon {
+#sort-page > table th > ion-icon {
     margin-left: 0.25rem;
 
     color: var(--va);
@@ -1508,40 +1508,40 @@
 
     cursor: pointer;
 }
-#pick-list-page > table th > ion-icon:hover {
+#sort-page > table th > ion-icon:hover {
     color: var(--fg);
 }
-#pick-list-page > table td:nth-child(3) > span:nth-child(2),
-#pick-list-page > table td:nth-child(3) > span:nth-child(4) {
+#sort-page > table td:nth-child(3) > span:nth-child(2),
+#sort-page > table td:nth-child(3) > span:nth-child(4) {
     margin: 0em 0.5em;
 
     opacity: 50%;
 }
-#pick-list-page > table tr.item td:nth-child(1) {
+#sort-page > table tr.item td:nth-child(1) {
     height: 5em;
 }
-#pick-list-page > table td:nth-child(1) > button,
-#pick-list-page > table th:nth-child(1) > button {
+#sort-page > table td:nth-child(1) > button,
+#sort-page > table th:nth-child(1) > button {
     background-color: var(--v4);
 }
-#pick-list-page > table td:nth-child(1) > button:not(:disabled):hover,
-#pick-list-page > table th:nth-child(1) > button:not(:disabled):hover {
+#sort-page > table td:nth-child(1) > button:not(:disabled):hover,
+#sort-page > table th:nth-child(1) > button:not(:disabled):hover {
     background-color: var(--v6);
 }
-#pick-list-page > table td:nth-child(1) > button:not(:disabled):active,
-#pick-list-page > table th:nth-child(1) > button:not(:disabled):active {
+#sort-page > table td:nth-child(1) > button:not(:disabled):active,
+#sort-page > table th:nth-child(1) > button:not(:disabled):active {
     background-color: var(--fg);
     color: var(--bg);
 }
-#pick-list-page > table td:nth-child(1) > button:disabled,
-#pick-list-page > table th:nth-child(1) > button:disabled {
+#sort-page > table td:nth-child(1) > button:disabled,
+#sort-page > table th:nth-child(1) > button:disabled {
     background-color: var(--v2);
     color: var(--v8);
 }
-#pick-list-page > table td:last-child {
+#sort-page > table td:last-child {
     font-style: italic;
 }
-#pick-list-page > table td:last-child > span:empty::before {
+#sort-page > table td:last-child > span:empty::before {
     content: "/";
 
     margin: 0em 1em;

@@ -3533,17 +3533,17 @@ export default class App extends util.Target {
             };
             this.addHandler("post-refresh", updatePitDataPage);
 
-            this.ePickListPage = document.getElementById("pick-list-page");
-            this.ePickListDownload = document.getElementById("pick-list-download");
-            this.ePickListTable = document.getElementById("pick-list-table");
-            const updatePickListTable = (c, f, t) => {
+            this.eSortPage = document.getElementById("sort-page");
+            this.eSortDownload = document.getElementById("sort-download");
+            this.eSortTable = document.getElementById("sort-table");
+            const updateSortTable = (c, f, t) => {
                 if (c != null && !["pickSort", "pickSortReverse"].includes(c)) return;
-                Array.from(this.ePickListTable.querySelectorAll("tr")).forEach(elem => elem.remove());
+                Array.from(this.eSortTable.querySelectorAll("tr")).forEach(elem => elem.remove());
                 let csv = [];
                 let entry = [];
                 csv.push(entry);
                 let row = document.createElement("tr");
-                this.ePickListTable.children[0].appendChild(row);
+                this.eSortTable.children[0].appendChild(row);
                 for (let i = 0; i < 10; i++) {
                     let dat = document.createElement("th");
                     row.appendChild(dat);
@@ -3648,7 +3648,7 @@ export default class App extends util.Target {
                 });
                 entryrows.forEach((entryrow, i) => {
                     csv.push(entryrow.entry);
-                    this.ePickListTable.children[0].appendChild(entryrow.row);
+                    this.eSortTable.children[0].appendChild(entryrow.row);
                     entryrow.row.children[0].textContent = i+1;
                 });
                 csv = csv.map(entry => entry.map(v => {
@@ -3657,11 +3657,11 @@ export default class App extends util.Target {
                 }).join(", ")).join("\n");
                 const blob = new Blob([csv], { type: "text/csv" });
                 const url = URL.createObjectURL(blob);
-                this.ePickListDownload.href = url;
-                this.ePickListDownload.download = "picklist.csv";
+                this.eSortDownload.href = url;
+                this.eSortDownload.download = "Sort.csv";
             };
-            this.addHandler("post-refresh", updatePickListTable);
-            this.addHandler("change", updatePickListTable);
+            this.addHandler("post-refresh", updateSortTable);
+            this.addHandler("change", updateSortTable);
 
             this.eAPISave = document.getElementById("api-save");
             this.eAPISave.addEventListener("click", async e => {
