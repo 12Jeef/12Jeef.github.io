@@ -41,12 +41,12 @@
                 </div>
             </div>
             <div class="content">
-                <h3>
+                <h3 class="editable">
                     <button id="server-config-api-key-edit"><ion-icon name="pencil"></ion-icon></button>
                     <span>TBA API Key:</span>
                     <span id="server-config-api-key"></span>
                 </h3>
-                <h3>
+                <h3 class="editable">
                     <button id="server-config-event-edit"><ion-icon name="pencil"></ion-icon></button>
                     <span>Event:</span>
                     <span>
@@ -54,12 +54,12 @@
                         <span id="server-config-event-key"></span>
                     </span>
                 </h3>
-                <h3>
+                <h3 class="editable">
                     <button id="server-config-pwd-edit"><ion-icon name="pencil"></ion-icon></button>
                     <span>Access Password:</span>
                     <span id="server-config-pwd"></span>
                 </h3>
-                <div class="nav">
+                <div class="tab-nav">
                     <button id="api-matches">Matches</button>
                     <button id="api-teams">Teams</button>
                     <button id="api-scouters">Scouters</button>
@@ -185,6 +185,27 @@
                 <tbody></tbody>
             </table>
         </div>
+        <div id="pick-list-page" class="page">
+            <h3 class="editable">
+                <button id="pick-list-name-edit"><ion-icon name="pencil"></ion-icon></button>
+                <span>Name:</span>
+                <span id="pick-list-name"></span>
+            </h3>
+            <!-- <h3 class="editable">
+                <button id="pick-list-edit-pwd"><ion-icon name="pencil"></ion-icon></button>
+                <span>PickList Password:</span>
+                <span id="pick-list-pwd"></span>
+            </h3> -->
+            <div class="tab-nav">
+                <button id="pick-list-final-ranking">Final Ranking</button>
+                <button id="pick-list-your-vote">Your Vote</button>
+            </div>
+            <div class="nav">
+                <button id="pick-list-post">Cast Vote</button>
+                <button id="pick-list-del">Remove Vote</button>
+            </div>
+            <div id="pick-list-content" class="content"></div>
+        </div>
         <div id="api-page" class="page">
             <header>
                 <button id="api-save">Save</button>
@@ -203,6 +224,7 @@
             <button id="match-analytics">Match Analytics</button>
             <button id="pit-data">Pit Data</button>
             <button id="sort">Sort</button>
+            <button id="pick-list">Pick List</button>
             <button id="api">API</button>
         </div>
         <script type="module" src="./ionicons/dist/ionicons/ionicons.esm.js"></script>

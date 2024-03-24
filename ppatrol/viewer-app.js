@@ -4,6 +4,9 @@ import { V } from "./util.js";
 import { Match, fieldSize } from "./data.js";
 
 
+const NRANKS = 20;
+
+
 function sortScouter(a, b) {
     let roleA = ["scouter", "other", "dev"].indexOf(String(a.role).split("-")[0]);
     let roleB = ["scouter", "other", "dev"].indexOf(String(b.role).split("-")[0]);
@@ -155,6 +158,15 @@ const pitQueries = {
 
 
 export default class App extends util.Target {
+    get USERID() {
+        const USERID = localStorage.getItem("USERID");
+        if (!USERID) {
+            localStorage.setItem("USERID", new Array(64).fill(null).map(_ => util.BASE64[Math.floor(util.BASE64.length*Math.random())]).join(""));
+            return this.USERID;
+        }
+        return String(USERID);
+    }
+
     #lock;
 
     get locked() { return this.#lock.state; }
@@ -165,6 +177,27 @@ export default class App extends util.Target {
     unlock() { return this.unlocked = true; }
     whenLocked() { return this.#lock.whenTrue(); }
     whenUnlocked() { return this.#lock.whenFalse(); }
+
+
+    #name;
+
+    get name() { return this.#name; }
+    set name(v) {
+        v = String(v);
+        if (this.name == v) return;
+        this.change("name", this.#name=v);
+        this.saveName();
+    }
+    loadName() {
+        let name = "Unnamed";
+        try {
+            name = JSON.parse(localStorage.getItem("_name"));
+        } catch (e) {}
+        this.name = name;
+    }
+    saveName() {
+        localStorage.setItem("_name", JSON.stringify(this.name));
+    }
 
     #matchesSkipped;
 
@@ -361,12 +394,12 @@ export default class App extends util.Target {
     }
     getTeam(i) {
         i = util.ensure(i, "int", -1);
-        if (i < 0 || i >= 6) return null;
+        if (i < 0 || i >= this.#teams.length) return null;
         return this.#teams[i];
     }
     setTeam(i, v) {
         i = util.ensure(i, "int", -1);
-        if (i < 0 || i >= 6) return null;
+        if (i < 0 || i >= this.#teams.length) return null;
         v = (v == null) ? null : Math.max(0, util.ensure(v, "int"));
         if (this.getTeam(i) == v) return v;
         [v, this.#teams[i]] = [this.getTeam(i), v];
@@ -395,54 +428,88 @@ export default class App extends util.Target {
         this.saveSimulated();
     }
     loadSimulated() {
-        let simulated = null;
+        let simulated = true;
         try {
             simulated = JSON.parse(localStorage.getItem("simulated"));
-        } catch (e) { simulated = true; }
+        } catch (e) {}
         this.simulated = simulated;
     }
     saveSimulated() {
         localStorage.setItem("simulated", JSON.stringify(this.simulated));
     }
 
-    #pickSort;
+    #sort;
     
-    get pickSort() { return this.#pickSort; }
-    set pickSort(v) {
+    get sort() { return this.#sort; }
+    set sort(v) {
         v = util.ensure(v, "int");
-        if (this.pickSort == v) return;
-        this.change("pickSort", this.pickSort, this.#pickSort=v);
-        this.savePickSort();
+        if (this.sort == v) return;
+        this.change("sort", this.sort, this.#sort=v);
+        this.saveSort();
     }
-    loadPickSort() {
-        let pickSort = null;
+    loadSort() {
+        let sort = null;
         try {
-            pickSort = JSON.parse(localStorage.getItem("pick-sort"));
+            sort = JSON.parse(localStorage.getItem("sort"));
         } catch (e) {}
-        this.pickSort = pickSort;
+        this.sort = sort;
     }
-    savePickSort() {
-        localStorage.setItem("pick-sort", JSON.stringify(this.pickSort));
+    saveSort() {
+        localStorage.setItem("sort", JSON.stringify(this.sort));
     }
 
-    #pickSortReverse;
+    #sortReverse;
     
-    get pickSortReverse() { return this.#pickSortReverse; }
-    set pickSortReverse(v) {
+    get sortReverse() { return this.#sortReverse; }
+    set sortReverse(v) {
         v = !!v;
-        if (this.pickSortReverse == v) return;
-        this.change("pickSortReverse", this.pickSortReverse, this.#pickSortReverse=v);
-        this.savePickSortReverse();
+        if (this.sortReverse == v) return;
+        this.change("sortReverse", this.sortReverse, this.#sortReverse=v);
+        this.saveSortReverse();
     }
-    loadPickSortReverse() {
-        let pickSortReverse = null;
+    loadSortReverse() {
+        let sortReverse = null;
         try {
-            pickSortReverse = JSON.parse(localStorage.getItem("pick-sort-reverse"));
+            sortReverse = JSON.parse(localStorage.getItem("sort-reverse"));
         } catch (e) {}
-        this.pickSortReverse = pickSortReverse;
+        this.sortReverse = sortReverse;
     }
-    savePickSortReverse() {
-        localStorage.setItem("pick-sort-reverse", JSON.stringify(this.pickSortReverse));
+    saveSortReverse() {
+        localStorage.setItem("sort-reverse", JSON.stringify(this.sortReverse));
+    }
+
+    #ranking;
+
+    get ranking() { return [...this.#ranking]; }
+    set ranking(v) {
+        v = util.ensure(v, "arr");
+        for (let i = 0; i < NRANKS; i++)
+            this.setRanking(i, v[i]);
+    }
+    getRanking(i) {
+        i = util.ensure(i, "int", -1);
+        if (i < 0 || i >= this.#ranking.length) return null;
+        return this.#ranking[i];
+    }
+    setRanking(i, v) {
+        i = util.ensure(i, "int", -1);
+        if (i < 0 || i >= this.#ranking.length) return null;
+        v = (v == null) ? null : Math.max(0, util.ensure(v, "int"));
+        if (this.getRanking(i) == v) return v;
+        [v, this.#ranking[i]] = [this.getRanking(i), v];
+        this.change("ranking", v, this.getRanking(i));
+        this.saveRanking();
+        return this.getRanking(i);
+    }
+    loadRanking() {
+        let ranking = null;
+        try {
+            ranking = JSON.parse(localStorage.getItem("ranking"));
+        } catch (e) {}
+        this.ranking = ranking;
+    }
+    saveRanking() {
+        localStorage.setItem("ranking", JSON.stringify(this.ranking));
     }
 
     #path;
@@ -474,6 +541,7 @@ export default class App extends util.Target {
             if (t) this.post("lock");
             else this.post("unlock");
         });
+        this.#name = "";
         this.#matchesSkipped = new Set();
         this.#matchSkips = new Set();
         this.#team = null;
@@ -481,9 +549,11 @@ export default class App extends util.Target {
         this.#qual = null;
         this.#teams = new Array(6).fill(null);
         this.#simulated = true;
-        this.#pickSort = 0;
-        this.#pickSortReverse = false;
+        this.#sort = 0;
+        this.#sortReverse = false;
+        this.#ranking = new Array(NRANKS).fill(null);
         this.#path = "";
+        this.loadName();
         this.loadMatchesSkipped();
         this.loadMatchSkips();
         this.loadTeam();
@@ -491,8 +561,9 @@ export default class App extends util.Target {
         this.loadQual();
         this.loadTeams();
         this.loadSimulated();
-        this.loadPickSort();
-        this.loadPickSortReverse();
+        this.loadSort();
+        this.loadSortReverse();
+        this.loadRanking();
         this.loadPath();
 
         window.app = this;
@@ -529,8 +600,7 @@ export default class App extends util.Target {
         let teams = [];
         let matchesScouted = [];
         let pitData = {};
-        let images = {};
-        let imageBlobs = [];
+        let votes = {};
 
         const getBufferStr = match => {
             if (match.empty) return null;
@@ -1913,19 +1983,6 @@ export default class App extends util.Target {
                 }
                 dat.classList.add("images");
                 dat.innerHTML = "<div></div>";
-                if (!(t in images)) continue;
-                util.ensure(images[t]["robot-picture"], "arr").map(buff => {
-                    buff = String(buff);
-                    const arr = new Int8Array(buff.length/2);
-                    for (let i = 0; i < buff.length; i += 2)
-                        arr[i/2] = util.BASE16.indexOf(buff[i])*16 + util.BASE16.indexOf(buff[i+1]) - 128;
-                    const blob = new Blob([arr], { type: "image/png" });
-                    const url = URL.createObjectURL(blob);
-                    imageBlobs.push(url);
-                    let img = document.createElement("img");
-                    img.src = url;
-                    dat.children[0].appendChild(img);
-                });
             }
 
             let collapsed = false;
@@ -2088,7 +2145,10 @@ export default class App extends util.Target {
 
                 this.eServerConfigAPIKeyEdit.disabled = true;
                 this.eServerConfigEventEdit.disabled = true;
-                this.eServerConfigAccessPwdEdit.disabled = true;
+                // this.eServerConfigAccessPwdEdit.disabled = true;
+
+                this.ePickListPost.disabled = true;
+                this.ePickListDel.disabled = true;
 
                 this.eAPISave.disabled = true;
             });
@@ -2097,7 +2157,10 @@ export default class App extends util.Target {
 
                 this.eServerConfigAPIKeyEdit.disabled = false;
                 this.eServerConfigEventEdit.disabled = false;
-                this.eServerConfigAccessPwdEdit.disabled = false;
+                // this.eServerConfigAccessPwdEdit.disabled = false;
+
+                this.ePickListPost.disabled = false;
+                this.ePickListDel.disabled = false;
 
                 this.eAPISave.disabled = false;
             });
@@ -2541,7 +2604,7 @@ export default class App extends util.Target {
                 updateAPIListing();
             });
             this.addHandler("post-refresh", updateAPIListing);
-            if (["matches", "teams"].includes(localStorage.getItem("api-listing"))) {
+            if (["matches", "teams", "scouters", "scanners"].includes(localStorage.getItem("api-listing"))) {
                 apiListing = localStorage.getItem("api-listing");
                 updateAPIListing();
             } else this.eAPIMatches.click();
@@ -3537,7 +3600,7 @@ export default class App extends util.Target {
             this.eSortDownload = document.getElementById("sort-download");
             this.eSortTable = document.getElementById("sort-table");
             const updateSortTable = (c, f, t) => {
-                if (c != null && !["pickSort", "pickSortReverse"].includes(c)) return;
+                if (c != null && !["sort", "sortReverse"].includes(c)) return;
                 Array.from(this.eSortTable.querySelectorAll("tr")).forEach(elem => elem.remove());
                 let csv = [];
                 let entry = [];
@@ -3561,14 +3624,14 @@ export default class App extends util.Target {
                     ][i-1];
                     dat.addEventListener("click", e => {
                         if ([1, 8].includes(i-1)) return;
-                        this.pickSort = i-1;
+                        this.sort = i-1;
                     });
                     dat.appendChild(document.createElement("ion-icon"));
-                    dat.lastChild.style.visibility = (this.pickSort == i-1) ? "" : "hidden";
-                    dat.lastChild.name = this.pickSortReverse ? "chevron-up" : "chevron-down";
+                    dat.lastChild.style.visibility = (this.sort == i-1) ? "" : "hidden";
+                    dat.lastChild.name = this.sortReverse ? "chevron-up" : "chevron-down";
                     dat.lastChild.addEventListener("click", e => {
                         e.stopPropagation();
-                        this.pickSortReverse = !this.pickSortReverse;
+                        this.sortReverse = !this.sortReverse;
                     });
                     if (i >= 3 && i <= 8)
                         dat.classList.add([
@@ -3642,9 +3705,9 @@ export default class App extends util.Target {
                 entryrows.sort((a, b) => {
                     a = a.entry;
                     b = b.entry;
-                    a = a[this.pickSort];
-                    b = b[this.pickSort];
-                    return (a-b) * (this.pickSortReverse ? -1 : 1);
+                    a = a[this.sort];
+                    b = b[this.sort];
+                    return (a-b) * (this.sortReverse ? -1 : 1);
                 });
                 entryrows.forEach((entryrow, i) => {
                     csv.push(entryrow.entry);
@@ -3662,6 +3725,227 @@ export default class App extends util.Target {
             };
             this.addHandler("post-refresh", updateSortTable);
             this.addHandler("change", updateSortTable);
+
+            this.ePickListName = document.getElementById("pick-list-name");
+            this.ePickListNameEdit = document.getElementById("pick-list-name-edit");
+
+            this.addHandler("change-name", () => (this.ePickListName.textContent = this.name));
+            this.ePickListName.textContent = this.name;
+
+            this.ePickListNameEdit.addEventListener("click", e => {
+                const name = prompt("Rename yourself from "+this.name+" to:");
+                if (!name) return;
+                this.name = name;
+            });
+
+            this.ePickListFinalRanking = document.getElementById("pick-list-final-ranking");
+            this.ePickListYourVote = document.getElementById("pick-list-your-vote");
+
+            const postVote = async () => {
+                await this.whenUnlocked();
+                this.lock();
+
+                try {
+                    console.log("📝:🔑 post-vote: PYAW");
+                    if (eventKey == null) throw "event-key";
+                    let resp = await fetch("https://ppatrol.pythonanywhere.com/data/"+eventKey+"/votes/"+this.USERID, {
+                        method: "POST",
+                        mode: "cors",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Password": pwd,
+                        },
+                        body: JSON.stringify({
+                            v: {
+                                USERID: this.USERID,
+                                name: this.name,
+                                ranking: this.ranking,
+                            },
+                        }),
+                    });
+                    if (resp.status != 200) throw resp.status;
+                } catch (e) {
+                    console.log("📝:🔑 post-vote: PYAW ERR", e);
+                }
+
+                this.unlock();
+
+                this.refresh();
+            };
+            const delVote = async () => {
+                await this.whenUnlocked();
+                this.lock();
+
+                try {
+                    console.log("📝:🔑 del-vote: PYAW");
+                    if (eventKey == null) throw "event-key";
+                    let resp = await fetch("https://ppatrol.pythonanywhere.com/data/"+eventKey+"/votes/"+this.USERID, {
+                        method: "DELETE",
+                        mode: "cors",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Password": pwd,
+                        },
+                        body: JSON.stringify({}),
+                    });
+                    if (resp.status != 200) throw resp.status;
+                } catch (e) {
+                    console.log("📝:🔑 del-vote: PYAW ERR", e);
+                }
+
+                this.unlock();
+
+                this.refresh();
+            };
+
+            this.addHandler("change-name", postVote);
+
+            this.ePickListPost = document.getElementById("pick-list-post");
+            this.ePickListDel = document.getElementById("pick-list-del");
+
+            this.ePickListPost.addEventListener("click", postVote);
+            this.ePickListDel.addEventListener("click", delVote);
+
+            this.ePickListContent = document.getElementById("pick-list-content");
+
+            let pickListMode = null;
+            const updatePickList = () => {
+                localStorage.setItem("pick-list-mode", pickListMode);
+                this.ePickListFinalRanking.classList.remove("this");
+                this.ePickListYourVote.classList.remove("this");
+                this.ePickListPost.style.display = this.ePickListDel.style.display = "none";
+                this.ePickListContent.innerHTML = "";
+                if (pickListMode == "final-ranking") {
+                    this.ePickListFinalRanking.classList.add("this");
+                    if (0) {
+                        votes = {};
+                        votes[this.USERID] = {
+                            USERID: this.USERID,
+                            name: this.name,
+                            ranking: this.ranking,
+                        };
+                        let teamNumbers = teams.map(team => team.team_number);
+                        for (let i = 0; i < 1; i++) {
+                            let ranking = new Array(NRANKS).fill(null);
+                            for (let j = 0; j < Math.min(teamNumbers.length, ranking.length); j++) {
+                                let team;
+                                do {
+                                    team = teamNumbers[Math.floor(teamNumbers.length*Math.random())];
+                                } while (ranking.includes(team));
+                                ranking[j] = team;
+                            }
+                            votes[i] = {
+                                USERID: i,
+                                name: i,
+                                ranking: ranking,
+                            };
+                        }
+                    }
+                    let entries = [];
+                    for (const USERID in votes) {
+                        const vote = votes[USERID];
+                        const ranking = util.ensure(vote.ranking, "arr");
+                        ranking.map((team, i) => {
+                            if (team == null) return;
+                            for (let entry of entries) {
+                                if (entry.team != team) continue;
+                                entry.voters.push({
+                                    USERID: vote.USERID,
+                                    name: vote.name,
+                                    i: i,
+                                    score: ranking.length-i,
+                                });
+                                return;
+                            }
+                            entries.push({
+                                team: team,
+                                voters: [{
+                                    USERID: vote.USERID,
+                                    name: vote.name,
+                                    i: i,
+                                    score: ranking.length-i,
+                                }],
+                            });
+                        });
+                    }
+                    entries
+                        .map(entry => {
+                            entry.score = entry.voters.map(vote => vote.score).sum();
+                            return entry;
+                        })
+                        .sort((a, b) => b.score-a.score)
+                        .forEach((entry, i) => {
+                            let elem = document.createElement("h3");
+                            this.ePickListContent.appendChild(elem);
+                            elem.innerHTML = "<span><span></span><span></span><span></span><span></span></span><span></span><span></span>";
+                            elem.children[0].children[0].textContent = i+1;
+                            elem.children[0].children[1].textContent = entry.team;
+                            elem.children[0].children[3].textContent = entry.score;
+                            for (let team of teams) {
+                                if (team.team_number != entry.team) continue;
+                                elem.children[0].children[2].textContent = team.nickname;
+                                break;
+                            }
+                            entry.voters.forEach(voter => {
+                                let subelem = document.createElement("span");
+                                elem.children[1].appendChild(subelem);
+                                subelem.innerHTML = "<span></span><span></span>";
+                                subelem.children[0].textContent = voter.name;
+                                subelem.children[1].textContent = ("Ranked #"+(voter.i+1))+", +"+voter.score;
+                            });
+                            elem.addEventListener("click", e => {
+                                if (elem.classList.contains("this"))
+                                    elem.classList.remove("this");
+                                else elem.classList.add("this");
+                            });
+                        });
+                    return;
+                }
+                if (pickListMode == "your-vote") {
+                    this.ePickListPost.style.display = this.ePickListDel.style.display = "";
+                    this.ePickListYourVote.classList.add("this");
+                    for (let i = 0; i < NRANKS; i++) {
+                        let elem = document.createElement("h3");
+                        this.ePickListContent.appendChild(elem);
+                        elem.innerHTML = "<span><span></span><span></span><span></span><span></span></span>";
+                        elem.children[0].children[0].textContent = i+1;
+                        elem.children[0].children[1].innerHTML = "<input placeholder='Team#' autocapitalize='false' autocomplete='off' spellcheck='false'>";
+                        elem.children[0].children[3].textContent = NRANKS-i;
+                        const input = elem.children[0].children[1].children[0];
+                        input.value = (this.getRanking(i) == null) ? "" : this.getRanking(i);
+                        input.addEventListener("change", e => {
+                            const value = this.setRanking(i, util.ensure(parseInt(input.value), "int", null));
+                            if (value != null) {
+                                for (let j = 0; j < NRANKS; j++) {
+                                    if (j == i) continue;
+                                    if (this.getRanking(j) != value) continue;
+                                    this.setRanking(j, null);
+                                }
+                            }
+                            updatePickList();
+                        });
+                        for (let team of teams) {
+                            if (team.team_number != this.getRanking(i)) continue;
+                            elem.children[0].children[2].textContent = team.nickname;
+                            break;
+                        }
+                    }
+                    return;
+                }
+            };
+            this.ePickListFinalRanking.addEventListener("click", e => {
+                pickListMode = "final-ranking";
+                updatePickList();
+            });
+            this.ePickListYourVote.addEventListener("click", e => {
+                pickListMode = "your-vote";
+                updatePickList();
+            });
+            this.addHandler("post-refresh", updatePickList);
+            if (["final-ranking", "your-vote"].includes(localStorage.getItem("pick-list-mode"))) {
+                pickListMode = localStorage.getItem("pick-list-mode");
+                updatePickList();
+            } else this.ePickListFinalRanking.click();
 
             this.eAPISave = document.getElementById("api-save");
             this.eAPISave.addEventListener("click", async e => {
@@ -3877,11 +4161,10 @@ export default class App extends util.Target {
                     localStorage.setItem("pit", JSON.stringify(pitData));
                 },
                 async () => {
-                    return;
                     try {
-                        console.log("🛜 images: PYAW");
+                        console.log("🛜 votes: PYAW");
                         if (eventKey == null) throw "event-key";
-                        let resp = await fetch("https://ppatrol.pythonanywhere.com/images/"+eventKey, {
+                        let resp = await fetch("https://ppatrol.pythonanywhere.com/data/"+eventKey+"/votes", {
                             method: "GET",
                             mode: "cors",
                             headers: {
@@ -3890,23 +4173,21 @@ export default class App extends util.Target {
                         });
                         if (resp.status != 200) throw resp.status;
                         resp = await resp.text();
-                        // console.log("🛜 pit: PYAW = "+resp);
-                        images = JSON.parse(resp);
+                        // console.log("🛜 votes: PYAW = "+resp);
+                        votes = JSON.parse(resp);
                     } catch (e) {
-                        console.log("🛜 images: PYAW ERR", e);
+                        console.log("🛜 votes: PYAW ERR", e);
                         try {
                             // throw "LS IGNORE";
-                            console.log("🛜 images: LS");
-                            images = JSON.parse(localStorage.getItem("images"));
+                            console.log("🛜 votes: LS");
+                            votes = JSON.parse(localStorage.getItem("votes"));
                         } catch (e) {
-                            console.log("🛜 images: LS ERR", e);
-                            images = null;
+                            console.log("🛜 votes: LS ERR", e);
+                            votes = null;
                         }
                     }
-                    images = util.ensure(images, "obj");
-                    localStorage.setItem("images", JSON.stringify(images));
-                    imageBlobs.forEach(url => URL.revokeObjectURL(url));
-                    imageBlobs = [];
+                    votes = util.ensure(votes, "obj");
+                    localStorage.setItem("votes", JSON.stringify(votes));
                 },
                 async () => {
                     try {
