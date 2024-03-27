@@ -4,6 +4,8 @@ import { V } from "./util.js";
 import { Match, fieldSize } from "./data.js";
 
 
+const MAGICOLDTIME = 1711582143636;
+
 const NRANKS = 20;
 
 
@@ -1130,6 +1132,7 @@ export default class App extends util.Target {
             endgame.score = endgame.climb.score + endgame.trap.score;
 
             return {
+                matches: matches,
                 preloaded: preloaded,
                 auto: auto,
                 teleop: teleop,
@@ -1270,6 +1273,7 @@ export default class App extends util.Target {
                 elem.children[1].textContent = "Teleop";
 
                 match.teleopFrames.forEach(frame => {
+                    if (match._t > MAGICOLDTIME && ["source", "ground"].includes(frame.type)) return;
                     elem = document.createElement("button");
                     elems.push({ elem: elem, ts: frame.ts });
                     elem.innerHTML = "<span></span><span></span><span></span>";
@@ -1451,6 +1455,7 @@ export default class App extends util.Target {
                     }
                     if (i > 0) {
                         if ([4, 8].includes(j)) {
+                            if (match._t > MAGICOLDTIME && j < 8 && i-1 > 3) continue;
                             dat.classList.add("dat");
                             dat.classList.add("k");
                             block = false;
@@ -1472,6 +1477,7 @@ export default class App extends util.Target {
                             if (text[0] == "~") block = true;
                             dat.textContent = text2;
                         } else if ([5, 6, 7, 9, 10, 11].includes(j)) {
+                            if (match._t > MAGICOLDTIME && j < 8 && i-1 > 3) continue;
                             dat.classList.add("dat");
                             dat.classList.add("v");
                             let k = j - 4 - 1 - Math.floor((j-4)/4)*4;
@@ -1753,6 +1759,7 @@ export default class App extends util.Target {
                 });
             });
             match.teleopFrames.forEach(frame => {
+                if (match._t > MAGICOLDTIME && ["source", "ground"].includes(frame.type)) return;
                 items.push({
                     type: "kf",
                     subtype: (frame.type == "hoard") ? "hoard" : (frame.type == "climb") ? "climb" : (frame.type == "source" || frame.type == "ground") ? "pickup" : "score",
@@ -2731,7 +2738,18 @@ export default class App extends util.Target {
             this.eTeamAnalyticsPitData = document.getElementById("team-analytics-pit-data");
             const updateTeamAnalyticsTables = () => {
                 const comp = computeFullTeam(this.team);
+                let t = null;
+                comp.matches.forEach(match => {
+                    if (t == null) t = match._t;
+                    else t = Math.min(t, match._t);
+                });
+                const old = t == null || t <= MAGICOLDTIME;
                 [this.eTeamAnalyticsAutoTable, this.eTeamAnalyticsTeleopTable, this.eTeamAnalyticsTotalTable].forEach((elem, ii) => {
+                    if (ii == 2) {
+                        if (!old)
+                            return elem.parentElement.parentElement.style.display = "none";
+                        elem.parentElement.parentElement.style.display = "";
+                    }
                     elem.innerHTML = "";
                     for (let i = 0; i < 6; i++) {
                         let row = document.createElement("tr");
@@ -2745,6 +2763,10 @@ export default class App extends util.Target {
                             dat.classList.add("dat");
                             if (j == 0) {
                                 dat.classList.add("k");
+                                if (!old && ii == 1 && i < 3) {
+                                    dat.innerHTML = "<span style='opacity:0;'>:)</span>";
+                                    continue;
+                                }
                                 dat.textContent = ["Pickups", "Source", "Ground", "Scores", "Speaker", "Amp"][i]+":";
                                 if (i % 3 > 0) dat.classList.add("special");
                                 if (ii == 0 && i == 1)
@@ -2754,6 +2776,10 @@ export default class App extends util.Target {
                             let k = j-1;
                             dat.classList.add("v");
                             dat.classList.add("i"+k);
+                            if (!old && ii == 1 && i < 3) {
+                                dat.innerHTML = "<span style='opacity:0;'>:)</span>";
+                                continue;
+                            }
                             let data = [
                                 [
                                     comp.auto.pickups, { success: 0, fail: 0, total: 0 }, comp.auto.pickups,
@@ -3045,7 +3071,7 @@ export default class App extends util.Target {
 
             this.eMatchAnalyticsTable = document.getElementById("match-analytics-table");
             let ignore = false;
-            const updateMatchAnalyticsTable = (c, f, t) => {
+            const updateMatchAnalyticsTable = c => {
                 if (c != null && !["qual", "teams", "simulated"].includes(c)) return;
                 if (ignore) return;
                 let tbamatch = null;
@@ -3066,11 +3092,20 @@ export default class App extends util.Target {
                 let theTeams = this.teams;
                 this.eMatchAnalyticsTable.innerHTML = "";
                 const comps = theTeams.map(team => computeFullTeam(team));
+                let t = null;
+                comps.forEach(comp => {
+                    comp.matches.forEach(match => {
+                        if (t == null) t = match._t;
+                        else t = Math.min(t, match._t);
+                    });
+                });
+                const old = t == null || t < MAGICOLDTIME;
                 let totalScoreHeaders = [null, null];
                 let totalScores = [null, null];
                 for (let i = 0; i < 33; i++) {
                     let row = document.createElement("tr");
                     this.eMatchAnalyticsTable.appendChild(row);
+                    if (!old && [14, 15].includes(i)) row.remove();
                     if (i == 0) {
                         for (let j = -1; j < 6; j++) {
                             let dat = document.createElement("th");
@@ -4347,7 +4382,7 @@ export default class App extends util.Target {
                     localStorage.setItem("matches-scouted", JSON.stringify(matchesScouted));
                     matchesScouted = Object.keys(matchesScouted).map(t => {
                         let match = matchesScouted[t];
-                        match._t = t;
+                        match._t = util.ensure(parseInt(t), "int");
                         return match;
                     });
                     matchesScouted.sort(sortMatch);
