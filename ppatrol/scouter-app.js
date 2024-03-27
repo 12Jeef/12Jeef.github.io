@@ -500,7 +500,7 @@ export default class App extends util.Target {
                             });
                             if (!clear) return;
                             localStorage.removeItem("_matches-scouted");
-                            this.updateMatches();
+                            this.updateMatches(true);
                             this.page = "navigator";
                         });
 
@@ -1415,7 +1415,7 @@ export default class App extends util.Target {
         this.updateMatches();
         return r;
     }
-    updateMatches() {
+    updateMatches(reset=false) {
         let matchesScouted = null;
         try {
             matchesScouted = JSON.parse(localStorage.getItem("_matches-scouted"));
@@ -1425,7 +1425,7 @@ export default class App extends util.Target {
             if (match.match.id in matchesScouted) {
                 console.log("*** loading "+match.match.id+" from LS", matchesScouted[match.match.id]);
                 match.match.fromObj(matchesScouted[match.match.id]);
-            }
+            } else if (reset) match.match.reset();
             if (!match.match.isNormal()) return;
             match.match.robot = (this.id > 0 && this.id <= 3) ? match.red[this.id-1] : (this.id > 3 && this.id <= 6) ? match.blue[this.id-4] : null;
         });
