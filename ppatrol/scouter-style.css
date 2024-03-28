@@ -1345,7 +1345,7 @@ button[fail]:disabled {
 }
 
 #prompt {
-    z-index: 10000;
+    z-index: 100;
     
     position: absolute;
     top: 0%;
@@ -1439,6 +1439,8 @@ button[fail]:disabled {
 }
 
 #overlay {
+    z-index: 200;
+
     position: absolute;
     top: 0%;
     left: 0%;
