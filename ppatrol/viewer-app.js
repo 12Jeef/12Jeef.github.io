@@ -809,9 +809,8 @@ export default class App extends util.Target {
                 if ((frame.type == "speaker") ? frame.state.value : frame.state) {
                     data.success++;
                     data[frame.type].success++;
-
-                data.score += { speaker: 2, amp: 1 }[frame.type];
-                data[frame.type].score += { speaker: 2, amp: 1 }[frame.type];
+                    data.score += { speaker: 2, amp: 1 }[frame.type];
+                    data[frame.type].score += { speaker: 2, amp: 1 }[frame.type];
                 } else {
                     data.fail++;
                     data[frame.type].fail++;
@@ -820,10 +819,16 @@ export default class App extends util.Target {
             return data;
         };
         const computeTeleopHoards = match => {
-            let data = { times: [], total: 0 };
+            // let data = { times: [], total: 0 };
+            let data = { success: 0, fail: 0, total: 0 };
             match.teleopFrames.forEach(frame => {
                 if (frame.type != "hoard") return;
-                data.times.push(frame.ts);
+                // data.times.push(frame.ts);
+                // data.total++;
+                if (match._t > MAGICOLDTIME) {
+                    if (frame.state) data.success++;
+                    else data.fail++;
+                } else data.success++;
                 data.total++;
             });
             return data;
@@ -1016,7 +1021,6 @@ export default class App extends util.Target {
                     ground: {
                         successes: comps.map(comp => comp.teleop.pickups.ground.success),
                         fails: comps.map(comp => comp.teleop.pickups.ground.fail),
-                        scores: comps.map(comp => comp.teleop.scores.speaker.score),
                     },
                 },
                 scores: {
@@ -1032,9 +1036,11 @@ export default class App extends util.Target {
                     },
                 },
                 hoards: {
-                    times: comps.map(comp => comp.teleop.hoards.times).flatten(),
-                    totals: comps.map(comp => comp.teleop.hoards.total),
-                    total: median(comps.map(comp => comp.teleop.hoards.total)),
+                    // times: comps.map(comp => comp.teleop.hoards.times).flatten(),
+                    // totals: comps.map(comp => comp.teleop.hoards.total),
+                    // total: median(comps.map(comp => comp.teleop.hoards.total)),
+                    successes: comps.map(comp => comp.teleop.hoards.success),
+                    fails: comps.map(comp => comp.teleop.hoards.fail),
                 },
             };
 
@@ -1064,6 +1070,10 @@ export default class App extends util.Target {
             teleop.scores.fail = teleop.scores.speaker.fail + teleop.scores.amp.fail;
             teleop.scores.total = teleop.scores.success + teleop.scores.fail;
             teleop.scores.score = teleop.scores.speaker.score + teleop.scores.amp.score;
+
+            teleop.hoards.success = median(teleop.hoards.successes);
+            teleop.hoards.fail = median(teleop.hoards.fails);
+            teleop.hoards.total = teleop.hoards.success + teleop.hoards.fail;
 
             teleop.score = teleop.scores.score;
 
@@ -1279,10 +1289,10 @@ export default class App extends util.Target {
                     elem.innerHTML = "<span></span><span></span><span></span>";
                     elem.children[0].textContent = util.formatTime(frame.ts);
                     elem.children[1].setAttribute(frame.type, "");
-                    if (frame.type == "hoard") {
-                        elem.children[2].textContent = "Hoard";
-                        return;
-                    }
+                    // if (frame.type == "hoard") {
+                    //     elem.children[2].textContent = "Hoard";
+                    //     return;
+                    // }
                     if (frame.type == "climb") {
                         elem.children[2].textContent = ["None", "Park", "Onstage"][frame.state];
                         return;
@@ -1764,7 +1774,8 @@ export default class App extends util.Target {
                     type: "kf",
                     subtype: (frame.type == "hoard") ? "hoard" : (frame.type == "climb") ? "climb" : (frame.type == "source" || frame.type == "ground") ? "pickup" : "score",
                     html: "<ion-icon name='"+((frame.type == "hoard") ? "bag" : (frame.type == "climb") ? "airplane" : (frame.type == "source" || frame.type == "ground") ? "arrow-up" : "arrow-down")+"'></ion-icon>"+((frame.type == "hoard") ? "H" : (frame.type == "climb") ? "NPO"[frame.state] : frame.type[0].toUpperCase()),
-                    state: (frame.type == "hoard" || frame.type == "climb") ? null : (frame.type == "speaker") ? frame.state.value : frame.state,
+                    // state: (frame.type == "hoard" || frame.type == "climb") ? null : (frame.type == "speaker") ? frame.state.value : frame.state,
+                    state: (frame.type == "climb") ? null : (frame.type == "speaker") ? frame.state.value : frame.state,
                     t: frame.ts,
                 });
             });
@@ -1825,7 +1836,8 @@ export default class App extends util.Target {
             row.innerHTML = "<td>#Hoards:</td><td></td>";
             row.children[0].colSpan = 2;
             row.children[0].style.fontSize = "0.75em";
-            row.children[1].textContent = comp.teleop.hoards.total;
+            // row.children[1].textContent = comp.teleop.hoards.total;
+            row.children[1].textContent = comp.teleop.hoards.success+"/"+comp.teleop.hoards.total;
 
             return elem;
         };
@@ -2878,7 +2890,8 @@ export default class App extends util.Target {
                             continue;
                         }
                         if (i == 4) {
-                            dat.textContent = comp.teleop.hoards.total;
+                            // dat.textContent = comp.teleop.hoards.total;
+                            dat.textContent = comp.teleop.hoards.success+"/"+comp.teleop.hoards.total;
                             continue;
                         }
                     }
@@ -3282,7 +3295,8 @@ export default class App extends util.Target {
                                 continue;
                             }
                             const comp = comps[j];
-                            dat.textContent = comp.teleop.hoards.total;
+                            // dat.textContent = comp.teleop.hoards.total;
+                            dat.textContent = comp.teleop.hoards.success+"/"+comp.teleop.hoards.total;
                         }
                         continue;
                     }
@@ -3712,7 +3726,8 @@ export default class App extends util.Target {
                                 // comp.teleop.score,
                                 comp.teleop.scores.speaker.success,
                                 comp.teleop.scores.amp.success,
-                                comp.teleop.hoards.total,
+                                // comp.teleop.hoards.total,
+                                comp.teleop.hoards.success,
                                 comp.endgame.score,
                                 comp.score,
                             ][i-3];

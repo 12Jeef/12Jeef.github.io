@@ -2133,7 +2133,8 @@ table.match-listing tr:nth-child(9) td > .kf.score > div {
 table.match-listing tr:nth-child(9) td > .kf.hoard > div {
     top: 2.25em;
 
-    background-color: var(--g3);
+    /* background-color: var(--g3); */
+    background-color: var(--g2);
 }
 table.match-listing tr:nth-child(9) td > .kf.climb > div {
     top: 3em;

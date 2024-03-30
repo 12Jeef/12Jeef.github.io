@@ -374,8 +374,11 @@ export default class App extends util.Target {
             this.eTeleopScoreAmpSuccess = document.getElementById("teleop-score-amp-success");
             this.eTeleopScoreAmpFail = document.getElementById("teleop-score-amp-fail");
             this.eTeleopScoreAmpUndo = document.getElementById("teleop-score-amp-undo");
-            this.eTeleopHoardAdd = document.getElementById("teleop-hoard-add");
-            this.eTeleopHoardRem = document.getElementById("teleop-hoard-rem");
+            // this.eTeleopHoardAdd = document.getElementById("teleop-hoard-add");
+            // this.eTeleopHoardRem = document.getElementById("teleop-hoard-rem");
+            this.eTeleopHoardSuccess = document.getElementById("teleop-hoard-success");
+            this.eTeleopHoardFail = document.getElementById("teleop-hoard-fail");
+            this.eTeleopHoardUndo = document.getElementById("teleop-hoard-undo");
             this.eTeleopPickupSourceSuccessCount = document.getElementById("teleop-pickup-source-success-count");
             this.eTeleopPickupSourceFailCount = document.getElementById("teleop-pickup-source-fail-count");
             this.eTeleopPickupGroundSuccessCount = document.getElementById("teleop-pickup-ground-success-count");
@@ -384,7 +387,9 @@ export default class App extends util.Target {
             this.eTeleopScoreSpeakerFailCount = document.getElementById("teleop-score-speaker-fail-count");
             this.eTeleopScoreAmpSuccessCount = document.getElementById("teleop-score-amp-success-count");
             this.eTeleopScoreAmpFailCount = document.getElementById("teleop-score-amp-fail-count");
-            this.eTeleopHoardCount = document.getElementById("teleop-hoard-count");
+            // this.eTeleopHoardCount = document.getElementById("teleop-hoard-count");
+            this.eTeleopHoardSuccessCount = document.getElementById("teleop-hoard-success-count");
+            this.eTeleopHoardFailCount = document.getElementById("teleop-hoard-fail-count");
             this.eTeleopScoreSpeaker = document.getElementById("teleop-score-speaker");
             this.eTeleopDisable = document.getElementById("teleop-disable");
             this.eTeleopDisabled = document.getElementById("teleop-disabled");
@@ -803,14 +808,16 @@ export default class App extends util.Target {
                         pos.addHandler("change", (c, f, t) => state.change("pos."+c, f, t));
                         
                         state.updateCount = () => {
-                            let source = [0, 0], ground = [0, 0], speaker = [0, 0], amp = [0, 0], hoard = 0;
+                            // let source = [0, 0], ground = [0, 0], speaker = [0, 0], amp = [0, 0], hoard = 0;
+                            let source = [0, 0], ground = [0, 0], speaker = [0, 0], amp = [0, 0], hoard = [0, 0];
                             if (this.hasMatch())
                                 this.match.teleopFrames.frames.forEach(frame => {
                                     if (frame.type == "source") source[+!frame.state]++;
                                     if (frame.type == "ground") ground[+!frame.state]++;
                                     if (frame.type == "speaker") speaker[+!frame.state.value]++;
                                     if (frame.type == "amp") amp[+!frame.state]++;
-                                    if (frame.type == "hoard") hoard++;
+                                    // if (frame.type == "hoard") hoard++;
+                                    if (frame.type == "hoard") hoard[+!frame.state]++;
                                 });
                             [
                                 this.eTeleopPickupSourceSuccessCount.textContent,
@@ -828,7 +835,11 @@ export default class App extends util.Target {
                                 this.eTeleopScoreAmpSuccessCount.textContent,
                                 this.eTeleopScoreAmpFailCount.textContent,
                             ] = amp;
-                            this.eTeleopHoardCount.textContent = hoard;
+                            // this.eTeleopHoardCount.textContent = hoard;
+                            [
+                                this.eTeleopHoardSuccessCount.textContent,
+                                this.eTeleopHoardFailCount.textContent,
+                            ] = hoard;
                         };
                         ["match", "match.teleopFrames.add", "match.teleopFrames.rem"].forEach(c => this.addHandler("change-"+c, state.updateCount));
 
@@ -840,7 +851,9 @@ export default class App extends util.Target {
                             this.eTeleopScoreSpeaker.disabled = this.eTeleopDisabled.checked;
                             this.eTeleopScoreAmpSuccess.disabled = this.eTeleopDisabled.checked;
                             this.eTeleopScoreAmpFail.disabled = this.eTeleopDisabled.checked;
-                            this.eTeleopHoardAdd.disabled = this.eTeleopDisabled.checked;
+                            // this.eTeleopHoardAdd.disabled = this.eTeleopDisabled.checked;
+                            this.eTeleopHoardSuccess.disabled = this.eTeleopDisabled.checked;
+                            this.eTeleopHoardFail.disabled = this.eTeleopDisabled.checked;
                         };
                         ["match.globalFrames.add", "match.globalFrames.rem"].forEach(c => this.addHandler("change-"+c, state.updateButtons));
 
@@ -881,11 +894,20 @@ export default class App extends util.Target {
                             this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, "amp", false));
                         });
                         this.eTeleopScoreAmpUndo.addEventListener("click", e => undo("amp"));
-                        this.eTeleopHoardAdd.addEventListener("click", e => {
+                        // this.eTeleopHoardAdd.addEventListener("click", e => {
+                        //     if (!this.hasMatch()) return;
+                        //     this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, "hoard", null));
+                        // });
+                        // this.eTeleopHoardRem.addEventListener("click", e => undo("hoard"));
+                        this.eTeleopHoardSuccess.addEventListener("click", e => {
                             if (!this.hasMatch()) return;
-                            this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, "hoard", null));
+                            this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, "hoard", true));
                         });
-                        this.eTeleopHoardRem.addEventListener("click", e => undo("hoard"));
+                        this.eTeleopHoardFail.addEventListener("click", e => {
+                            if (!this.hasMatch()) return;
+                            this.match.teleopFrames.add(new Match.Frame(util.getTime()-startTime, "hoard", false));
+                        });
+                        this.eTeleopHoardUndo.addEventListener("click", e => undo("hoard"));
 
                         this.eTeleopScoreSpeaker.addEventListener("click", e => {
                             state.type = "speaker";

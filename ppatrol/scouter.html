@@ -124,12 +124,15 @@
         <div id="teleop" class="page">
             <div class="content">
                 <div class="section" style="flex-basis:50%;">
-                    <h3><span style="display:none;"></span><span style="color:var(--fg);">Hoard</span><span id="teleop-hoard-count" style="color:var(--fg);">0</span></h3>
+                    <!-- <h3><span style="display:none;"></span><span style="color:var(--fg);">Hoard</span><span id="teleop-hoard-count" style="color:var(--fg);">0</span></h3> -->
+                    <h3><span style="display:none;"></span><span>Hoard</span><span id="teleop-hoard-success-count"></span><span id="teleop-hoard-fail-count"></span><button id="teleop-hoard-undo"><ion-icon name="arrow-undo"></ion-icon></button></h3>
                     <div class="nav">
-                        <button id="teleop-hoard-add"><ion-icon name="bag-add"></ion-icon></button>
+                        <!-- <button id="teleop-hoard-add"><ion-icon name="bag-add"></ion-icon></button> -->
+                        <button id="teleop-hoard-success" success><ion-icon name="bag"></ion-icon><ion-icon name="checkmark"></ion-icon></button>
                     </div>
                     <div class="nav">
-                        <button id="teleop-hoard-rem"><ion-icon name="bag-remove"></ion-icon></button>
+                        <!-- <button id="teleop-hoard-rem"><ion-icon name="bag-remove"></ion-icon></button> -->
+                        <button id="teleop-hoard-fail" fail><ion-icon name="bag"></ion-icon><ion-icon name="close-outline"></ion-icon></button>
                     </div>
                 </div>
                 <div class="section" style="display:none;">

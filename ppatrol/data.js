@@ -606,7 +606,7 @@ export class Match extends util.Target {
                         .write(i+11+10, 1, value)
                     ;
                     i += 11+10+1;
-                } else if (type == 4) {
+                // } else if (type == 4) {
                 } else if (type == 5) {
                     // ASSUMING
                     /*
@@ -766,8 +766,8 @@ export class Match extends util.Target {
                     let value = buff.read(i+11+10, 1);
                     frame.state = { at: new V(x, y), value: !!value };
                     i += 11+10+1;
-                } else if (type == 4) {
-                    frame.state = null;
+                // } else if (type == 4) {
+                //     frame.state = null;
                 } else if (type == 5) {
                     frame.state = buff.read(i, 2);
                     i += 2;
