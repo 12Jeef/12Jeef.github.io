@@ -3015,12 +3015,12 @@ export default class App extends util.Target {
             const updateTeamAnalyticsGraph = () => {
                 this.eTeamAnalyticsGraph.innerHTML = "<div class='legend'></div><div class='content'><div class='side'></div><div class='bottom'></div></div>";
                 const legend = this.eTeamAnalyticsGraph.children[0];
-                for (let i = 0; i < 2; i++) {
+                for (let i = 0; i < 3; i++) {
                     let elem = document.createElement("div");
                     legend.appendChild(elem);
                     elem.innerHTML = "<div></div><div></div>";
-                    elem.children[0].style.backgroundColor = ["#f00", "#0f0"][i];
-                    elem.children[1].textContent = ["# Teleop Speaker", "# Teleop Amp"][i];
+                    elem.children[0].style.backgroundColor = ["#f00", "#0f0", "#0ff"][i];
+                    elem.children[1].textContent = ["# Teleop Speaker", "# Teleop Amp", "# Teleop Hoards"][i];
                 }
                 const graph = this.eTeamAnalyticsGraph.children[1];
                 const side = graph.children[0];
@@ -3035,11 +3035,11 @@ export default class App extends util.Target {
                     const comp = computeFullMatch(match);
                     return {
                         match: match,
-                        vals: [comp.teleop.scores.speaker.success, comp.teleop.scores.amp.success],
+                        vals: [comp.teleop.scores.speaker.success, comp.teleop.scores.amp.success, comp.teleop.hoards.success],
                     };
                 });
                 const allValues = values.map(data => data.vals).flatten();
-                const mx = Math.max(...allValues), mn = Math.min(...allValues);
+                const mx = Math.max(...allValues)+1, mn = Math.min(...allValues)-1;
                 for (let i = mn; i <= mx; i++) {
                     let elem;
                     elem = document.createElement("div");
@@ -3057,13 +3057,16 @@ export default class App extends util.Target {
                     bottom.appendChild(elem);
                     elem.style.left = ((i+1)/(values.length+1))*100+"%";
                     elem.textContent = (match.id == 0) ? "P" : (match.id < 0) ? "E"+(-match.id) : match.id;
+                    const maps = {};
+                    vals.forEach((val, j) => (maps[val] = [...util.ensure(maps[val], "arr"), j]));
                     vals.forEach((val, j) => {
                         let elem = document.createElement("div");
                         graph.appendChild(elem);
                         elem.classList.add("point");
-                        elem.style.left = ((i+1)/(values.length+1))*100+"%";
-                        elem.style.bottom = ((val-mn)/(mx-mn))*100+"%";
-                        elem.style.backgroundColor = ["#f00", "#0f0"][j];
+                        let x = maps[val].indexOf(j) - (maps[val].length-1)/2;
+                        elem.style.left = "calc("+(((i+1)/(values.length+1))*100)+"% + "+(x*0.5)+"rem)";
+                        elem.style.bottom = (((val-mn)/(mx-mn))*100)+"%";
+                        elem.style.backgroundColor = ["#f00", "#0f0", "#0ff"][j];
                     });
                 });
             };
