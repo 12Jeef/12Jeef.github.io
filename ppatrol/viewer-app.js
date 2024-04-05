@@ -2197,7 +2197,7 @@ export default class App extends util.Target {
                 this.eServerConfigAPIKey.textContent = String(apiKey);
                 this.eServerConfigEventName.textContent = util.ensure(event.name, "str", "None");
                 this.eServerConfigEventKey.textContent = String(eventKey);
-                this.eServerConfigAccessPwd.textContent = "*";
+                this.eServerConfigAccessPwd.textContent = new Array(pwd.length).fill("*").join("");
             });
 
             this.eRefresh = document.getElementById("refresh");
