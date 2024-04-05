@@ -26,7 +26,7 @@ let allowedWeird = [
     "📸", "🐒", "🔫", "🤯", "🤮",
     "👌", "❤️", "📸", "🤌", "👀",
     "💙", "🥇", "🥈", "🥉", "🗿",
-    "💣", "😑", "🫦",
+    "💣", "😑", "\n",
 ];
 for (let c of allowedWeird) if (c.length > 2) console.log(c, c.length);
 const allowedChars = [...allowedNormal, ...allowedWeird];
