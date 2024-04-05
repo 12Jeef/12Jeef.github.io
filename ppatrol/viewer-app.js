@@ -265,6 +265,7 @@ export default class App extends util.Target {
     addMatchSkip(...ks) {
         let r = util.Target.resultingForEach(ks, k => {
             k = String(k);
+            if (!["practice", "elim", "quals", "_show"].includes(k)) return false;
             if (this.hasMatchSkip(k)) return false;
             this.#matchSkips.add(k);
             this.change("addMatchSkip", null, k);
@@ -619,8 +620,12 @@ export default class App extends util.Target {
             if (match.id < 0)
                 if (this.hasMatchSkip("elim")) v = !v;
             if (match.id > 0)
-                if (this.hasMatchSkip("normal")) v = !v;
+                if (this.hasMatchSkip("quals")) v = !v;
             return v;
+        };
+        const getShown = match => {
+            if (!getSkipped(match)) return true;
+            return !this.hasMatchSkip("_show");
         };
 
         const getTBAMatch = match => {
@@ -2640,11 +2645,17 @@ export default class App extends util.Target {
             else eNavButtons["server-config"].click();
 
             this.eMasterListPage = document.getElementById("master-list-page");
-            this.addHandler("post-refresh", () => {
+            const updateMasterList = (c, f, t) => {
+                if (c != null && !["addMatchSkip", "remMatchSkip"].includes(c)) return;
                 Array.from(this.eMasterListPage.querySelectorAll("table")).forEach(elem => elem.remove());
-                for (let i = 0; i < 1; i++) matchesScouted.sort(sortMatch).forEach(match => this.eMasterListPage.appendChild(makeMatchListing(match)));
-            });
-            ["practice", "elim", "normal"].forEach(id => {
+                for (let i = 0; i < 1; i++) matchesScouted.sort(sortMatch).forEach(match => {
+                    if (!getShown(match)) return;
+                    this.eMasterListPage.appendChild(makeMatchListing(match));
+                });
+            };
+            this.addHandler("post-refresh", updateMasterList);
+            this.addHandler("change", updateMasterList);
+            ["practice", "elim", "quals", "_show"].forEach(id => {
                 const btn = document.getElementById("listing-include-"+id);
                 if (!btn) return;
                 btn.addEventListener("click", e => {
@@ -4414,7 +4425,7 @@ export default class App extends util.Target {
                     let wantedOrder = [];
                     for (let id in matches) {
                         id = parseInt(id);
-                        getRobots(matches[id]).forEach((robot, i) => wantedOrder.push([id, robot, i]));
+                        getRobots(matches[id]).forEach((robot, i) => wantedOrder.push([id, robot, i], [id, robot, i]));
                     }
                     let prevMatch = null, prevId = null, prevRobot = null;
                     for (let i = 0; i < matchesScouted.length; i++) {
