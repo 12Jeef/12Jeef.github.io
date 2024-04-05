@@ -2002,6 +2002,13 @@ export default class App extends util.Target {
                 }
                 dat.classList.add("images");
                 dat.innerHTML = "<div></div>";
+                util.ensure(data["robot-picture"], "arr").forEach(id => {
+                    let elem = document.createElement("iframe");
+                    dat.appendChild(elem);
+                    elem.src = "https://drive.google.com/file/d/"+id+"/preview";
+                    elem.width = 300;
+                    elem.height = 450;
+                });
             }
 
             let collapsed = false;

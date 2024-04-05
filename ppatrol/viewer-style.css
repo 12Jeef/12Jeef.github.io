@@ -2256,7 +2256,3 @@ table tr.pit td.images > div {
     align-content: center;
     gap: 0.5em;
 }
-table tr.pit td.images > div > img {
-    max-width: 30rem;
-    max-height: 30rem;
-}
