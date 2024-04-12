@@ -332,7 +332,10 @@ button[fail]:disabled {
 
     border-radius: 0em;
 }
-#navigator > header > h3 button.other {
+#navigator > header > h3 button:active {
+    filter: brightness(1.5);
+}
+/* #navigator > header > h3 button.other {
     background-color: var(--b3);
 }
 #navigator > header > h3 button.dev {
@@ -342,7 +345,7 @@ button[fail]:disabled {
 #navigator > header > h3 button.dev:active {
     background-color: var(--fg);
     color: var(--bg);
-}
+} */
 #navigator > .content {
     width: 100%;
     max-width: 100%;

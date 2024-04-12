@@ -10,8 +10,10 @@ const NRANKS = 20;
 
 
 function sortScouter(a, b) {
-    let roleA = ["scouter", "other", "dev"].indexOf(String(a.role).split("-")[0]);
-    let roleB = ["scouter", "other", "dev"].indexOf(String(b.role).split("-")[0]);
+    // let roleA = ["scouter", "other", "dev"].indexOf(String(a.role).split("-")[0]);
+    let roleA = util.ensure(a.role, "int");
+    // let roleB = ["scouter", "other", "dev"].indexOf(String(b.role).split("-")[0]);
+    let roleB = util.ensure(b.role, "int");
     if (roleA < roleB) return -1;
     if (roleB < roleA) return +1;
     let nameA = String(a.name);
@@ -2393,18 +2395,26 @@ export default class App extends util.Target {
             this.eAPIListing = document.getElementById("api-listing");
 
             let scouters2 = [];
-            this.addHandler("post-refresh", () => (scouters2 = [...scouters]));
+            this.addHandler("post-refresh", () => (scouters2 = JSON.parse(JSON.stringify(scouters))));
             setInterval(() => {
                 if (this.locked) return;
                 if (scouters.length == scouters2.length) {
                     let diff = false;
                     for (let i = 0; i < scouters.length; i++) {
                         for (let k in scouters[i]) {
+                            if (!(k in scouters2[i])) {
+                                diff = true;
+                                break;
+                            }
                             if (scouters[i][k] == scouters2[i][k]) continue;
                             diff = true;
                             break;
                         }
                         for (let k in scouters2[i]) {
+                            if (!(k in scouters[i])) {
+                                diff = true;
+                                break;
+                            }
                             if (scouters2[i][k] == scouters[i][k]) continue;
                             diff = true;
                             break;
@@ -2578,21 +2588,40 @@ export default class App extends util.Target {
                         let names = prompt("Add scouter(s):");
                         if (names == null) return;
                         names = names.split(",").map(name => name.trim());
-                        scouters.push(...names.map(name => { return { name: name, role: "scouter" }; }));
+                        // scouters.push(...names.map(name => { return { name: name, role: "scouter" }; }));
+                        scouters.push(...names.map(name => { return { name: name, role: 0 }; }));
                         scouters.sort(sortScouter);
                         updateAPIListing();
                     });
                     scouters.sort(sortScouter).forEach(scouter => {
                         let elem = document.createElement("div");
                         this.eAPIListing.appendChild(elem);
-                        String(scouter.role).split("-").forEach(subrole => elem.classList.add(subrole));
+                        // String(scouter.role).split("-").forEach(subrole => elem.classList.add(subrole));
+                        elem.style.background = scouter.background;
                         elem.innerHTML = "<span></span><button><ion-icon name='ellipsis-vertical'></ion-icon></button><button><ion-icon name='close'></ion-icon></button>";
                         elem.children[0].textContent = scouter.name;
                         elem.children[1].addEventListener("click", e => {
-                            let role = prompt(`Edit Role (${scouter.name} was ${scouter.role})`);
-                            if (role == null) return;
-                            if (!["scouter", "other", "dev"].includes(role)) return;
-                            scouters[scouters.indexOf(scouter)].role = role;
+                            // let role = prompt(`Edit Role (${scouter.name} was ${scouter.role})`);
+                            // if (role == null) return;
+                            // if (!["scouter", "other", "dev"].includes(role)) return;
+                            // scouters[scouters.indexOf(scouter)].role = role;
+                            let k = prompt("What property you like to change? (role: int, background: str)");
+                            let kfs = {
+                                role: () => {
+                                    let v = prompt(`Change role from ${scouter.role} to:`);
+                                    if (v == null) return;
+                                    scouter.role = util.ensure(parseInt(v), "int");
+                                    return true;
+                                },
+                                background: () => {
+                                    let v = prompt(`Change background from ${scouter.background} to:`);
+                                    if (v == null) return;
+                                    scouter.background = (v.length > 0) ? String(v) : null;
+                                    return true;
+                                },
+                            };
+                            if (!(k in kfs)) return;
+                            if (!kfs[k]()) return;
                             updateAPIListing();
                         });
                         elem.children[2].addEventListener("click", e => {

@@ -698,7 +698,7 @@ h3.editable > span > span:last-of-type {
 
     border: 0.1rem solid var(--v8);
 }
-#server-config-page > .content > #api-listing > div:has(> button).scouter {
+/* #server-config-page > .content > #api-listing > div:has(> button).scouter {
     background-color: var(--bg);
 }
 #server-config-page > .content > #api-listing > div:has(> button).other {
@@ -726,6 +726,16 @@ h3.editable > span > span:last-of-type {
 }
 #server-config-page > .content > #api-listing > div.other > button:active,
 #server-config-page > .content > #api-listing > div.dev > button:active {
+    background-color: var(--fg);
+    color: var(--bg);
+} */
+#server-config-page > .content > #api-listing > div > button {
+    background-color: #fff4;
+}
+#server-config-page > .content > #api-listing > div > button:hover {
+    background-color: #fff8;
+}
+#server-config-page > .content > #api-listing > div > button:active {
     background-color: var(--fg);
     color: var(--bg);
 }
