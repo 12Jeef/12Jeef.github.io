@@ -555,7 +555,7 @@ export default class App extends util.Target {
                             let scouter = scouters.findIndex(s => s.name == this.scouter);
                             if (scouter < 0) return;
                             scouter = scouters[scouter];
-                            this.eScouterName.classList.add(scouter.role);
+                            this.eScouterName.style.background = scouter.background;
                         };
                         this.addHandler("change", updateScouter);
                         updateScouter();
