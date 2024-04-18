@@ -4454,7 +4454,7 @@ export default class App extends util.Target {
                     let wantedOrder = [];
                     for (let id in matches) {
                         id = parseInt(id);
-                        getRobots(matches[id]).forEach((robot, i) => wantedOrder.push([id, robot, i], [id, robot, i]));
+                        getRobots(matches[id]).forEach((robot, i) => wantedOrder.push([id, robot, i]));
                     }
                     let prevMatch = null, prevId = null, prevRobot = null;
                     for (let i = 0; i < matchesScouted.length; i++) {
