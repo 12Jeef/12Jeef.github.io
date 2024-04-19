@@ -2180,12 +2180,18 @@ table.match-listing tr:nth-child(9) td > .range.able[on] {
 table.match-listing tr:nth-child(9) td > .range.able[off] {
     background-color: var(--r2);
 }
+table.match-listing tr:nth-child(10) td:nth-last-child(3),
+table.match-listing tr:nth-child(11) td:nth-last-child(3),
+table.match-listing tr:nth-child(12) td:nth-last-child(3),
+table.match-listing tr:nth-child(13) td:nth-last-child(3),
+table.match-listing tr:nth-child(14) td:nth-last-child(3),
+table.match-listing tr:nth-child(15) td:nth-last-child(3) {
+    border-right: 0.1rem solid var(--v8);
+}
 table.match-listing tr:nth-child(10) td:first-child {
     position: relative;
 
     padding: 0.5em 1.5em;
-
-    border-right: 0.1rem solid var(--v8);
 
     vertical-align: top;
 }
@@ -2207,6 +2213,12 @@ table.match-listing tr:nth-child(10) td:first-child::after {
     bottom: 0em;
     right: 0.1em;
     transform: rotate(180deg);
+}
+table.match-listing tr:nth-child(13) td:first-child {
+    border-top: 0.1rem solid var(--v8);
+}
+table.match-listing tr:nth-child(13) td:first-child > span {
+    color: var(--a);
 }
 
 table tr.pit.t th,

@@ -604,6 +604,7 @@ export default class App extends util.Target {
         let matches = {};
         let teams = [];
         let matchesScouted = [];
+        let matchesSScouted = [];
         let pitData = {};
         let votes = {};
 
@@ -731,6 +732,13 @@ export default class App extends util.Target {
                 });
             });
             return periods;
+        };
+        const getSScout = match => {
+            for (let t in matchesSScouted) {
+                if (parseInt(matchesSScouted[t]["match"]) != match.id) continue;
+                return matchesSScouted[t];
+            }
+            return null;
         };
 
         const computeAutoPickups = match => {
@@ -966,6 +974,7 @@ export default class App extends util.Target {
                 return true;
             }).sort(sortMatch);
             const comps = matches.map(match => computeFullMatch(match));
+            const sss = matches.map(match => getSScout(match));
 
             let preloaded = {
                 states: matches.map(match => !!match.preloaded),
@@ -1158,6 +1167,7 @@ export default class App extends util.Target {
                 endgame: endgame,
                 score: auto.score+teleop.score+endgame.score,
                 notes: matches.map(match => { return { id: match.id, from: match.scouter, note: match.notes }; }).filter(note => note.note.length > 0),
+                sss: sss.filter(ss => ss != null),
             };
         };
         const computeFullTeam = team => {
@@ -1217,6 +1227,7 @@ export default class App extends util.Target {
             if (match.empty) return makeEmptyMatchListing(match);
             const k = getBufferStr(match);
             const comp = computeFullMatch(match);
+            const ss = getSScout(match);
             const showMap = () => {
                 let elems = [], elem;
 
@@ -1811,7 +1822,7 @@ export default class App extends util.Target {
             row.children[1].textContent = Math.round(comp.cycle/10)/100;
             let notes = document.createElement("td");
             row.insertBefore(notes, row.firstChild);
-            notes.rowSpan = 6;
+            notes.rowSpan = 3;
             notes.colSpan = 10;
             notes.textContent = match.notes;
             row = document.createElement("tr");
@@ -1832,12 +1843,26 @@ export default class App extends util.Target {
             row.children[0].colSpan = 2;
             row.children[0].style.fontSize = "0.75em";
             row.children[1].textContent = comp.endgame.score;
+            let ssname = document.createElement("td");
+            row.insertBefore(ssname, row.firstChild);
+            ssname.colSpan = 10;
+            ssname.innerHTML = "<span>@</span>";
+            ssname.appendChild(document.createTextNode(ss ? ss["scouter-name"] : "No super scout data"));
             row = document.createElement("tr");
             elem.appendChild(row);
             row.innerHTML = "<td>Total Score:</td><td></td>";
             row.children[0].colSpan = 2;
             row.children[0].style.fontSize = "0.75em";
             row.children[1].textContent = comp.score;
+            console.log(ss);
+            let sseg = document.createElement("td");
+            row.insertBefore(sseg, row.firstChild);
+            sseg.colSpan = 4;
+            sseg.textContent = ss ? ss["endgame-notes"] : "No endgame notes";
+            let ssdriving = document.createElement("td");
+            row.insertBefore(ssdriving, row.firstChild);
+            ssdriving.colSpan = 6;
+            ssdriving.textContent = ss ? ss["driving-notes"] : "No driving notes";
             row = document.createElement("tr");
             elem.appendChild(row);
             row.innerHTML = "<td>#Hoards:</td><td></td>";
@@ -1845,6 +1870,14 @@ export default class App extends util.Target {
             row.children[0].style.fontSize = "0.75em";
             // row.children[1].textContent = comp.teleop.hoards.total;
             row.children[1].textContent = comp.teleop.hoards.success+"/"+comp.teleop.hoards.total;
+            let ssother = document.createElement("td");
+            row.insertBefore(ssother, row.firstChild);
+            ssother.colSpan = 4;
+            ssother.textContent = ss ? ss["any-other"] : "No other notes";
+            let ssmech = document.createElement("td");
+            row.insertBefore(ssmech, row.firstChild);
+            ssmech.colSpan = 6;
+            ssmech.textContent = ss ? ss["mechanism-descriptions"] : "No mechanism notes";
 
             return elem;
         };
@@ -4472,6 +4505,35 @@ export default class App extends util.Target {
                     wantedOrder.forEach(([id, robot, j]) => {
                         matchesScouted.push({ empty: true, id: id, robot: robot, team: (j < 3) ? "r" : "b" });
                     });
+                },
+                async () => {
+                    try {
+                        console.log("🛜 matches-sscouted: PYAW");
+                        if (eventKey == null) throw "event-key";
+                        let resp = await fetch("https://ppatrol.pythonanywhere.com/data/"+eventKey+"/matches-ss", {
+                            method: "GET",
+                            mode: "cors",
+                            headers: {
+                                "Password": pwd,
+                            },
+                        });
+                        if (resp.status != 200) throw resp.status;
+                        resp = await resp.text();
+                        // console.log("🛜 matches-scouted: PYAW = "+resp);
+                        matchesSScouted = JSON.parse(resp);
+                    } catch (e) {
+                        console.log("🛜 matches-sscouted: PYAW ERR", e);
+                        try {
+                            // throw "LS IGNORE";
+                            console.log("🛜 matches-scouted: LS");
+                            matchesSScouted = JSON.parse(localStorage.getItem("matches-sscouted"));
+                        } catch (e) {
+                            console.log("🛜 matches-sscouted: LS ERR", e);
+                            matchesSScouted = null;
+                        }
+                    }
+                    matchesSScouted = util.ensure(matchesSScouted, "obj");
+                    localStorage.setItem("matches-sscouted", JSON.stringify(matchesSScouted));
                 },
             ].map(f => f()));
 
