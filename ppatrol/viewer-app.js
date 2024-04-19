@@ -736,6 +736,8 @@ export default class App extends util.Target {
         const getSScout = match => {
             for (let t in matchesSScouted) {
                 if (parseInt(matchesSScouted[t]["match"]) != match.id) continue;
+                if (parseInt(matchesSScouted[t]["team"]) != match.robot) continue;
+                console.log(match.id, match.robot, matchesSScouted[t]["match"], matchesSScouted[t]["team"]);
                 return matchesSScouted[t];
             }
             return null;
@@ -1854,7 +1856,6 @@ export default class App extends util.Target {
             row.children[0].colSpan = 2;
             row.children[0].style.fontSize = "0.75em";
             row.children[1].textContent = comp.score;
-            console.log(ss);
             let sseg = document.createElement("td");
             row.insertBefore(sseg, row.firstChild);
             sseg.colSpan = 4;
