@@ -1,4 +1,4 @@
-import * as util from "../util.mjs";
+import * as util from "../../util.mjs";
 import WorkerScript from "./workerscript.js";
 
 
@@ -20,10 +20,9 @@ const normalDistAVNode = WorkerScript.makeNormalDistMat(0.5);
 const normalDistBarrier = WorkerScript.makeNormalDistMat(0);
 
 
-const doDiffuse = [false, false, false, false];
 export default class HeartWorkerScript extends WorkerScript {
     get channels() { return 4; }
-    get channelsDoDiffuse() { return doDiffuse; }
+    get channelsDoDiffuse() { return [false, false, false, false]; }
 
     get wrapDiffuse() { return false; }
     get wrapPen() { return false; }
@@ -125,10 +124,8 @@ export default class HeartWorkerScript extends WorkerScript {
     }
 
     applyFilter(data, dataIdx, x, y) {
-        if (this.space[this.getIdx(x, y, 3)]) data[dataIdx + 3] *= 0.75;
+        if (this.space[this.getIdx(x, y, 3)]) data[dataIdx + 3] = 0;
     }
-
-    get mode() { return 2; }
     
     get fireDeg() { return 10; }
     get tiredDeg() { return 45; }

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Cell2D</title>
+		<meta charset="UTF-8">
+        <link rel="stylesheet" href="./style.css">
+    </head>
+    <body>
+        <div id="display">
+            <canvas id="main" width="1000" height="600"></canvas>
+            <canvas id="meter" width="1000" height="100"></canvas>
+        </div>
+        <div id="toolbar">
+            <button id="tool-draw">
+                <ion-icon name="brush"></ion-icon>
+                <div>Draw</div>
+            </button>
+            <button id="tool-erase">
+                <ion-icon src="./erase.svg"></ion-icon>
+                <div>Erase</div>
+            </button>
+            <button id="tool-move">
+                <ion-icon name="move"></ion-icon>
+                <div>Move</div>
+            </button>
+            <button id="tool-meter">
+                <ion-icon name="search"></ion-icon>
+                <div>Meter</div>
+            </button>
+        </div>
+        <div id="settings">
+            <div id="simulation">
+                <h1>Simulation</h1>
+                <div>
+                    <button id="sim-select"></button>
+                    <div id="sim-dropdown">
+                        <button id="sim-diffusion">Diffusion</button>
+                        <button id="sim-pattern">Pattern</button>
+                        <button id="sim-heart">Heart</button>
+                    </div>
+                </div>
+                <span class="header">
+                    <span>Mode</span>
+                    <input type="number" min="0" step="1" id="sim-mode">
+                </span>
+            </div>
+            <div id="channels">
+                <h1>Active channels</h1>
+                <div>
+                    <button id="channel-0">Red</button>
+                    <button id="channel-1">Green</button>
+                    <button id="channel-2">Blue</button>
+                </div>
+            </div>
+            <div id="subsettings">
+                <span class="header">
+                    <span>Pen Size</span>
+                    <input type="number" min="0" id="pensize-input">
+                </span>
+                <input type="range" min="0" max="50" id="pensize-range">
+            </div>
+        </div>
+        <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+        <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+        <script src="./script.js" type="module"></script>
+    </body>
+</html>

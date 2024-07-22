@@ -1,4 +1,4 @@
-import * as util from "../util.mjs";
+import * as util from "../../util.mjs";
 
 
 export default class WorkerScript extends util.Target {
@@ -31,6 +31,11 @@ export default class WorkerScript extends util.Target {
     getNormalDist(x, y, i) { return null; }
     getPenAdd(x, y, i) { return 100; }
 
+    #setup() {
+        this.space.fill(0);
+        this.space2.fill(0);
+        this.setup();
+    }
     setup() {}
     updateFirst() {}
     updatePreDiffuse() {}
@@ -88,18 +93,20 @@ export default class WorkerScript extends util.Target {
     constructor() {
         super();
 
+        this.mode = 0;
+
         this.ctx = null;
         this.ctx2 = null;
 
         this.space = new Float64Array(0);
         this.space2 = new Float64Array(0);
 
-        this.meter = new util.V();
         this.pen = 0;
+        this.meter = new util.V();
         
         this.drawQueue = [];
-        this.moveQueue = [];
         this.eraseQueue = [];
+        this.moveQueue = [];
 
         self.addEventListener("message", e => {
             const { type, data } = e.data;
@@ -117,10 +124,10 @@ export default class WorkerScript extends util.Target {
                 this.space = new Float64Array(this.length);
                 this.space2 = new Float64Array(this.length);
 
-                this.setup();
+                this.#setup();
 
-                const id = setInterval(() => {
-                    const { width, height, channels, ctx, ctx2, pen, drawQueue, moveQueue, eraseQueue } = this;
+                const update = () => {
+                    const { width, height, channels, ctx, ctx2, pen, drawQueue, eraseQueue, moveQueue } = this;
                     let { space, space2 } = this;
                     
                     this.updateFirst();
@@ -146,6 +153,31 @@ export default class WorkerScript extends util.Target {
                                         aidx = this.getIdx(this.clampX(ax), this.clampY(ay), i);
                                     }
                                     space[aidx] += this.getPenAdd(x, y, i);
+                                }
+                            }
+                        });
+                    }
+                    while (eraseQueue.length > 0) {
+                        const erase = eraseQueue.shift();
+                        const { pos, i } = erase;
+                        let x = Math.round(pos[0]);
+                        let y = Math.round(pos[1]);
+                        i.forEach(i => {
+                            i = this.clampI(i);
+                            for (let rx = -pen; rx <= pen; rx++) {
+                                for (let ry = -pen; ry <= pen; ry++) {
+                                    if (rx**2 + ry**2 > pen**2) continue;
+                                    let ax = x + rx;
+                                    let ay = y + ry;
+                                    let aidx = 0;
+                                    if (!this.wrapPen) {
+                                        if (ax < 0 || ax >= width) continue;
+                                        if (ay < 0 || ay >= height) continue;
+                                        aidx = this.getIdx(ax, ay, i);
+                                    } else {
+                                        aidx = this.getIdx(this.clampX(ax), this.clampY(ay), i);
+                                    }
+                                    space[aidx] = 0;
                                 }
                             }
                         });
@@ -195,31 +227,6 @@ export default class WorkerScript extends util.Target {
                                         let aidx = this.getIdx(this.clampX(ax), this.clampY(ay), i);
                                         space[aidx] += values.shift();
                                     }
-                                }
-                            }
-                        });
-                    }
-                    while (eraseQueue.length > 0) {
-                        const erase = eraseQueue.shift();
-                        const { pos, i } = erase;
-                        let x = Math.round(pos[0]);
-                        let y = Math.round(pos[1]);
-                        i.forEach(i => {
-                            i = this.clampI(i);
-                            for (let rx = -pen; rx <= pen; rx++) {
-                                for (let ry = -pen; ry <= pen; ry++) {
-                                    if (rx**2 + ry**2 > pen**2) continue;
-                                    let ax = x + rx;
-                                    let ay = y + ry;
-                                    let aidx = 0;
-                                    if (!this.wrapPen) {
-                                        if (ax < 0 || ax >= width) continue;
-                                        if (ay < 0 || ay >= height) continue;
-                                        aidx = this.getIdx(ax, ay, i);
-                                    } else {
-                                        aidx = this.getIdx(this.clampX(ax), this.clampY(ay), i);
-                                    }
-                                    space[aidx] = 0;
                                 }
                             }
                         });
@@ -278,7 +285,6 @@ export default class WorkerScript extends util.Target {
                                 sums[i] += space[idx];
                             }
                             data.data[dataIdx + 3] = 255;
-                            if (this.meter.x === x && this.meter.y === y) data.data[dataIdx + 3] *= 0.5;
                             this.applyFilter(data.data, dataIdx, x, y);
                         }
                     }
@@ -287,9 +293,9 @@ export default class WorkerScript extends util.Target {
                     ctx2.fillStyle = "#000";
                     ctx2.fillRect(x, 0, 1, this.height2);
 
-                    ctx2.lineWidth = 5;
+                    ctx2.lineWidth = 2;
                     for (let i = 0; i < Math.min(3, channels); i++) {
-                        ctx2.strokeStyle = "#"+["f00", "0f0", "00f"][i];
+                        ctx2.strokeStyle = "#"+["f00", "0f0", "08f"][i];
                         let y = util.lerp(this.height2, 0, this.meterScaler(space[this.getIdx(...this.meter.xy, i)]));
                         ctx2.beginPath();
                         ctx2.moveTo(Math.min(x, pX), pValues[i]);
@@ -299,30 +305,36 @@ export default class WorkerScript extends util.Target {
                     }
 
                     pX = x;
-                    x = (x + 0.25) % this.width2;
+                    x = (x + 1) % this.width2;
 
                     this.updateLast();
-                }, 0);
+                };
+                setInterval(update, 0);
+                return;
+            }
+            if (type === "mode") {
+                this.mode = data;
+                this.#setup();
                 return;
             }
             if (type === "draw") {
                 this.drawQueue.push(data);
                 return;
             }
-            if (type === "move") {
-                this.moveQueue.push(data);
-                return;
-            }
             if (type === "erase") {
                 this.eraseQueue.push(data);
                 return;
             }
-            if (type === "meter") {
-                this.meter.set(data);
+            if (type === "move") {
+                this.moveQueue.push(data);
                 return;
             }
             if (type === "pen") {
                 this.pen = data;
+                return;
+            }
+            if (type === "meter") {
+                this.meter.set(data);
                 return;
             }
         });
