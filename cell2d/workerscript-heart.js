@@ -98,7 +98,7 @@ export default class HeartWorkerScript extends WorkerScript {
                 let idxW = this.getIdx(x, y, 2);
                 let V = space[idxV];
                 let W = space[idxW];
-                let I = 0;
+                let Dsum = 0;
                 const { get, mx, mn } = this.getNormalDist(x, y, 2);
                 for (let rx = mn; rx <= mx; rx++) {
                     for (let ry = mn; ry <= mx; ry++) {
@@ -108,11 +108,11 @@ export default class HeartWorkerScript extends WorkerScript {
                         if (space[this.getIdx(ax, ay, 3)]) continue;
                         let nd = get(rx, ry);
                         let aidx = this.getIdx(ax, ay, 0);
-                        I += Math.max(0, space[aidx]) * nd;
+                        Dsum += Math.max(0, space[aidx]) * nd;
                     }
                 }
-                I *= D;
-                let dV = k * V * (1 - V) * (V - a) - W + I;
+                Dsum *= D;
+                let dV = k * V * (1 - V) * (V - a) - W + Dsum;
                 let dW = epsilon * (beta * V - W);
                 V += dV * dt;
                 W += dW * dt;
