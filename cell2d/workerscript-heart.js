@@ -128,7 +128,7 @@ export default class HeartWorkerScript extends WorkerScript {
         if (this.space[this.getIdx(x, y, 3)]) data[dataIdx + 3] *= 0.75;
     }
 
-    get mode() { return 4; }
+    get mode() { return 2; }
     
     get fireDeg() { return 10; }
     get tiredDeg() { return 45; }

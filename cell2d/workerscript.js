@@ -131,6 +131,7 @@ export default class WorkerScript extends util.Target {
                         let x = Math.round(pos[0]);
                         let y = Math.round(pos[1]);
                         i.forEach(i => {
+                            i = this.clampI(i);
                             for (let rx = -pen; rx <= pen; rx++) {
                                 for (let ry = -pen; ry <= pen; ry++) {
                                     if (rx**2 + ry**2 > pen**2) continue;
@@ -140,9 +141,9 @@ export default class WorkerScript extends util.Target {
                                     if (!this.wrapPen) {
                                         if (ax < 0 || ax >= width) continue;
                                         if (ay < 0 || ay >= height) continue;
-                                        aidx = this.getIdx(ax, ay, this.clampI(i));
+                                        aidx = this.getIdx(ax, ay, i);
                                     } else {
-                                        aidx = this.getIdx(this.clampX(ax), this.clampY(ay), this.clampI(i));
+                                        aidx = this.getIdx(this.clampX(ax), this.clampY(ay), i);
                                     }
                                     space[aidx] += this.getPenAdd(x, y, i);
                                 }
@@ -157,6 +158,7 @@ export default class WorkerScript extends util.Target {
                         let sx = Math.round(shift[0]);
                         let sy = Math.round(shift[1]);
                         i.forEach(i => {
+                            i = this.clampI(i);
                             const values = [];
                             for (let rx = -pen; rx <= pen; rx++) {
                                 for (let ry = -pen; ry <= pen; ry++) {
@@ -171,9 +173,9 @@ export default class WorkerScript extends util.Target {
                                     if (outside) {
                                         values.push(0);
                                     } else {
-                                        let idx = this.getIdx(this.clampX(x + rx), this.clampY(y + ry), this.clampI(i));
-                                        values.push(space[idx]);
-                                        space[idx] = 0;
+                                        let aidx = this.getIdx(this.clampX(ax), this.clampY(ay), i);
+                                        values.push(space[aidx]);
+                                        space[aidx] = 0;
                                     }
                                 }
                             }
@@ -190,8 +192,8 @@ export default class WorkerScript extends util.Target {
                                     if (outside) {
                                         values.shift();
                                     } else {
-                                        let idx = this.getIdx(this.clampX(x + rx + sx), this.clampY(y + ry + sy), this.clampI(i));
-                                        space[idx] += values.shift();
+                                        let aidx = this.getIdx(this.clampX(ax), this.clampY(ay), i);
+                                        space[aidx] += values.shift();
                                     }
                                 }
                             }
@@ -203,6 +205,7 @@ export default class WorkerScript extends util.Target {
                         let x = Math.round(pos[0]);
                         let y = Math.round(pos[1]);
                         i.forEach(i => {
+                            i = this.clampI(i);
                             for (let rx = -pen; rx <= pen; rx++) {
                                 for (let ry = -pen; ry <= pen; ry++) {
                                     if (rx**2 + ry**2 > pen**2) continue;
@@ -212,9 +215,9 @@ export default class WorkerScript extends util.Target {
                                     if (!this.wrapPen) {
                                         if (ax < 0 || ax >= width) continue;
                                         if (ay < 0 || ay >= height) continue;
-                                        aidx = this.getIdx(ax, ay, this.clampI(i));
+                                        aidx = this.getIdx(ax, ay, i);
                                     } else {
-                                        aidx = this.getIdx(this.clampX(ax), this.clampY(ay), this.clampI(i));
+                                        aidx = this.getIdx(this.clampX(ax), this.clampY(ay), i);
                                     }
                                     space[aidx] = 0;
                                 }
