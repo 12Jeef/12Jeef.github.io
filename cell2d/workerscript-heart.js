@@ -6,7 +6,7 @@ import WorkerScript from "./workerscript.js";
 // dW/dt = ε(ßV - W)
 
 const dt = 0.5;
-const k = 2;
+const r = 2;
 const a = 0.25;
 const epsilon = 0.075;
 const beta = 0.85;
@@ -112,7 +112,7 @@ export default class HeartWorkerScript extends WorkerScript {
                     }
                 }
                 Dsum *= D;
-                let dV = k * V * (1 - V) * (V - a) - W + Dsum;
+                let dV = r * V * (1 - V) * (V - a) - W + Dsum;
                 let dW = epsilon * (beta * V - W);
                 V += dV * dt;
                 W += dW * dt;
