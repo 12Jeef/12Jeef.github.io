@@ -29,7 +29,7 @@ input {
     outline: none;
     border: none;
 
-    background-color: #444;
+    background: #444;
 }
 canvas {
     margin: 0;
@@ -40,7 +40,7 @@ canvas {
     outline: none;
     border: none;
 
-    background-color: #fff2;
+    background: #fff2;
 }
 
 body {
@@ -122,7 +122,7 @@ body {
 
     padding: 0.25em 0.5em;
 
-    background-color: #666;
+    background: #666;
     opacity: 0;
     visibility: hidden;
     filter: drop-shadow(0 0 0.5rem #0008);
@@ -167,7 +167,7 @@ body {
     font-size: 1em;
     text-align: center;
 }
-#settings > #simulation > div {
+#settings > #simulation > #sims {
     position: relative;
 
     display: flex;
@@ -177,32 +177,35 @@ body {
     align-items: stretch;
     align-content: stretch;
 }
-#settings > #simulation > div > #sim-select::before {
+#settings > #simulation > #sims > #sim-select::before {
     content: "▼";
 
     position: absolute;
     top: 50%;
     right: 0.75em;
+    transform-origin: 50% 50%;
     transform: translateY(-50%);
 }
-#settings > #simulation > div.open > #sim-select::before {
-    transform: scale(-1);
+#settings > #simulation > #sims.open > #sim-select::before {
+    transform: translateY(-50%) scale(-1);
 }
-#settings > #simulation > div > #sim-select,
-#settings > #simulation > div > #sim-dropdown > button {
+#settings > #simulation > #sims > #sim-select,
+#settings > #simulation > #sims > #sim-dropdown > button {
     padding: 0.5em 0.75em;
 
-    background-color: #444;
+    background: #444;
 
     text-align: left;
 
     transition: filter 0.25s;
 }
-#settings > #simulation > div > #sim-select:hover,
-#settings > #simulation > div > #sim-dropdown > button:hover {
+#settings > #simulation > #sims > #sim-select:hover,
+#settings > #simulation > #sims > #sim-dropdown > button:hover {
     filter: brightness(1.25);
 }
-#settings > #simulation > div > #sim-dropdown {
+#settings > #simulation > #sims > #sim-dropdown {
+    z-index: 1;
+
     position: absolute;
     top: 100%;
     left: 0;
@@ -223,11 +226,47 @@ body {
 
     transition: transform 0.25s, opacity 0.25s, visibility 0.25s;
 }
-#settings > #simulation > div.open > #sim-dropdown {
+#settings > #simulation > #sims.open > #sim-dropdown {
     transform: scale(1);
 
     opacity: 1;
     visibility: inherit;
+}
+#settings > #simulation > #sim-params,
+#settings > #simulation > #sim-params > div {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: center;
+    gap: 0.25em;
+}
+#settings > #simulation > #sim-params > button {
+    position: relative;
+
+    padding-left: 1.75em;
+
+    background: transparent;
+
+    text-align: left;
+}
+#settings > #simulation > #sim-params > button::before {
+    content: "▶";
+
+    position: absolute;
+    left: 0.5em;
+    top: 50%;
+    transform: translateY(-50%);
+}
+#settings > #simulation > #sim-params.open > button::before {
+    transform: translateY(-50%) rotate(90deg);
+}
+#settings > #simulation > #sim-params > div {
+    padding-left: 1em;
+}
+#settings > #simulation > #sim-params:not(.open) > div {
+    display: none;
 }
 #settings > #channels > div {
     display: flex;
@@ -243,39 +282,46 @@ body {
 
     padding: 0.5em;
 
+    opacity: 1;
+
     font-weight: 700;
     text-transform: uppercase;
 
-    transition: filter 0.25s;
+    transition: filter 0.25s, opacity 0.25s;
 }
-#settings > #channels > div > button:hover {
+#settings > #channels > div > button:not(:disabled):hover {
     filter: brightness(1.25);
 }
+#settings > #channels > div > button:disabled {
+    opacity: 0.5;
+
+    cursor: auto;
+}
 #settings > #channels > div > button:not(.active) {
-    background-color: transparent !important;
+    background: transparent !important;
 }
 #settings > #channels > div > button:nth-of-type(1) {
-    background-color: #c04;
+    background: #c04;
     border: 0.1rem solid #c04;
 }
 #settings > #channels > div > button:nth-of-type(2) {
-    background-color: #0a4;
+    background: #0a4;
     border: 0.1rem solid #0a4;
 }
 #settings > #channels > div > button:nth-of-type(3) {
-    background-color: #06c;
+    background: #06c;
     border: 0.1rem solid #06c;
 }
-#settings > div {
+#settings > #subsettings {
     display: flex;
     flex-direction: column;
     flex-wrap: nowrap;
     justify-content: flex-start;
     align-items: stretch;
-    align-content: center;
+    align-content: stretch;
     gap: 0.25em;
 }
-#settings > div > span.header {
+#settings span.header {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
@@ -284,31 +330,34 @@ body {
     align-content: center;
     gap: 0.5em;
 }
-#settings > div > span.header > span {
+#settings span.header > span {
     flex-basis: 100%;
 
+    font-size: 0.75em;
     font-weight: 700;
 }
-#settings > div > span.header > input {
+#settings span.header > input {
     width: 5em;
 }
-#settings > div > input[type="range"] {
+#settings input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
 
+    min-width: 0em;
+    width: 100%;
     height: 1em;
 
-    background-color: #444;
+    background: #444;
 }
-#settings > div > input[type="range"]::-webkit-slider-thumb {
+#settings input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
 
     height: 1em;
     width: 1em;
 
-    background-color: #08f;
+    background: #08f;
 }
-#settings > div > input[type="range"]::-webkit-slider-thumb:hover {
-    background-color: #4af;
+#settings input[type="range"]::-webkit-slider-thumb:hover {
+    background: #4af;
 }

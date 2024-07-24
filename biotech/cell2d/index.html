@@ -31,7 +31,7 @@
         <div id="settings">
             <div id="simulation">
                 <h1>Simulation</h1>
-                <div>
+                <div id="sims">
                     <button id="sim-select"></button>
                     <div id="sim-dropdown">
                         <button id="sim-diffusion">Diffusion</button>
@@ -39,25 +39,111 @@
                         <button id="sim-heart">Heart</button>
                     </div>
                 </div>
-                <span class="header">
-                    <span>Mode</span>
-                    <input type="number" min="0" step="1" id="sim-mode">
-                </span>
+
+                <div id="sim-params">
+                    <button id="sim-params-toggle">Parameters</button>
+                    <div>
+                        <span class="header sim-param pattern">
+                            <span>Mode</span>
+                            <input type="number" min="0" step="1" id="pattern-mode">
+                        </span>
+                        <span class="header sim-param pattern">
+                            <span>dt</span>
+                            <input type="number" min="0" id="pattern-dt">
+                        </span>
+                        <span class="header sim-param pattern">
+                            <span>ρ<sub>A</sub></span>
+                            <input type="number" min="0" id="pattern-rhoA">
+                        </span>
+                        <span class="header sim-param pattern">
+                            <span>ρ<sub>I</sub></span>
+                            <input type="number" min="0" id="pattern-rhoI">
+                        </span>
+                        <span class="header sim-param pattern">
+                            <span>c<sub>A</sub></span>
+                            <input type="number" min="0" id="pattern-cA">
+                        </span>
+                        <span class="header sim-param pattern">
+                            <span>c<sub>I</sub></span>
+                            <input type="number" min="0" id="pattern-cI">
+                        </span>
+                        <span class="header sim-param pattern">
+                            <span>k</span>
+                            <input type="number" min="0" id="pattern-k">
+                        </span>
+                        <span class="header sim-param pattern">
+                            <span>μ</span>
+                            <input type="number" min="0" id="pattern-mu">
+                        </span>
+                        <span class="header sim-param pattern">
+                            <span>ν</span>
+                            <input type="number" min="0" id="pattern-nu">
+                        </span>
+
+                        <span class="header sim-param heart">
+                            <span>Mode</span>
+                            <input type="number" min="0" step="1" id="heart-mode">
+                        </span>
+                        <span class="header sim-param heart">
+                            <span>dt</span>
+                            <input type="number" min="0" max="2" id="heart-dt">
+                        </span>
+                        <span class="header sim-param heart">
+                            <span>r</span>
+                            <input type="number" min="0" id="heart-r">
+                        </span>
+                        <span class="header sim-param heart">
+                            <span>a</span>
+                            <input type="number" min="0" id="heart-a">
+                        </span>
+                        <span class="header sim-param heart">
+                            <span>ε</span>
+                            <input type="number" min="0" id="heart-epsilon">
+                        </span>
+                        <span class="header sim-param heart">
+                            <span>ß</span>
+                            <input type="number" min="0" id="heart-beta">
+                        </span>
+                        <span class="header sim-param heart">
+                            <span>D</span>
+                            <input type="number" min="0" id="heart-D">
+                        </span>
+                    </div>
+                </div>
             </div>
             <div id="channels">
                 <h1>Active channels</h1>
                 <div>
-                    <button id="channel-0">Red</button>
-                    <button id="channel-1">Green</button>
-                    <button id="channel-2">Blue</button>
+                    <button id="channel-active-0">Red</button>
+                    <button id="channel-active-1">Green</button>
+                    <button id="channel-active-2">Blue</button>
+                </div>
+                <h1>Visible channels</h1>
+                <div>
+                    <button id="channel-visible-0">Red</button>
+                    <button id="channel-visible-1">Green</button>
+                    <button id="channel-visible-2">Blue</button>
                 </div>
             </div>
             <div id="subsettings">
+                <span class="header">
+                    <span>Space Width</span>
+                    <input type="number" min="1" id="space-width">
+                </span>
+                <span class="header">
+                    <span>Space Height</span>
+                    <input type="number" min="1" id="space-height">
+                </span>
                 <span class="header">
                     <span>Pen Size</span>
                     <input type="number" min="0" id="pensize-input">
                 </span>
                 <input type="range" min="0" max="50" id="pensize-range">
+                <span class="header">
+                    <span>Pen Weight</span>
+                    <input type="number" id="penweight-input">
+                </span>
+                <input type="range" min="-100" max="100" id="penweight-range">
             </div>
         </div>
         <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>

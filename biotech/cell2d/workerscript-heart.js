@@ -2,22 +2,21 @@ import * as util from "../../util.mjs";
 import WorkerScript from "./workerscript.js";
 
 
-// dV/dt = kV(1-V)(V-a) - W + D * (diffusion)
+// dV/dt = rV(1-V)(V-a) - W + D * (diffusion)
 // dW/dt = ε(ßV - W)
 
-const dt = 0.5;
-const r = 2;
-const a = 0.25;
-const epsilon = 0.075;
-const beta = 0.85;
-const D = 0.5;
+let dt = 0;
+let r = 0;
+let a = 0;
+let epsilon = 0;
+let beta = 0;
+let D = 0;
 
-
-const normalDist = WorkerScript.makeNormalDistMat(1);
-const normalDistAtrium = WorkerScript.makeNormalDistMat(1);
-const normalDistVentricle = WorkerScript.makeNormalDistMat(2);
-const normalDistAVNode = WorkerScript.makeNormalDistMat(0.5);
-const normalDistBarrier = WorkerScript.makeNormalDistMat(0);
+let normalDist = WorkerScript.makeNormalDistMat(1);
+let normalDistAtrium = WorkerScript.makeNormalDistMat(1);
+let normalDistVentricle = WorkerScript.makeNormalDistMat(2);
+let normalDistAVNode = WorkerScript.makeNormalDistMat(0.5);
+let normalDistBarrier = WorkerScript.makeNormalDistMat(0);
 
 
 export default class HeartWorkerScript extends WorkerScript {
@@ -36,7 +35,6 @@ export default class HeartWorkerScript extends WorkerScript {
         if (this.inVentricle(x, y)) return normalDistVentricle;
         return normalDistBarrier;
     }
-    getPenAdd(x, y, i) { return a/10; }
 
     setup() {
         let callbackfs = {
@@ -111,10 +109,10 @@ export default class HeartWorkerScript extends WorkerScript {
                     }
                 }
                 Dsum *= D;
-                let dV = r * V * (1 - V) * (V - a) - W + Dsum;
-                let dW = epsilon * (beta * V - W);
-                V += dV * dt;
-                W += dW * dt;
+                let dVdt = r * V * (1 - V) * (V - a) - W + Dsum;
+                let dWdt = epsilon * (beta * V - W);
+                V += dVdt * dt;
+                W += dWdt * dt;
                 if (mode === 2)
                     V += a * this.inSinusNode(x, y) * (Math.max(this.sinusPulseThresh, Math.sin(2*Math.PI * time/this.sinusPulsePeriod)) - this.sinusPulseThresh) / (1-this.sinusPulseThresh);
                 space[idxV] = V || 0;
@@ -161,7 +159,29 @@ export default class HeartWorkerScript extends WorkerScript {
     constructor() {
         super();
 
+        this.mode = 0;
+
         this.time = 0;
+
+        this.addHandler("message", ({ type, data }) => {
+            if (type === "mode") {
+                this.mode = data;
+                this.fullSetup();
+                return;
+            }
+            if (type === "dt")
+                return dt = data;
+            if (type === "r")
+                return r = data;
+            if (type === "a")
+                return a = data;
+            if (type === "epsilon")
+                return epsilon = data;
+            if (type === "beta")
+                return beta = data;
+            if (type === "D")
+                return D = data;
+        });
     }
 }
 

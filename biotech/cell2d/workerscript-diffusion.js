@@ -17,8 +17,6 @@ export default class DiffusionWorkerScript extends WorkerScript {
 
     meterScaler(v) { return util.lerp(0.25, 0.75, v/256); }
 
-    getPenAdd(x, y, i) { return 10; }
-
     getNormalDist(x, y, i) {
         // if (i == 0) return [normalDist1, normalDist2, normalDist3, normalDist4][Math.floor(4 * x / width)];
         // if (i == 2) return [normalDist1, normalDist2, normalDist3, normalDist4][Math.floor(4 * y / height)];

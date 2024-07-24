@@ -29,9 +29,8 @@ export default class WorkerScript extends util.Target {
     get length() { return this.width * this.height * this.channels; }
 
     getNormalDist(x, y, i) { return null; }
-    getPenAdd(x, y, i) { return 100; }
 
-    #setup() {
+    fullSetup() {
         this.space.fill(0);
         this.space2.fill(0);
         this.setup();
@@ -101,20 +100,25 @@ export default class WorkerScript extends util.Target {
         this.space = new Float64Array(0);
         this.space2 = new Float64Array(0);
 
-        this.pen = 0;
+        this.penSize = 0;
+        this.penWeight = 0;
         this.meter = new util.V();
         
+        this.visibleChannels = new Array(3).fill(true);
+
         this.drawQueue = [];
         this.eraseQueue = [];
         this.moveQueue = [];
 
         self.addEventListener("message", e => {
             const { type, data } = e.data;
-            if (type === "start") {
+            if (type === "init") {
                 const { eCanvas, eCanvas2 } = data;
                 this.ctx = eCanvas.getContext("2d", { willReadFrequently: true });
                 this.ctx2 = eCanvas2.getContext("2d");
-
+                return;
+            }
+            if (type === "start") {
                 this.ctx2.fillStyle = "#000";
                 this.ctx2.fillRect(0, 0, this.width2, this.height2);
                 let x = 0;
@@ -124,10 +128,10 @@ export default class WorkerScript extends util.Target {
                 this.space = new Float64Array(this.length);
                 this.space2 = new Float64Array(this.length);
 
-                this.#setup();
+                this.fullSetup();
 
                 const update = () => {
-                    const { width, height, channels, ctx, ctx2, pen, drawQueue, eraseQueue, moveQueue } = this;
+                    const { width, height, channels, ctx, ctx2, penSize, drawQueue, eraseQueue, moveQueue } = this;
                     let { space, space2 } = this;
                     
                     this.updateFirst();
@@ -138,10 +142,10 @@ export default class WorkerScript extends util.Target {
                         let x = Math.round(pos[0]);
                         let y = Math.round(pos[1]);
                         i.forEach(i => {
-                            i = this.clampI(i);
-                            for (let rx = -pen; rx <= pen; rx++) {
-                                for (let ry = -pen; ry <= pen; ry++) {
-                                    if (rx**2 + ry**2 > pen**2) continue;
+                            if (i < 0 || i >= this.channels) return;
+                            for (let rx = -penSize; rx <= penSize; rx++) {
+                                for (let ry = -penSize; ry <= penSize; ry++) {
+                                    if (rx**2 + ry**2 > penSize**2) continue;
                                     let ax = x + rx;
                                     let ay = y + ry;
                                     let aidx = 0;
@@ -152,7 +156,7 @@ export default class WorkerScript extends util.Target {
                                     } else {
                                         aidx = this.getIdx(this.clampX(ax), this.clampY(ay), i);
                                     }
-                                    space[aidx] += this.getPenAdd(x, y, i);
+                                    space[aidx] += this.penWeight;
                                 }
                             }
                         });
@@ -163,10 +167,10 @@ export default class WorkerScript extends util.Target {
                         let x = Math.round(pos[0]);
                         let y = Math.round(pos[1]);
                         i.forEach(i => {
-                            i = this.clampI(i);
-                            for (let rx = -pen; rx <= pen; rx++) {
-                                for (let ry = -pen; ry <= pen; ry++) {
-                                    if (rx**2 + ry**2 > pen**2) continue;
+                            if (i < 0 || i >= this.channels) return;
+                            for (let rx = -penSize; rx <= penSize; rx++) {
+                                for (let ry = -penSize; ry <= penSize; ry++) {
+                                    if (rx**2 + ry**2 > penSize**2) continue;
                                     let ax = x + rx;
                                     let ay = y + ry;
                                     let aidx = 0;
@@ -190,11 +194,11 @@ export default class WorkerScript extends util.Target {
                         let sx = Math.round(shift[0]);
                         let sy = Math.round(shift[1]);
                         i.forEach(i => {
-                            i = this.clampI(i);
+                            if (i < 0 || i >= this.channels) return;
                             const values = [];
-                            for (let rx = -pen; rx <= pen; rx++) {
-                                for (let ry = -pen; ry <= pen; ry++) {
-                                    if (rx**2 + ry**2 > pen**2) continue;
+                            for (let rx = -penSize; rx <= penSize; rx++) {
+                                for (let ry = -penSize; ry <= penSize; ry++) {
+                                    if (rx**2 + ry**2 > penSize**2) continue;
                                     let ax = x + rx;
                                     let ay = y + ry;
                                     let outside = false;
@@ -211,9 +215,9 @@ export default class WorkerScript extends util.Target {
                                     }
                                 }
                             }
-                            for (let rx = -pen; rx <= pen; rx++) {
-                                for (let ry = -pen; ry <= pen; ry++) {
-                                    if (rx**2 + ry**2 > pen**2) continue;
+                            for (let rx = -penSize; rx <= penSize; rx++) {
+                                for (let ry = -penSize; ry <= penSize; ry++) {
+                                    if (rx**2 + ry**2 > penSize**2) continue;
                                     let ax = x + rx + sx;
                                     let ay = y + ry + sy;
                                     let outside = false;
@@ -281,7 +285,7 @@ export default class WorkerScript extends util.Target {
                             let dataIdx = (y * width + x) * 4;
                             for (let i = 0; i < Math.min(3, channels); i++) {
                                 let idx = this.getIdx(x, y, i);
-                                data.data[dataIdx + i] = Math.min(255, Math.max(0, this.applyChannel(space[idx])));
+                                data.data[dataIdx + i] = Math.min(255, Math.max(0, this.applyChannel(space[idx]) * this.visibleChannels[i]));
                                 sums[i] += space[idx];
                             }
                             data.data[dataIdx + 3] = 255;
@@ -312,9 +316,8 @@ export default class WorkerScript extends util.Target {
                 setInterval(update, 0);
                 return;
             }
-            if (type === "mode") {
-                this.mode = data;
-                this.#setup();
+            if (type === "v-channels") {
+                this.visibleChannels = data;
                 return;
             }
             if (type === "draw") {
@@ -329,14 +332,19 @@ export default class WorkerScript extends util.Target {
                 this.moveQueue.push(data);
                 return;
             }
-            if (type === "pen") {
-                this.pen = data;
+            if (type === "pen-size") {
+                this.penSize = data;
+                return;
+            }
+            if (type === "pen-weight") {
+                this.penWeight = data;
                 return;
             }
             if (type === "meter") {
                 this.meter.set(data);
                 return;
             }
+            this.post("message", { type, data });
         });
     }
 }
