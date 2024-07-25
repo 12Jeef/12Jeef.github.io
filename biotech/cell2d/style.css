@@ -300,17 +300,78 @@ body {
 #settings > #channels > div > button:not(.active) {
     background: transparent !important;
 }
-#settings > #channels > div > button:nth-of-type(1) {
+#settings > #channels > div > button {
+    background: #666;
+    border: 0.1rem solid #666;
+}
+#settings > #channels > div > button.r {
     background: #c04;
     border: 0.1rem solid #c04;
 }
-#settings > #channels > div > button:nth-of-type(2) {
+#settings > #channels > div > button.g {
     background: #0a4;
     border: 0.1rem solid #0a4;
 }
-#settings > #channels > div > button:nth-of-type(3) {
+#settings > #channels > div > button.b {
     background: #06c;
     border: 0.1rem solid #06c;
+}
+#settings > #channels > div > div {
+    flex-basis: 100%;
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    align-content: stretch;
+}
+#settings > #channels > div > div:nth-of-type(1) {
+    border: 0.1rem solid #c04;
+}
+#settings > #channels > div > div:nth-of-type(2) {
+    border: 0.1rem solid #0a4;
+}
+#settings > #channels > div > div:nth-of-type(3) {
+    border: 0.1rem solid #06c;
+}
+#settings > #channels > div > div > div {
+    padding: 0.5em;
+}
+#settings > #channels > div > div > div:first-child {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    align-content: center;
+    gap: 0.25em;
+}
+#settings > #channels > div > div.dropping > div:first-child {
+    background: #444;
+}
+#settings > #channels > div > div > div:first-child > span {
+    flex-basis: 100%;
+
+    font-size: 0.75em;
+}
+#settings > #channels > div > div > div:first-child > button {
+    background-color: transparent;
+}
+#settings > #channels > div > div > div:last-child {
+    font-size: 0.75em;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+}
+#settings > #channels > div > div:nth-child(1) > div:last-child {
+    background: #c04;
+}
+#settings > #channels > div > div:nth-child(2) > div:last-child {
+    background: #0a4;
+}
+#settings > #channels > div > div:nth-child(3) > div:last-child {
+    background: #06c;
 }
 #settings > #subsettings {
     display: flex;

@@ -52,21 +52,18 @@ const updateSim = () => {
     updateWorkerPenSize();
     updateWorkerPenWeight();
     updateMeter();
-    updateWorkerVisibleChannels();
 
     Array.from(document.querySelectorAll(".sim-param")).forEach(elem => (elem.style.display = "none"));
     Array.from(document.querySelectorAll(".sim-param."+simulator)).forEach(elem => (elem.style.display = ""));
     context.post("update-sim");
 
-    worker.postMessage({ type: "start", data: null });
-
-    channels = {
-        "diffusion": 3,
-        "pattern": 2,
-        "heart": 4,
-    }[simulator] ?? 0;
-    updateActiveChannels();
+    updatePenChannels();
     updateVisibleChannels();
+    updateWorkerVisibleChannels();
+    updateChannelMappings();
+    updateWorkerChannelMappings();
+
+    worker.postMessage({ type: "start", data: null });
 };
 const closeSimulatorDropdown = e => {
     if (e) {
@@ -130,6 +127,8 @@ const createSimParameter = (sim, name, value, cast=parseFloat) => {
         penWeight = 25;
         updatePenWeight();
         updateWorkerPenWeight();
+        channels = ["Red", "Green", "Blue"];
+        channelMappings = [0, 1, 2];
     });
 }
 
@@ -161,6 +160,8 @@ const createSimParameter = (sim, name, value, cast=parseFloat) => {
         penWeight = 0.01;
         updatePenWeight();
         updateWorkerPenWeight();
+        channels = ["A", "I"];
+        channelMappings = [0, 1, null];
     });
 }
 //// HEART
@@ -187,6 +188,8 @@ const createSimParameter = (sim, name, value, cast=parseFloat) => {
         penWeight = a.value / 2;
         updatePenWeight();
         updateWorkerPenWeight();
+        channels = ["V", "W", "Walls"];
+        channelMappings = [0, null, 1];
     });
 }
 
@@ -295,59 +298,145 @@ const updateMeter = () => {
     worker.postMessage({ type: "meter", data: meter.xy });
 };
 
-//// ACTIVE CHANNELS
+//// CHANNELS
 
-let channels = 0;
-let activeChannels = new Array(3).fill(true);
-const updateActiveChannels = () => {
-    activeChannels.forEach((active, i) => {
-        const elem = document.getElementById("channel-active-"+i);
-        if (active)
-            elem.classList.add("active");
-        else elem.classList.remove("active");
-        elem.disabled = i >= channels;
+let channels = [];
+
+let penChannels = [];
+const updatePenChannels = () => {
+    while (penChannels.length < channels.length)
+        penChannels.push(true);
+    while (penChannels.length > channels.length)
+        penChannels.pop();
+    while (ePenChannelButtons.length < channels.length) {
+        const i = ePenChannelButtons.length;
+        const eButton = document.createElement("button");
+        ePenChannels.appendChild(eButton);
+        ePenChannelButtons.push(eButton);
+        eButton.addEventListener("click", e => {
+            if (e.shiftKey) {
+                for (let j = 0; j < penChannels.length; j++)
+                    penChannels[j] = false;
+                penChannels[i] = true;
+            } else penChannels[i] = !penChannels[i];
+            updatePenChannels();
+        });
+        eButton.draggable = true;
+        eButton.addEventListener("dragstart", e => {
+            e.dataTransfer.setData("text/plain", String(i));
+        });
+    }
+    while (ePenChannelButtons.length > channels.length) {
+        const eButton = ePenChannelButtons.pop();
+        ePenChannels.removeChild(eButton);
+    }
+    ePenChannelButtons.forEach((eButton, i) => {
+        if (penChannels[i])
+            eButton.classList.add("active");
+        else eButton.classList.remove("active");
+        eButton.textContent = channels[i];
+        eButton.classList.remove("r");
+        eButton.classList.remove("g");
+        eButton.classList.remove("b");
+        if (["red", "r"].includes(channels[i].toLowerCase())) eButton.classList.add("r");
+        if (["green", "g"].includes(channels[i].toLowerCase())) eButton.classList.add("g");
+        if (["blue", "b"].includes(channels[i].toLowerCase())) eButton.classList.add("b");
     });
 };
-updateActiveChannels();
-activeChannels.forEach((_, i) => {
-    const elem = document.getElementById("channel-active-"+i);
-    elem.addEventListener("click", e => {
-        if (i >= channels) return;
-        if (e.shiftKey) {
-            for (let j = 0; j < activeChannels.length; j++)
-                activeChannels[j] = false;
-            activeChannels[i] = true;
-        } else activeChannels[i] = !activeChannels[i];
-        updateActiveChannels();
-    });
-});
-let visibleChannels = new Array(3).fill(true);
+const ePenChannels = document.getElementById("pen-channels");
+const ePenChannelButtons = [];
+updatePenChannels();
+
+let visibleChannels = [];
 const updateVisibleChannels = () => {
-    visibleChannels.forEach((visible, i) => {
-        const elem = document.getElementById("channel-visible-"+i);
-        if (visible)
-            elem.classList.add("active");
-        else elem.classList.remove("active");
-        elem.disabled = i >= channels;
+    while (visibleChannels.length < channels.length)
+        visibleChannels.push(true);
+    while (visibleChannels.length > channels.length)
+        visibleChannels.pop();
+    while (eVisibleChannelButtons.length < channels.length) {
+        const i = eVisibleChannelButtons.length;
+        const eButton = document.createElement("button");
+        eVisibleChannels.appendChild(eButton);
+        eVisibleChannelButtons.push(eButton);
+        eButton.addEventListener("click", e => {
+            if (e.shiftKey) {
+                for (let j = 0; j < visibleChannels.length; j++)
+                visibleChannels[j] = false;
+                visibleChannels[i] = true;
+            } else visibleChannels[i] = !visibleChannels[i];
+            updateVisibleChannels();
+            updateWorkerVisibleChannels();
+        });
+        eButton.draggable = true;
+        eButton.addEventListener("dragstart", e => {
+            e.dataTransfer.setData("text/plain", String(i));
+        });
+    }
+    while (eVisibleChannelButtons.length > channels.length) {
+        const eButton = eVisibleChannelButtons.pop();
+        eVisibleChannels.removeChild(eButton);
+    }
+    eVisibleChannelButtons.forEach((eButton, i) => {
+        if (visibleChannels[i])
+            eButton.classList.add("active");
+        else eButton.classList.remove("active");
+        eButton.textContent = channels[i];
+        eButton.classList.remove("r");
+        eButton.classList.remove("g");
+        eButton.classList.remove("b");
+        if (["red", "r"].includes(channels[i].toLowerCase())) eButton.classList.add("r");
+        if (["green", "g"].includes(channels[i].toLowerCase())) eButton.classList.add("g");
+        if (["blue", "b"].includes(channels[i].toLowerCase())) eButton.classList.add("b");
     });
 };
 const updateWorkerVisibleChannels = () => {
-    worker.postMessage({ type: "v-channels", data: visibleChannels });
+    worker.postMessage({ type: "visible-channels", data: visibleChannels });
 };
+const eVisibleChannels = document.getElementById("visible-channels");
+const eVisibleChannelButtons = [];
 updateVisibleChannels();
-visibleChannels.forEach((_, i) => {
-    const elem = document.getElementById("channel-visible-"+i);
-    elem.addEventListener("click", e => {
-        if (i >= channels) return;
-        if (e.shiftKey) {
-            for (let j = 0; j < visibleChannels.length; j++)
-            visibleChannels[j] = false;
-            visibleChannels[i] = true;
-        } else visibleChannels[i] = !visibleChannels[i];
-        updateVisibleChannels();
-        updateWorkerVisibleChannels();
+
+let channelMappings = [null, null, null];
+const updateChannelMappings = () => {
+    for (let i = 0; i < 3; i++) {
+        let j = channelMappings[i];
+        document.getElementById("channel-map-"+i+"-name").textContent = ((j == null) || (j < 0) || (j >= channels.length)) ? "" : channels[j];
+    }
+};
+const updateWorkerChannelMappings = () => {
+    worker.postMessage({ type: "channel-mappings", data: channelMappings });
+};
+for (let i = 0; i < 3; i++) {
+    const elem = document.getElementById("channel-map-"+i);
+    const eRemove = document.getElementById("channel-map-"+i+"-remove");
+    eRemove.addEventListener("click", e => {
+        channelMappings[i] = null;
+        updateChannelMappings();
+        updateWorkerChannelMappings();
     });
-});
+    const onDragOver = e => {
+        e.preventDefault();
+        elem.classList.add("dropping");
+    };
+    const onDragNotOver = e => {
+        e.preventDefault();
+        elem.classList.remove("dropping");
+    };
+    elem.addEventListener("dragenter", onDragOver);
+    elem.addEventListener("dragover", onDragOver);
+    elem.addEventListener("dragleave", onDragNotOver);
+    elem.addEventListener("drop", e => {
+        onDragNotOver(e);
+        const data = e.dataTransfer.getData("text/plain");
+        const channel = parseInt(data);
+        if (!Number.isInteger(channel)) return;
+        if (channel < 0) return;
+        if (channel >= channels.length) return;
+        channelMappings[i] = channel;
+        updateChannelMappings();
+        updateWorkerChannelMappings();
+    });
+}
 
 //// ACTIVE TOOL
 
@@ -419,7 +508,7 @@ const update = () => {
     window.requestAnimationFrame(update);
     if (mouseDown) {
         let i = [];
-        activeChannels.forEach((active, j) => {
+        penChannels.forEach((active, j) => {
             if (!active) return;
             i.push(j);
         })

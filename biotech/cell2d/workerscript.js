@@ -19,8 +19,6 @@ export default class WorkerScript extends util.Target {
     get width2() { return this.eCanvas2.width; }
     get height2() { return this.eCanvas2.height; }
 
-    meterScaler(v) { return v; }
-
     clampX(x) { return ((x % this.width) + this.width) % this.width; }
     clampY(y) { return ((y % this.height) + this.height) % this.height; }
     clampI(i) { return ((i % this.channels) + this.channels) % this.channels; }
@@ -40,7 +38,7 @@ export default class WorkerScript extends util.Target {
     updatePreDiffuse() {}
     updatePostDiffuse() {}
     updateLast() {}
-    applyChannel(v) { return v * 256; }
+    applyChannel(i, v) { return v * 256; }
     applyFilter(data, dataIdx, x, y) {}
 
     static makeNormalDist(stDev, mean=0) {
@@ -104,7 +102,8 @@ export default class WorkerScript extends util.Target {
         this.penWeight = 0;
         this.meter = new util.V();
         
-        this.visibleChannels = new Array(3).fill(true);
+        this.visibleChannels = [];
+        this.channelMappings = [];
 
         this.drawQueue = [];
         this.eraseQueue = [];
@@ -279,14 +278,16 @@ export default class WorkerScript extends util.Target {
                     ctx.fillStyle = "#000";
                     ctx.fillRect(0, 0, width, height);
                     const data = ctx.getImageData(0, 0, width, height);
-                    let sums = [0, 0, 0];
                     for (let x = 0; x < width; x++) {
                         for (let y = 0; y < height; y++) {
                             let dataIdx = (y * width + x) * 4;
-                            for (let i = 0; i < Math.min(3, channels); i++) {
-                                let idx = this.getIdx(x, y, i);
-                                data.data[dataIdx + i] = Math.min(255, Math.max(0, this.applyChannel(space[idx]) * this.visibleChannels[i]));
-                                sums[i] += space[idx];
+                            for (let i = 0; i < 3; i++) {
+                                let j = this.channelMappings[i];
+                                if (j == null) continue;
+                                if (j < 0) continue;
+                                if (j >= this.channels) continue;
+                                let idx = this.getIdx(x, y, j);
+                                data.data[dataIdx + i] = Math.min(255, Math.max(0, this.applyChannel(j, space[idx]) * this.visibleChannels[j]));
                             }
                             data.data[dataIdx + 3] = 255;
                             this.applyFilter(data.data, dataIdx, x, y);
@@ -299,8 +300,12 @@ export default class WorkerScript extends util.Target {
 
                     ctx2.lineWidth = 2;
                     for (let i = 0; i < Math.min(3, channels); i++) {
+                        let j = this.channelMappings[i];
+                        if (j == null) continue;
+                        if (j < 0) continue;
+                        if (j >= this.channels) continue;
                         ctx2.strokeStyle = "#"+["f00", "0f0", "08f"][i];
-                        let y = util.lerp(this.height2, 0, this.meterScaler(space[this.getIdx(...this.meter.xy, i)]));
+                        let y = util.lerp(this.height2, 0, util.lerp(0.25, 0.75, this.applyChannel(j, space[this.getIdx(...this.meter.xy, j)]) / 256));
                         ctx2.beginPath();
                         ctx2.moveTo(Math.min(x, pX), pValues[i]);
                         ctx2.lineTo(x, y);
@@ -316,8 +321,13 @@ export default class WorkerScript extends util.Target {
                 setInterval(update, 0);
                 return;
             }
-            if (type === "v-channels") {
+            if (type === "visible-channels") {
                 this.visibleChannels = data;
+                return;
+            }
+            if (type === "channel-mappings") {
+                this.channelMappings = data;
+                console.log(this.channelMappings, data);
                 return;
             }
             if (type === "draw") {

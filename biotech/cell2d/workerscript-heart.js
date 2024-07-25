@@ -20,16 +20,14 @@ let normalDistBarrier = WorkerScript.makeNormalDistMat(0);
 
 
 export default class HeartWorkerScript extends WorkerScript {
-    get channels() { return 4; }
-    get channelsDoDiffuse() { return [false, false, false, false]; }
+    get channels() { return 3; }
+    get channelsDoDiffuse() { return [false, false, false]; }
 
     get wrapDiffuse() { return false; }
     get wrapPen() { return false; }
 
-    meterScaler(v) { return util.lerp(0.25, 0.75, v); }
-
     getNormalDist(x, y, i) {
-        if (this.mode != 2) return normalDist;
+        if (this.mode !== 2) return normalDist;
         if (this.inChannel(x, y)) return normalDistAVNode;
         if (this.inAtrium(x, y)) return normalDistAtrium;
         if (this.inVentricle(x, y)) return normalDistVentricle;
@@ -47,7 +45,7 @@ export default class HeartWorkerScript extends WorkerScript {
                     this.space[idx] = (Math.abs(util.angleRel(dir, 0)) < this.fireDeg/2 && !inner) * (a*2);
                     return;
                 }
-                if (i === 2) {
+                if (i === 1) {
                     this.space[idx] = (Math.abs(util.angleRel(dir, this.tiredDeg/2 + this.fireDeg/2)) < this.tiredDeg/2 && !inner) * 1;
                     return;
                 }
@@ -57,7 +55,7 @@ export default class HeartWorkerScript extends WorkerScript {
                     this.space[idx] = (Math.abs(x-this.width/2) < this.fireW && y < this.height/2 && y > this.height/4) * (a*2);
                     return;
                 }
-                if (i === 2) {
+                if (i === 1) {
                     this.space[idx] = (x <= this.width/2-this.fireW && y < this.height/2) * 1;
                     return;
                 }
@@ -76,10 +74,7 @@ export default class HeartWorkerScript extends WorkerScript {
         let callback = null;
         if (this.mode in callbackfs) callback = callbackfs[this.mode];
         this.forEach((v, idx, x, y, i) => {
-            if (i === 1) {
-                return;
-            }
-            if (i === 3) {
+            if (i === 2) {
                 this.space[idx] = +(this.mode === 2 && this.onBarrier(x, y) && !this.inChannel(x, y));
                 return;
             }
@@ -92,7 +87,7 @@ export default class HeartWorkerScript extends WorkerScript {
         for (let x = 0; x < width; x++) {
             for (let y = 0; y < height; y++) {
                 let idxV = this.getIdx(x, y, 0);
-                let idxW = this.getIdx(x, y, 2);
+                let idxW = this.getIdx(x, y, 1);
                 let V = space[idxV];
                 let W = space[idxW];
                 let Dsum = 0;
@@ -102,7 +97,7 @@ export default class HeartWorkerScript extends WorkerScript {
                         let ax = x + rx, ay = y + ry;
                         if (ax < 0 || ax >= width) continue;
                         if (ay < 0 || ay >= height) continue;
-                        if (space[this.getIdx(ax, ay, 3)]) continue;
+                        if (space[this.getIdx(ax, ay, 2)]) continue;
                         let nd = get(rx, ry);
                         let aidx = this.getIdx(ax, ay, 0);
                         Dsum += Math.max(0, space[aidx]) * nd;
@@ -122,7 +117,7 @@ export default class HeartWorkerScript extends WorkerScript {
     }
 
     applyFilter(data, dataIdx, x, y) {
-        if (this.space[this.getIdx(x, y, 3)]) data[dataIdx + 3] = 0;
+        if (this.space[this.getIdx(x, y, 2)]) data[dataIdx + 3] = 0;
     }
     
     get fireDeg() { return 10; }

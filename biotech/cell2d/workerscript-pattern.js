@@ -25,8 +25,6 @@ export default class PatternWorkerScript extends WorkerScript {
 
     get degradeFactor() { return 1; }
 
-    meterScaler(v) { return util.lerp(0.25, 0.75, v/2); }
-
     getNormalDist(x, y, i) {
         if (i === 0) return normalDistA;
         if (i === 1) return normalDistI;
@@ -70,7 +68,7 @@ export default class PatternWorkerScript extends WorkerScript {
             }
         }
     }
-    applyChannel(v) { return v * 128; }
+    applyChannel(i, v) { return v * 128; }
 
     constructor() {
         super();
@@ -83,10 +81,8 @@ export default class PatternWorkerScript extends WorkerScript {
                 this.fullSetup();
                 return;
             }
-            if (type === "dt") {
-                console.log(dt, data);
+            if (type === "dt")
                 return dt = data;
-            }
             if (type === "rhoA")
                 return rhoA = data;
             if (type === "rhoI")
