@@ -326,7 +326,7 @@ export default class WorkerScript extends util.Target {
                     this.updateLast();
                 };
                 setInterval(() => {
-                    for (let i = 10; i > 0; i--)
+                    for (let i = 1; i > 0; i--)
                         update(i === 1);
                 }, 0);
                 return;
