@@ -2,15 +2,16 @@ import * as util from "../../util.mjs";
 
 
 export default class WorkerScript extends util.Target {
-    get epsilon() { return 0.01; }
+    dt = 0.01;
+    dx = 1;
 
-    get channels() { return 0; }
-    get channelsDoDiffuse() { return []; }
+    epsilon = 0.001;
 
-    get wrapDiffuse() { return true; }
-    get wrapPen() { return true; }
+    channels = 0;
+    channelsD = [];
 
-    get degradeFactor() { return 1; }
+    wrapDiffuse = true;
+    wrapPen = true;
 
     get eCanvas() { return this.ctx.canvas; }
     get eCanvas2() { return this.ctx2.canvas; }
@@ -26,7 +27,8 @@ export default class WorkerScript extends util.Target {
 
     get length() { return this.width * this.height * this.channels; }
 
-    getNormalDist(x, y, i) { return null; }
+    getD(x, y, i) { return this.channelsD[i]; }
+    getp(x, y, i) { return (this.getD(x, y, i) * this.dt) / (this.dx ** 2); }
 
     fullSetup() {
         this.space.fill(0);
@@ -91,6 +93,7 @@ export default class WorkerScript extends util.Target {
         super();
 
         this.mode = 0;
+        this.time = 0;
 
         this.ctx = null;
         this.ctx2 = null;
@@ -129,11 +132,13 @@ export default class WorkerScript extends util.Target {
 
                 this.fullSetup();
 
-                const update = () => {
+                const update = (applyCanvas=true) => {
                     const { width, height, channels, ctx, ctx2, penSize, drawQueue, eraseQueue, moveQueue } = this;
                     let { space, space2 } = this;
                     
                     this.updateFirst();
+
+                    this.time += this.dt;
 
                     while (drawQueue.length > 0) {
                         const draw = drawQueue.shift();
@@ -242,29 +247,29 @@ export default class WorkerScript extends util.Target {
                         for (let x = 0; x < width; x++) {
                             for (let y = 0; y < height; y++) {
                                 let idx = this.getIdx(x, y, i);
-                                if (!this.channelsDoDiffuse[i]) {
+                                let p = this.getp(x, y, i);
+                                if (p <= 0) {
                                     space2[idx] = space[idx];
                                     continue;
                                 }
                                 if (space[idx] < this.epsilon) continue;
                                 space2[idx] += space[idx];
-                                const { get, mx, mn } = this.getNormalDist(x, y, i);
-                                for (let rx = mn; rx <= mx; rx++) {
-                                    for (let ry = mn; ry <= mx; ry++) {
-                                        let nd = get(rx, ry) * this.degradeFactor;
-                                        let ax = x + rx;
-                                        let ay = y + ry;
-                                        let aidx = 0;
-                                        if (!this.wrapDiffuse) {
-                                            if (ax < 0 || ax >= width) continue;
-                                            if (ay < 0 || ay >= height) continue;
-                                            aidx = this.getIdx(ax, ay, i);
-                                        } else {
-                                            aidx = this.getIdx(this.clampX(ax), this.clampY(ay), i);
-                                        }
-                                        space2[aidx] += space[idx] * nd;
-                                        space2[idx] -= space[idx] * nd;
+                                for (let j = 0; j < 4; j++) {
+                                    let [rx, ry] = [[+1, 0], [-1, 0], [0, +1], [0, -1]][j];
+                                    let ax = x + rx;
+                                    let ay = y + ry;
+                                    let aidx = 0;
+                                    if (!this.wrapDiffuse) {
+                                        if (ax < 0 || ax >= width) continue;
+                                        if (ay < 0 || ay >= height) continue;
+                                        aidx = this.getIdx(ax, ay, i);
+                                    } else {
+                                        ax = this.clampX(ax);
+                                        ay = this.clampY(ay);
+                                        aidx = this.getIdx(ax, ay, i);
                                     }
+                                    space2[aidx] += space[idx] * p;
+                                    space2[idx] -= space[idx] * p;
                                 }
                             }
                         }
@@ -273,6 +278,8 @@ export default class WorkerScript extends util.Target {
                     [this.space, this.space2] = [space, space2];
 
                     this.updatePostDiffuse();
+
+                    if (!applyCanvas) return;
 
                     ctx.clearRect(0, 0, width, height);
                     ctx.fillStyle = "#000";
@@ -318,7 +325,10 @@ export default class WorkerScript extends util.Target {
 
                     this.updateLast();
                 };
-                setInterval(update, 0);
+                setInterval(() => {
+                    for (let i = 10; i > 0; i--)
+                        update(i === 1);
+                }, 0);
                 return;
             }
             if (type === "visible-channels") {
@@ -327,7 +337,6 @@ export default class WorkerScript extends util.Target {
             }
             if (type === "channel-mappings") {
                 this.channelMappings = data;
-                console.log(this.channelMappings, data);
                 return;
             }
             if (type === "draw") {
@@ -353,6 +362,13 @@ export default class WorkerScript extends util.Target {
             if (type === "meter") {
                 this.meter.set(data);
                 return;
+            }
+            if (type.startsWith("D")) {
+                let i = parseInt(type.slice(1));
+                if (!Number.isNaN(i) && i >= 0 && i < this.channels) {
+                    this.channelsD[i] = data;
+                    return;
+                }
             }
             this.post("message", { type, data });
         });

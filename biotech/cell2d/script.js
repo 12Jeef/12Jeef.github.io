@@ -25,7 +25,7 @@ let eOffCanvas2 = null;
 const context = new util.Target();
 
 let worker = null;
-let simulator = "diffusion";
+let simulator = "pattern";
 const updateSim = () => {
     eSimSelect.textContent = document.getElementById("sim-"+simulator).textContent;
 
@@ -122,7 +122,16 @@ const createSimParameter = (sim, name, value, cast=parseFloat) => {
 
 //// DIFFUSION
 {
+    const createParameter = (name, value, cast=parseFloat) => createSimParameter("diffusion", name, value, cast);
+
+    const D0 = createParameter("D0", 10);
+    const D1 = createParameter("D1", 10);
+    const D2 = createParameter("D2", 10);
+
     context.addHandler("update-sim", () => {
+        D0.updateWorker();
+        D1.updateWorker();
+        D2.updateWorker();
         if (simulator !== "diffusion") return;
         penWeight = 25;
         updatePenWeight();
@@ -137,30 +146,32 @@ const createSimParameter = (sim, name, value, cast=parseFloat) => {
     const createParameter = (name, value, cast=parseFloat) => createSimParameter("pattern", name, value, cast);
 
     const mode = createParameter("mode", 0, parseInt);
-    const dt = createParameter("dt", 0.5);
     const rhoA = createParameter("rhoA", 0);
-    const rhoI = createParameter("rhoI", 0);
+    const rhoH = createParameter("rhoH", 0);
     const cA = createParameter("cA", 1);
-    const cI = createParameter("cI", 1);
-    const k = createParameter("k", 0.2);
+    const cH = createParameter("cH", 1);
+    const k = createParameter("k", 0);
     const mu = createParameter("mu", 0.7);
     const nu = createParameter("nu", 1);
+    const D0 = createParameter("D0", 1);
+    const D1 = createParameter("D1", 10);
 
     context.addHandler("update-sim", () => {
         mode.updateWorker();
-        dt.updateWorker();
         rhoA.updateWorker();
-        rhoI.updateWorker();
+        rhoH.updateWorker();
         cA.updateWorker();
-        cI.updateWorker();
+        cH.updateWorker();
         k.updateWorker();
         mu.updateWorker();
         nu.updateWorker();
+        D0.updateWorker();
+        D1.updateWorker();
         if (simulator !== "pattern") return;
-        penWeight = 0.01;
+        penWeight = 0.1;
         updatePenWeight();
         updateWorkerPenWeight();
-        channels = ["A", "I"];
+        channels = ["A", "H", "Walls"];
         channelMappings = [0, 1, null];
     });
 }
@@ -169,23 +180,21 @@ const createSimParameter = (sim, name, value, cast=parseFloat) => {
     const createParameter = (name, value, cast=parseFloat) => createSimParameter("heart", name, value, cast);
 
     const mode = createParameter("mode", 0, parseInt);
-    const dt = createParameter("dt", 0.5);
-    const r = createParameter("r", 2);
-    const a = createParameter("a", 0.25);
-    const epsilon = createParameter("epsilon", 0.075);
-    const beta = createParameter("beta", 0.85);
-    const D = createParameter("D", 0.5);
+    const r = createParameter("r", 0.1);
+    const a = createParameter("a", 0.1);
+    const epsilon = createParameter("epsilon", 0.005);
+    const beta = createParameter("beta", 0.5);
+    const D0 = createParameter("D0", 0.5);
 
     context.addHandler("update-sim", () => {
         mode.updateWorker();
-        dt.updateWorker();
         r.updateWorker();
         a.updateWorker();
         epsilon.updateWorker();
         beta.updateWorker();
-        D.updateWorker();
+        D0.updateWorker();
         if (simulator !== "heart") return;
-        penWeight = a.value / 2;
+        penWeight = 0.5;
         updatePenWeight();
         updateWorkerPenWeight();
         channels = ["V", "W", "Walls"];
@@ -195,7 +204,7 @@ const createSimParameter = (sim, name, value, cast=parseFloat) => {
 
 //// SPACE
 
-let spaceWidth = 100;
+let spaceWidth = 200;
 const eSpaceWidth = document.getElementById("space-width");
 const updateSpaceWidth = () => {
     eSpaceWidth.value = spaceWidth;
@@ -210,7 +219,7 @@ eSpaceWidth.addEventListener("change", () => {
 });
 updateSpaceWidth();
 
-let spaceHeight = 60;
+let spaceHeight = 120;
 const eSpaceHeight = document.getElementById("space-height");
 const updateSpaceHeight = () => {
     eSpaceHeight.value = spaceHeight;
@@ -561,5 +570,3 @@ const update = () => {
     ctx2Real.drawImage(eCanvas2, 0, 0, ctx2Real.canvas.width, ctx2Real.canvas.height);
 };
 update();
-
-// 10, 0.1, a/2

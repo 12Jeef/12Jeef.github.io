@@ -43,29 +43,38 @@
                 <div id="sim-params">
                     <button id="sim-params-toggle">Parameters</button>
                     <div>
+                        <span class="header sim-param diffusion">
+                            <span>D<sub>r</sub></span>
+                            <input type="number" min="0" id="diffusion-D0">
+                        </span>
+                        <span class="header sim-param diffusion">
+                            <span>D<sub>g</sub></span>
+                            <input type="number" min="0" id="diffusion-D1">
+                        </span>
+                        <span class="header sim-param diffusion">
+                            <span>D<sub>b</sub></span>
+                            <input type="number" min="0" id="diffusion-D2">
+                        </span>
+
                         <span class="header sim-param pattern">
                             <span>Mode</span>
                             <input type="number" min="0" step="1" id="pattern-mode">
-                        </span>
-                        <span class="header sim-param pattern">
-                            <span>dt</span>
-                            <input type="number" min="0" id="pattern-dt">
                         </span>
                         <span class="header sim-param pattern">
                             <span>ρ<sub>A</sub></span>
                             <input type="number" min="0" id="pattern-rhoA">
                         </span>
                         <span class="header sim-param pattern">
-                            <span>ρ<sub>I</sub></span>
-                            <input type="number" min="0" id="pattern-rhoI">
+                            <span>ρ<sub>H</sub></span>
+                            <input type="number" min="0" id="pattern-rhoH">
                         </span>
                         <span class="header sim-param pattern">
                             <span>c<sub>A</sub></span>
                             <input type="number" min="0" id="pattern-cA">
                         </span>
                         <span class="header sim-param pattern">
-                            <span>c<sub>I</sub></span>
-                            <input type="number" min="0" id="pattern-cI">
+                            <span>c<sub>H</sub></span>
+                            <input type="number" min="0" id="pattern-cH">
                         </span>
                         <span class="header sim-param pattern">
                             <span>k</span>
@@ -79,14 +88,18 @@
                             <span>ν</span>
                             <input type="number" min="0" id="pattern-nu">
                         </span>
+                        <span class="header sim-param pattern">
+                            <span>D<sub>A</sub></span>
+                            <input type="number" min="0" id="pattern-D0">
+                        </span>
+                        <span class="header sim-param pattern">
+                            <span>D<sub>I</sub></span>
+                            <input type="number" min="0" id="pattern-D1">
+                        </span>
 
                         <span class="header sim-param heart">
                             <span>Mode</span>
                             <input type="number" min="0" step="1" id="heart-mode">
-                        </span>
-                        <span class="header sim-param heart">
-                            <span>dt</span>
-                            <input type="number" min="0" max="2" id="heart-dt">
                         </span>
                         <span class="header sim-param heart">
                             <span>r</span>
@@ -105,8 +118,8 @@
                             <input type="number" min="0" id="heart-beta">
                         </span>
                         <span class="header sim-param heart">
-                            <span>D</span>
-                            <input type="number" min="0" id="heart-D">
+                            <span>D<sub>V</sub></span>
+                            <input type="number" min="0" id="heart-D0">
                         </span>
                     </div>
                 </div>

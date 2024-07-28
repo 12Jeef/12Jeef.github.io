@@ -5,53 +5,38 @@ const eCanvas = document.getElementById("canvas");
 const ctx = eCanvas.getContext("2d");
 
 
-const avoidK = 0.05;
-const centeringK = 0.0005;
-const matchingK = 0.05;
-
-const turnK = 0.5;
-const margin = 20;
-
-
 let width = ctx.canvas.width;
 let height = ctx.canvas.height;
 
 
+const nSpecies = 2;
+
+
 class Agent extends util.Target {
-    #protectedRange;
-    #visualRange;
+    #species;
 
     #pos;
-    #vel;
 
     #npos;
-    #nvel;
 
     constructor(opts) {
         super();
 
-        this.#protectedRange = 0;
-        this.#visualRange = 0;
+        this.#species = 0;
 
         this.#pos = new util.V();
-        this.#vel = new util.V();
 
         this.#npos = new util.V();
-        this.#nvel = new util.V();
 
-        const { protectedRange, visualRange, pos, vel } = opts;
+        const { species, pos } = opts;
 
-        this.protectedRange = protectedRange;
-        this.visualRange = visualRange;
-
+        this.species = species;
+        
         this.pos = pos;
-        this.vel = vel;
     }
 
-    get protectedRange() { return this.#protectedRange; }
-    set protectedRange(v) { this.#protectedRange = Math.max(0, Number(v) || 0); }
-    get visualRange() { return this.#visualRange; }
-    set visualRange(v) { this.#visualRange = Math.max(0, Number(v) || 0); }
+    get species() { return this.#species; }
+    set species(v) { this.#species = Math.min(nSpecies-1, Math.max(0, Math.round(Number(v) || 0))); }
 
     get pos() { return this.#pos; }
     set pos(v) { this.#pos.set(v); }
@@ -59,6 +44,77 @@ class Agent extends util.Target {
     set x(v) { this.pos.x = v; }
     get y() { return this.pos.y; }
     set y(v) { this.pos.y = v; }
+
+    get npos() { return this.#npos; }
+    set npos(v) { this.#npos.set(v); }
+    get nx() { return this.npos.x; }
+    set nx(v) { this.npos.x = v; }
+    get ny() { return this.npos.y; }
+    set ny(v) { this.npos.y = v; }
+
+    update() {
+        [this.npos] = [this.pos];
+    }
+    postUpdate() {
+        [this.pos] = [this.npos];
+    }
+}
+
+// row = me
+// column = other
+
+function generateRandomValue() {
+    return {
+        avoid: util.lerp(0.25, 0.01, Math.random()),
+        centering: util.lerp(0.0025, 0.0001, Math.random()),
+        matching: util.lerp(0.25, 0.01, Math.random()),
+    };
+}
+const matrix = [
+    [
+        { avoid: 0.05, centering: 0.0005, matching: 0.05 }, // i am prey, i see prey
+        { avoid: 0, centering: 0.005, matching: 0.05 }, // i am pred, i see prey
+    ],
+    [
+        { avoid: 0.05, centering: 0, matching: 0.005 }, // i am prey, i see pred
+        { avoid: 0.05, centering: 0.0005, matching: 0.05 }, // i am pred, i see pred
+    ],
+];
+// const matrix = new Array(nSpecies).fill(null).map(_ => new Array(nSpecies).fill(null).map(_ => generateRandomValue()));
+
+const minSpeed = 0.5;
+const maxSpeed = 2.5;
+
+class AgentBoid extends Agent {
+    #protectedRange;
+    #visualRange;
+
+    #vel;
+
+    #nvel;
+
+    constructor(opts) {
+        super(opts);
+
+        this.#protectedRange = 0;
+        this.#visualRange = 0;
+
+        this.#vel = new util.V();
+
+        this.#nvel = new util.V();
+
+        const { protectedRange, visualRange, vel } = opts;
+
+        this.protectedRange = protectedRange;
+        this.visualRange = visualRange;
+
+        this.vel = vel;
+    }
+
+    get protectedRange() { return this.#protectedRange; }
+    set protectedRange(v) { this.#protectedRange = Math.max(0, Number(v) || 0); }
+    get visualRange() { return this.#visualRange; }
+    set visualRange(v) { this.#visualRange = Math.max(0, Number(v) || 0); }
 
     get vel() { return this.#vel; }
     set vel(v) { this.#vel.set(v); }
@@ -68,13 +124,6 @@ class Agent extends util.Target {
     set velY(v) { this.vel.y = v; }
 
     get dir() { return util.clampAngle(this.vel.towards() + 180); }
-
-    get npos() { return this.#npos; }
-    set npos(v) { this.#npos.set(v); }
-    get nx() { return this.npos.x; }
-    set nx(v) { this.npos.x = v; }
-    get ny() { return this.npos.y; }
-    set ny(v) { this.npos.y = v; }
 
     get nvel() { return this.#nvel; }
     set nvel(v) { this.#nvel.set(v); }
@@ -86,20 +135,20 @@ class Agent extends util.Target {
     get ndir() { return util.clampAngle(this.nvel.towards() + 180); }
 
     update() {
-        [this.npos, this.nvel] = [this.pos, this.vel];
+        super.update();
 
-        // const dir = this.dir;
+        [this.nvel] = [this.vel];
 
-        let neighborCloseDx = 0;
-        let neighborCloseDy = 0;
+        let neighborCloseDx = new Array(nSpecies).fill(0);
+        let neighborCloseDy = new Array(nSpecies).fill(0);
 
-        let neighborAvgX = 0;
-        let neighborAvgY = 0;
+        let neighborAvgX = new Array(nSpecies).fill(0);
+        let neighborAvgY = new Array(nSpecies).fill(0);
 
-        let neighborAvgVelX = 0;
-        let neighborAvgVelY = 0;
+        let neighborAvgVelX = new Array(nSpecies).fill(0);
+        let neighborAvgVelY = new Array(nSpecies).fill(0);
         
-        let nNeighborAgents = 0;
+        let nNeighborAgents = new Array(nSpecies).fill(0);
 
         let scans = [];
 
@@ -114,9 +163,6 @@ class Agent extends util.Target {
         agents.forEach(agent => {
             if (agent === this) return;
 
-            // const dir2 = this.pos.towards(agent.pos);
-            // const dirRel = Math.abs(util.angleRel(dir, dir2));
-            const rangeScale = 1; // dirRel < 90 ? 1 : util.lerp(1, 0, (dirRel-90)/90); // (util.cos(dirRel) + 1) / 2;
             const { dist, shift: [shiftX, shiftY] } = (() => {
                 let distMn = Infinity;
                 let shift = [0, 0];
@@ -129,47 +175,53 @@ class Agent extends util.Target {
                 return { dist: distMn, shift: shift };
             })();
 
-            if (dist < this.protectedRange * rangeScale) {
-                neighborCloseDx += this.x - (agent.x + width * shiftX);
-                neighborCloseDy += this.y - (agent.y + height * shiftY);
+            if (dist < this.protectedRange) {
+                neighborCloseDx[agent.species] += this.x - (agent.x + width * shiftX);
+                neighborCloseDy[agent.species] += this.y - (agent.y + height * shiftY);
                 return;
             }
 
-            if (dist > this.visualRange * rangeScale) return;
+            if (dist > this.visualRange) return;
 
-            neighborAvgX += (agent.x + width * shiftX);
-            neighborAvgY += (agent.y + height * shiftY);
+            neighborAvgX[agent.species] += (agent.x + width * shiftX);
+            neighborAvgY[agent.species] += (agent.y + height * shiftY);
 
-            neighborAvgVelX += agent.velX;
-            neighborAvgVelY += agent.velY;
+            neighborAvgVelX[agent.species] += agent.velX;
+            neighborAvgVelY[agent.species] += agent.velY;
 
-            nNeighborAgents++;
+            nNeighborAgents[agent.species]++;
         });
 
-        this.nvelX += neighborCloseDx * avoidK;
-        this.nvelY += neighborCloseDy * avoidK;
+        for (let i = 0; i < nSpecies; i++) {
+            const { avoid, centering, matching } = matrix[this.species][i];
 
-        if (nNeighborAgents > 0) {
-            neighborAvgX /= nNeighborAgents;
-            neighborAvgY /= nNeighborAgents;
+            this.nvelX += neighborCloseDx[i] * avoid;
+            this.nvelY += neighborCloseDy[i] * avoid;
 
-            this.nvelX += (neighborAvgX - this.x) * centeringK;
-            this.nvelY += (neighborAvgY - this.y) * centeringK;
+            if (nNeighborAgents[i] > 0) {
+                neighborAvgX[i] /= nNeighborAgents[i];
+                neighborAvgY[i] /= nNeighborAgents[i];
 
-            neighborAvgVelX /= nNeighborAgents;
-            neighborAvgVelY /= nNeighborAgents;
+                this.nvelX += (neighborAvgX[i] - this.x) * centering;
+                this.nvelY += (neighborAvgY[i] - this.y) * centering;
 
-            this.nvelX += (neighborAvgVelX - this.nvelX) * matchingK;
-            this.nvelY += (neighborAvgVelY - this.nvelY) * matchingK;
+                neighborAvgVelX[i] /= nNeighborAgents[i];
+                neighborAvgVelY[i] /= nNeighborAgents[i];
+
+                this.nvelX += (neighborAvgVelX[i] - this.velX) * matching;
+                this.nvelY += (neighborAvgVelY[i] - this.velY) * matching;
+            }
         }
 
-        // if (this.x < margin) this.nvelX += turnK;
-        // if (this.x > width - margin) this.nvelX -= turnK;
-        // if (this.y < margin) this.nvelY += turnK;
-        // if (this.y > height - margin) this.nvelY -= turnK;
+        let vel = this.nvel.dist();
+        if (vel === 0) this.nvel.set(minSpeed, 0);
+        else if (vel < minSpeed) this.nvel.imul(minSpeed / vel);
+        else if (vel > maxSpeed) this.nvel.imul(maxSpeed / vel);
     }
     postUpdate() {
-        [this.pos, this.vel] = [this.npos, this.nvel];
+        super.postUpdate();
+
+        [this.vel] = [this.nvel];
 
         this.pos.iadd(this.vel);
 
@@ -177,13 +229,108 @@ class Agent extends util.Target {
         this.y = ((this.y % height) + height) % height;
     }
 }
+
+const speed = 5;
+
+class AgentViscek extends Agent {
+    #visualRange;
+
+    #dir;
+
+    #ndir;
+
+    constructor(opts) {
+        super(opts);
+
+        this.#visualRange = 0;
+
+        this.#dir = 0;
+
+        this.#ndir = 0;
+
+        const { visualRange, dir } = opts;
+
+        this.visualRange = visualRange;
+
+        this.dir = dir;
+    }
+
+    get visualRange() { return this.#visualRange; }
+    set visualRange(v) { this.#visualRange = Math.max(0, Number(v) || 0); }
+
+    get dir() { return this.#dir; }
+    set dir(v) { this.#dir = util.clampAngle(Number(v) || 0); }
+
+    get ndir() { return this.#ndir; }
+    set ndir(v) { this.#ndir = util.clampAngle(Number(v) || 0); }
+
+    update() {
+        super.update();
+
+        [this.ndir] = [this.dir];
+
+        let scans = [];
+
+        let xMin = this.x - this.visualRange < 0;
+        let xMax = this.x + this.visualRange > width;
+        let yMin = this.y - this.visualRange < 0;
+        let yMax = this.y + this.visualRange > height;
+        for (let x = xMin * -1; x <= xMax * +1; x++)
+            for (let y = yMin * -1; y <= yMax * +1; y++)
+                scans.push([x, y]);
+
+        let avgDir = 0;
+        let n = 0;
+
+        agents.forEach(agent => {
+            const { dist, shift: [shiftX, shiftY] } = (() => {
+                let distMn = Infinity;
+                let shift = [0, 0];
+                scans.forEach(([sx, sy]) => {
+                    let dist = this.pos.dist(agent.pos.add(sx * width, sy * height));
+                    if (dist > distMn) return;
+                    distMn = dist;
+                    shift = [sx, sy];
+                });
+                return { dist: distMn, shift: shift };
+            })();
+
+            if (dist > this.visualRange) return;
+
+            n++;
+
+            if (agent.species != this.species)
+                return avgDir += agent.pos.towards(this.pos);
+            avgDir += agent.dir;
+        });
+
+        if (n > 0) {
+            let ndir = avgDir / n;
+            this.ndir = ndir;
+        }
+    }
+    postUpdate() {
+        super.postUpdate();
+
+        [this.dir] = [this.ndir];
+
+        this.pos.iadd(util.V.dir(this.dir, speed));
+
+        this.x = ((this.x % width) + width) % width;
+        this.y = ((this.y % height) + height) % height;
+    }
+}
+
 const agents = [];
 for (let i = 0; i < 200; i++)
-    agents.push(new Agent({
-        protectedRange: 8,
+    agents.push(new AgentBoid({
+        protectedRange: 10,
         visualRange: 40,
-        pos: [Math.random() * width, Math.random() * height],
-        vel: util.V.dir(360 * Math.random(), 10),
+        // species: Math.floor(Math.random()*nSpecies),
+        species: +(Math.random() > 0.75),
+        pos: [Math.random()*width, Math.random()*height],
+        vel: util.V.dir(360*Math.random(), 10),
+        // dir: 360*Math.random(),
     }));
 
 
@@ -196,25 +343,11 @@ const update = () => {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     ctx.lineWidth = 1;
     agents.forEach(agent => {
-        ctx.fillStyle = "#fff";
+        ctx.fillStyle = ["#08f", "#f02", "#0c4"][agent.species];
         ctx.beginPath();
         ctx.arc(...agent.pos.xy, 5, 0, 2*Math.PI);
         ctx.closePath();
         ctx.fill();
-
-        return;
-
-        ctx.strokeStyle = "#f004";
-        ctx.beginPath();
-        ctx.arc(...agent.pos.xy, agent.protectedRange, 0, 2*Math.PI);
-        ctx.closePath();
-        ctx.stroke();
-
-        ctx.strokeStyle = "#0f04";
-        ctx.beginPath();
-        ctx.arc(...agent.pos.xy, agent.visualRange, 0, 2*Math.PI);
-        ctx.closePath();
-        ctx.stroke();
     });
 };
 update();

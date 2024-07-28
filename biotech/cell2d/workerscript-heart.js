@@ -2,36 +2,30 @@ import * as util from "../../util.mjs";
 import WorkerScript from "./workerscript.js";
 
 
-// dV/dt = rV(1-V)(V-a) - W + D * (diffusion)
-// dW/dt = ε(ßV - W)
+// dV/dt = rV(1-V)(V-a) - ßW + D * (diffusion)
+// dW/dt = ε(V - W)
 
-let dt = 0;
 let r = 0;
 let a = 0;
 let epsilon = 0;
 let beta = 0;
-let D = 0;
-
-let normalDist = WorkerScript.makeNormalDistMat(1);
-let normalDistAtrium = WorkerScript.makeNormalDistMat(1);
-let normalDistVentricle = WorkerScript.makeNormalDistMat(2);
-let normalDistAVNode = WorkerScript.makeNormalDistMat(0.5);
-let normalDistBarrier = WorkerScript.makeNormalDistMat(0);
 
 
 export default class HeartWorkerScript extends WorkerScript {
-    get channels() { return 3; }
-    get channelsDoDiffuse() { return [false, false, false]; }
+    dt = 0.05;
 
-    get wrapDiffuse() { return false; }
-    get wrapPen() { return false; }
+    channels = 3;
+    channelsD = [0, 0, 0];
 
-    getNormalDist(x, y, i) {
-        if (this.mode !== 2) return normalDist;
-        if (this.inChannel(x, y)) return normalDistAVNode;
-        if (this.inAtrium(x, y)) return normalDistAtrium;
-        if (this.inVentricle(x, y)) return normalDistVentricle;
-        return normalDistBarrier;
+    wrapDiffuse = false;
+    wrapPen = false;
+
+    getD(x, y, i) {
+        if (this.space[this.getIdx(x, y, 2)]) return 0;
+        if (this.inChannel(x, y)) return 1;
+        if (this.inAtrium(x, y)) return 2;
+        if (this.inVentricle(x, y)) return 2;
+        return super.getD(x, y, i);
     }
 
     setup() {
@@ -46,7 +40,7 @@ export default class HeartWorkerScript extends WorkerScript {
                     return;
                 }
                 if (i === 1) {
-                    this.space[idx] = (Math.abs(util.angleRel(dir, this.tiredDeg/2 + this.fireDeg/2)) < this.tiredDeg/2 && !inner) * 1;
+                    this.space[idx] = (Math.abs(util.angleRel(dir, this.tiredDeg/2 + this.fireDeg/2)) < this.tiredDeg/2 && !inner) * 0.1;
                     return;
                 }
             },
@@ -56,7 +50,7 @@ export default class HeartWorkerScript extends WorkerScript {
                     return;
                 }
                 if (i === 1) {
-                    this.space[idx] = (x <= this.width/2-this.fireW && y < this.height/2) * 1;
+                    this.space[idx] = (x <= this.width/2-this.fireW && y < this.height/2) * 0.1;
                     return;
                 }
             },
@@ -81,7 +75,6 @@ export default class HeartWorkerScript extends WorkerScript {
             if (callback) callback(v, idx, x, y, i);
         });
     }
-    updateFirst() { this.time += dt; }
     updatePreDiffuse() {
         const { space, width, height, mode, time } = this;
         for (let x = 0; x < width; x++) {
@@ -90,24 +83,10 @@ export default class HeartWorkerScript extends WorkerScript {
                 let idxW = this.getIdx(x, y, 1);
                 let V = space[idxV];
                 let W = space[idxW];
-                let Dsum = 0;
-                const { get, mx, mn } = this.getNormalDist(x, y, 2);
-                for (let rx = mn; rx <= mx; rx++) {
-                    for (let ry = mn; ry <= mx; ry++) {
-                        let ax = x + rx, ay = y + ry;
-                        if (ax < 0 || ax >= width) continue;
-                        if (ay < 0 || ay >= height) continue;
-                        if (space[this.getIdx(ax, ay, 2)]) continue;
-                        let nd = get(rx, ry);
-                        let aidx = this.getIdx(ax, ay, 0);
-                        Dsum += Math.max(0, space[aidx]) * nd;
-                    }
-                }
-                Dsum *= D;
-                let dVdt = r * V * (1 - V) * (V - a) - W + Dsum;
-                let dWdt = epsilon * (beta * V - W);
-                V += dVdt * dt;
-                W += dWdt * dt;
+                let dVdt = r * V * (1 - V) * (V/a - 1) - beta * W;
+                let dWdt = epsilon * (V - W);
+                V += dVdt;
+                W += dWdt;
                 if (mode === 2)
                     V += a * this.inSinusNode(x, y) * (Math.max(this.sinusPulseThresh, Math.sin(2*Math.PI * time/this.sinusPulsePeriod)) - this.sinusPulseThresh) / (1-this.sinusPulseThresh);
                 space[idxV] = V || 0;
@@ -117,7 +96,7 @@ export default class HeartWorkerScript extends WorkerScript {
     }
 
     applyFilter(data, dataIdx, x, y) {
-        if (this.space[this.getIdx(x, y, 2)]) data[dataIdx + 3] = 0;
+        if (this.space[this.getIdx(x, y, 2)]) data[dataIdx + 3] /= 2;
     }
     
     get fireDeg() { return 10; }
@@ -132,7 +111,7 @@ export default class HeartWorkerScript extends WorkerScript {
     get channelY() { return this.height/2; }
     get channelW() { return 5; }
 
-    get sinusPulsePeriod() { return 200; }
+    get sinusPulsePeriod() { return 80; }
     get sinusPulseThresh() { return 0.75; }
 
     onBarrier(x, y) {
@@ -156,16 +135,12 @@ export default class HeartWorkerScript extends WorkerScript {
 
         this.mode = 0;
 
-        this.time = 0;
-
         this.addHandler("message", ({ type, data }) => {
             if (type === "mode") {
                 this.mode = data;
                 this.fullSetup();
                 return;
             }
-            if (type === "dt")
-                return dt = data;
             if (type === "r")
                 return r = data;
             if (type === "a")
@@ -174,8 +149,6 @@ export default class HeartWorkerScript extends WorkerScript {
                 return epsilon = data;
             if (type === "beta")
                 return beta = data;
-            if (type === "D")
-                return D = data;
         });
     }
 }
