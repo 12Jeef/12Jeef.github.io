@@ -25,7 +25,7 @@ let eOffCanvas2 = null;
 const context = new util.Target();
 
 let worker = null;
-let simulator = "pattern";
+let simulator = "wound-heal";
 const updateSim = () => {
     eSimSelect.textContent = document.getElementById("sim-"+simulator).textContent;
 
@@ -81,7 +81,7 @@ eSimSelect.addEventListener("click", e => {
     eSims.classList.add("open");
     document.body.addEventListener("click", closeSimulatorDropdown, true);
 });
-["diffusion", "pattern", "heart"].forEach(sim => {
+["diffusion", "pattern", "wound-heal", "heart"].forEach(sim => {
     const elem = document.getElementById("sim-"+sim);
     elem.addEventListener("click", e => {
         simulator = sim;
@@ -175,6 +175,21 @@ const createSimParameter = (sim, name, value, cast=parseFloat) => {
         channelMappings = [0, 1, null];
     });
 }
+
+//// WOUND HEALING
+{
+    const createParameter = (name, value, cast=parseFloat) => createSimParameter("wound-heal", name, value, cast);
+
+    context.addHandler("update-sim", () => {
+        if (simulator !== "wound-heal") return;
+        penWeight = 0.1;
+        updatePenWeight();
+        updateWorkerPenWeight();
+        channels = ["n", "c", "Walls"];
+        channelMappings = [0, 1, null];
+    });
+}
+
 //// HEART
 {
     const createParameter = (name, value, cast=parseFloat) => createSimParameter("heart", name, value, cast);
@@ -490,6 +505,22 @@ document.body.addEventListener("keydown", e => {
         return;
     }
 });
+
+let paused = false;
+const updatePaused = () => {
+    eIcon.name = paused ? "play" : "pause";
+};
+const updateWorkerPaused = () => {
+    worker.postMessage({ type: "paused", data: paused });
+};
+const elem = document.getElementById("tool-pp");
+const eIcon = elem.querySelector(":scope > ion-icon");
+elem.addEventListener("click", e => {
+    paused = !paused;
+    updatePaused();
+    updateWorkerPaused();
+});
+updatePaused();
 
 //// MOUSE
 

@@ -94,6 +94,7 @@ export default class WorkerScript extends util.Target {
 
         this.mode = 0;
         this.time = 0;
+        this.paused = false;
 
         this.ctx = null;
         this.ctx2 = null;
@@ -136,9 +137,11 @@ export default class WorkerScript extends util.Target {
                     const { width, height, channels, ctx, ctx2, penSize, drawQueue, eraseQueue, moveQueue } = this;
                     let { space, space2 } = this;
                     
-                    this.updateFirst();
+                    if (!this.paused) {
+                        this.updateFirst();
 
-                    this.time += this.dt;
+                        this.time += this.dt;
+                    }
 
                     while (drawQueue.length > 0) {
                         const draw = drawQueue.shift();
@@ -240,44 +243,46 @@ export default class WorkerScript extends util.Target {
                         });
                     }
 
-                    this.updatePreDiffuse();
+                    if (!this.paused) {
+                        this.updatePreDiffuse();
 
-                    space2.fill(0);
-                    for (let i = 0; i < channels; i++) {
-                        for (let x = 0; x < width; x++) {
-                            for (let y = 0; y < height; y++) {
-                                let idx = this.getIdx(x, y, i);
-                                let p = this.getp(x, y, i);
-                                if (p <= 0) {
-                                    space2[idx] = space[idx];
-                                    continue;
-                                }
-                                if (space[idx] < this.epsilon) continue;
-                                space2[idx] += space[idx];
-                                for (let j = 0; j < 4; j++) {
-                                    let [rx, ry] = [[+1, 0], [-1, 0], [0, +1], [0, -1]][j];
-                                    let ax = x + rx;
-                                    let ay = y + ry;
-                                    let aidx = 0;
-                                    if (!this.wrapDiffuse) {
-                                        if (ax < 0 || ax >= width) continue;
-                                        if (ay < 0 || ay >= height) continue;
-                                        aidx = this.getIdx(ax, ay, i);
-                                    } else {
-                                        ax = this.clampX(ax);
-                                        ay = this.clampY(ay);
-                                        aidx = this.getIdx(ax, ay, i);
+                        space2.fill(0);
+                        for (let i = 0; i < channels; i++) {
+                            for (let x = 0; x < width; x++) {
+                                for (let y = 0; y < height; y++) {
+                                    let idx = this.getIdx(x, y, i);
+                                    let p = this.getp(x, y, i);
+                                    if (p <= 0) {
+                                        space2[idx] = space[idx];
+                                        continue;
                                     }
-                                    space2[aidx] += space[idx] * p;
-                                    space2[idx] -= space[idx] * p;
+                                    if (space[idx] < this.epsilon) continue;
+                                    space2[idx] += space[idx];
+                                    for (let j = 0; j < 4; j++) {
+                                        let [rx, ry] = [[+1, 0], [-1, 0], [0, +1], [0, -1]][j];
+                                        let ax = x + rx;
+                                        let ay = y + ry;
+                                        let aidx = 0;
+                                        if (!this.wrapDiffuse) {
+                                            if (ax < 0 || ax >= width) continue;
+                                            if (ay < 0 || ay >= height) continue;
+                                            aidx = this.getIdx(ax, ay, i);
+                                        } else {
+                                            ax = this.clampX(ax);
+                                            ay = this.clampY(ay);
+                                            aidx = this.getIdx(ax, ay, i);
+                                        }
+                                        space2[aidx] += space[idx] * p;
+                                        space2[idx] -= space[idx] * p;
+                                    }
                                 }
                             }
                         }
-                    }
-                    [space, space2] = [space2, space];
-                    [this.space, this.space2] = [space, space2];
+                        [space, space2] = [space2, space];
+                        [this.space, this.space2] = [space, space2];
 
-                    this.updatePostDiffuse();
+                        this.updatePostDiffuse();
+                    }
 
                     if (!applyCanvas) return;
 
@@ -301,6 +306,8 @@ export default class WorkerScript extends util.Target {
                         }
                     }
                     ctx.putImageData(data, 0, 0);
+
+                    if (this.paused) return;
 
                     ctx2.fillStyle = "#000";
                     ctx2.fillRect(x, 0, 1, this.height2);
@@ -361,6 +368,10 @@ export default class WorkerScript extends util.Target {
             }
             if (type === "meter") {
                 this.meter.set(data);
+                return;
+            }
+            if (type === "paused") {
+                this.paused = data;
                 return;
             }
             if (type.startsWith("D")) {

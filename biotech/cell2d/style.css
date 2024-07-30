@@ -120,6 +120,7 @@ body {
     left: calc(100% - 0.25em);
     transform: translate(-1em, -50%);
 
+    min-width: max-content;
     padding: 0.25em 0.5em;
 
     background: #666;
