@@ -16,6 +16,8 @@ export default class HeartWorkerScript extends WorkerScript {
 
     channels = 3;
     channelsD = [0, 0, 0];
+    channelsDXScale = [1, 1, 1];
+    channelsDYScale = [1, 1, 1];
 
     wrapDiffuse = false;
     wrapPen = false;

@@ -7,6 +7,8 @@ export default class DiffusionWorkerScript extends WorkerScript {
 
     channels = 3;
     channelsD = [0, 0, 0];
+    channelsDXScale = [1, 1, 1];
+    channelsDYScale = [1, 1, 1];
 
     applyChannel(i, v) { return v; }
 

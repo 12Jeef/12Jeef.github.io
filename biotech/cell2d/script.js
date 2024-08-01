@@ -25,7 +25,7 @@ let eOffCanvas2 = null;
 const context = new util.Target();
 
 let worker = null;
-let simulator = "wound-heal";
+let simulator = "pattern";
 const updateSim = () => {
     eSimSelect.textContent = document.getElementById("sim-"+simulator).textContent;
 
@@ -151,10 +151,10 @@ const createSimParameter = (sim, name, value, cast=parseFloat) => {
     const cA = createParameter("cA", 1);
     const cH = createParameter("cH", 1);
     const k = createParameter("k", 0);
-    const mu = createParameter("mu", 0.7);
-    const nu = createParameter("nu", 1);
+    const mu = createParameter("mu", 1);
+    const nu = createParameter("nu", 1.2);
     const D0 = createParameter("D0", 1);
-    const D1 = createParameter("D1", 10);
+    const D1 = createParameter("D1", 7.5);
 
     context.addHandler("update-sim", () => {
         mode.updateWorker();
@@ -172,7 +172,7 @@ const createSimParameter = (sim, name, value, cast=parseFloat) => {
         updatePenWeight();
         updateWorkerPenWeight();
         channels = ["A", "H", "Walls"];
-        channelMappings = [0, 1, null];
+        channelMappings = [1, 0, null];
     });
 }
 

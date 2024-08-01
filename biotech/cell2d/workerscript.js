@@ -9,9 +9,14 @@ export default class WorkerScript extends util.Target {
 
     channels = 0;
     channelsD = [];
+    channelsDXScale = [];
+    channelsDYScale = [];
 
     wrapDiffuse = true;
     wrapPen = true;
+
+    axisXDScale = 1;
+    axisYDScale = 1;
 
     get eCanvas() { return this.ctx.canvas; }
     get eCanvas2() { return this.ctx2.canvas; }
@@ -20,9 +25,9 @@ export default class WorkerScript extends util.Target {
     get width2() { return this.eCanvas2.width; }
     get height2() { return this.eCanvas2.height; }
 
-    clampX(x) { return ((x % this.width) + this.width) % this.width; }
-    clampY(y) { return ((y % this.height) + this.height) % this.height; }
-    clampI(i) { return ((i % this.channels) + this.channels) % this.channels; }
+    clampX(x, y, i) { return ((x % this.width) + this.width) % this.width; }
+    clampY(x, y, i) { return ((y % this.height) + this.height) % this.height; }
+    clampI(x, y, i) { return ((i % this.channels) + this.channels) % this.channels; }
     getIdx(x, y, i) { return (x * this.height + y) * this.channels + i; }
 
     get length() { return this.width * this.height * this.channels; }
@@ -149,7 +154,6 @@ export default class WorkerScript extends util.Target {
                         let x = Math.round(pos[0]);
                         let y = Math.round(pos[1]);
                         i.forEach(i => {
-                            if (i < 0 || i >= this.channels) return;
                             for (let rx = -penSize; rx <= penSize; rx++) {
                                 for (let ry = -penSize; ry <= penSize; ry++) {
                                     if (rx**2 + ry**2 > penSize**2) continue;
@@ -161,7 +165,7 @@ export default class WorkerScript extends util.Target {
                                         if (ay < 0 || ay >= height) continue;
                                         aidx = this.getIdx(ax, ay, i);
                                     } else {
-                                        aidx = this.getIdx(this.clampX(ax), this.clampY(ay), i);
+                                        aidx = this.getIdx(this.clampX(ax, ay, i), this.clampY(ax, ay, i), this.clampI(ax, ay, i));
                                     }
                                     space[aidx] += this.penWeight;
                                 }
@@ -174,7 +178,6 @@ export default class WorkerScript extends util.Target {
                         let x = Math.round(pos[0]);
                         let y = Math.round(pos[1]);
                         i.forEach(i => {
-                            if (i < 0 || i >= this.channels) return;
                             for (let rx = -penSize; rx <= penSize; rx++) {
                                 for (let ry = -penSize; ry <= penSize; ry++) {
                                     if (rx**2 + ry**2 > penSize**2) continue;
@@ -186,7 +189,7 @@ export default class WorkerScript extends util.Target {
                                         if (ay < 0 || ay >= height) continue;
                                         aidx = this.getIdx(ax, ay, i);
                                     } else {
-                                        aidx = this.getIdx(this.clampX(ax), this.clampY(ay), i);
+                                        aidx = this.getIdx(this.clampX(ax, ay, i), this.clampY(ax, ay), this.clampI(ax, ay, i));
                                     }
                                     space[aidx] = 0;
                                 }
@@ -201,7 +204,6 @@ export default class WorkerScript extends util.Target {
                         let sx = Math.round(shift[0]);
                         let sy = Math.round(shift[1]);
                         i.forEach(i => {
-                            if (i < 0 || i >= this.channels) return;
                             const values = [];
                             for (let rx = -penSize; rx <= penSize; rx++) {
                                 for (let ry = -penSize; ry <= penSize; ry++) {
@@ -216,7 +218,7 @@ export default class WorkerScript extends util.Target {
                                     if (outside) {
                                         values.push(0);
                                     } else {
-                                        let aidx = this.getIdx(this.clampX(ax), this.clampY(ay), i);
+                                        let aidx = this.getIdx(this.clampX(ax, ay, i), this.clampY(ax, ay, i), this.clampI(ax, ay, i));
                                         values.push(space[aidx]);
                                         space[aidx] = 0;
                                     }
@@ -235,7 +237,7 @@ export default class WorkerScript extends util.Target {
                                     if (outside) {
                                         values.shift();
                                     } else {
-                                        let aidx = this.getIdx(this.clampX(ax), this.clampY(ay), i);
+                                        let aidx = this.getIdx(this.clampX(ax, ay, i), this.clampY(ax, ay, i), this.clampI(ax, ay, i));
                                         space[aidx] += values.shift();
                                     }
                                 }
@@ -268,12 +270,12 @@ export default class WorkerScript extends util.Target {
                                             if (ay < 0 || ay >= height) continue;
                                             aidx = this.getIdx(ax, ay, i);
                                         } else {
-                                            ax = this.clampX(ax);
-                                            ay = this.clampY(ay);
+                                            ax = this.clampX(ax, ay, i);
+                                            ay = this.clampY(ax, ay, i);
                                             aidx = this.getIdx(ax, ay, i);
                                         }
-                                        space2[aidx] += space[idx] * p;
-                                        space2[idx] -= space[idx] * p;
+                                        space2[aidx] += space[idx] * (p * (ry ? this.channelsDYScale[i] : this.channelsDXScale[i]));
+                                        space2[idx] -= space[idx] * (p * (ry ? this.channelsDYScale[i] : this.channelsDXScale[i]));
                                     }
                                 }
                             }

@@ -44,6 +44,8 @@ function sH(c) {
 export default class PatternWorkerScript extends WorkerScript {
     channels = 3;
     channelsD = [2, 10, 0];
+    channelsDXScale = [1, 1, 1];
+    channelsDYScale = [1, 1, 1];
 
     getD(x, y, i) {
         if (this.space[this.getIdx(x, y, 2)]) return 0;

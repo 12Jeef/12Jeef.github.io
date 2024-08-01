@@ -9,7 +9,7 @@ let width = ctx.canvas.width;
 let height = ctx.canvas.height;
 
 
-const nSpecies = 2;
+const nSpecies = 3;
 
 
 class Agent extends util.Target {
@@ -65,25 +65,25 @@ class Agent extends util.Target {
 
 function generateRandomValue() {
     return {
-        avoid: util.lerp(0.25, 0.01, Math.random()),
-        centering: util.lerp(0.0025, 0.0001, Math.random()),
-        matching: util.lerp(0.25, 0.01, Math.random()),
+        avoid: util.lerp(-0.25, +0.225, Math.random()),
+        centering: util.lerp(-0.0025, +0.0025, Math.random()),
+        matching: util.lerp(-0.25, +0.25, Math.random()),
     };
 }
-const matrix = [
-    [
-        { avoid: 0.05, centering: 0.0005, matching: 0.05 }, // i am prey, i see prey
-        { avoid: 0, centering: 0.005, matching: 0.05 }, // i am pred, i see prey
-    ],
-    [
-        { avoid: 0.05, centering: 0, matching: 0.005 }, // i am prey, i see pred
-        { avoid: 0.05, centering: 0.0005, matching: 0.05 }, // i am pred, i see pred
-    ],
-];
-// const matrix = new Array(nSpecies).fill(null).map(_ => new Array(nSpecies).fill(null).map(_ => generateRandomValue()));
+// const matrix = [
+//     [
+//         { avoid: 0.05, centering: 0.0005, matching: 0.05 }, // i am prey, i see prey
+//         { avoid: 0, centering: 0.005, matching: 0.05 }, // i am pred, i see prey
+//     ],
+//     [
+//         { avoid: 0.05, centering: 0, matching: 0.005 }, // i am prey, i see pred
+//         { avoid: 0.05, centering: 0.0005, matching: 0.05 }, // i am pred, i see pred
+//     ],
+// ];
+const matrix = new Array(nSpecies).fill(null).map(_ => new Array(nSpecies).fill(null).map(_ => generateRandomValue()));
 
 const minSpeed = 0.5;
-const maxSpeed = 2.5;
+const maxSpeed = 5;
 
 class AgentBoid extends Agent {
     #protectedRange;
@@ -231,6 +231,10 @@ class AgentBoid extends Agent {
 }
 
 const speed = 5;
+const speedEp = 2;
+const dirEp = 20;
+
+const hateOthers = true;
 
 class AgentViscek extends Agent {
     #visualRange;
@@ -297,11 +301,14 @@ class AgentViscek extends Agent {
 
             if (dist > this.visualRange) return;
 
+            if (agent.species != this.species) {
+                if (!hateOthers) return;
+                n++;
+                avgDir += agent.pos.towards(this.pos) + util.lerp(-dirEp, +dirEp, Math.random());
+                return;
+            }
             n++;
-
-            if (agent.species != this.species)
-                return avgDir += agent.pos.towards(this.pos);
-            avgDir += agent.dir;
+            avgDir += agent.dir + util.lerp(-dirEp, +dirEp, Math.random());
         });
 
         if (n > 0) {
@@ -314,24 +321,35 @@ class AgentViscek extends Agent {
 
         [this.dir] = [this.ndir];
 
-        this.pos.iadd(util.V.dir(this.dir, speed));
+        this.pos.iadd(util.V.dir(this.dir, speed + util.lerp(-speedEp, +speedEp, Math.random())));
 
         this.x = ((this.x % width) + width) % width;
         this.y = ((this.y % height) + height) % height;
     }
 }
 
-const agents = [];
-for (let i = 0; i < 200; i++)
-    agents.push(new AgentBoid({
+const buildBoid = () => {
+    return new AgentBoid({
         protectedRange: 10,
         visualRange: 40,
-        // species: Math.floor(Math.random()*nSpecies),
-        species: +(Math.random() > 0.75),
+        // species: +(Math.random() > 0.75),
+        species: Math.floor(Math.random()*nSpecies),
         pos: [Math.random()*width, Math.random()*height],
         vel: util.V.dir(360*Math.random(), 10),
-        // dir: 360*Math.random(),
-    }));
+    });
+};
+const buildViscek = () => {
+    return new AgentViscek({
+        visualRange: 40,
+        species: Math.floor(Math.random()*nSpecies),
+        pos: [Math.random()*width, Math.random()*height],
+        dir: 360*Math.random(),
+    });
+};
+
+const agents = [];
+for (let i = 0; i < 200; i++)
+    agents.push(buildBoid());
 
 
 const update = () => {
