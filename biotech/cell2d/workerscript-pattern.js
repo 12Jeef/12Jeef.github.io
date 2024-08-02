@@ -9,7 +9,7 @@ let rhoA = 0;
 let rhoH = 0;
 let cA = 0;
 let cH = 0;
-let k = 0;
+let s = 0;
 let mu = 0;
 let nu = 0;
 
@@ -117,7 +117,7 @@ export default class PatternWorkerScript extends WorkerScript {
                 let idxH = this.getIdx(x, y, 1);
                 let A = space[idxA];
                 let H = space[idxH];
-                let dAdt = rhoA + (cA * A**2) / ((1 + k * A**2) * Math.max(0.1, H)) - mu * A;
+                let dAdt = rhoA + (cA * A**2) / ((1 + s * A**2) * Math.max(0.1, H)) - mu * A;
                 let dHdt = rhoH + (cH * A**2) - nu * H;
                 A += dAdt * this.dt;
                 H += dHdt * this.dt;
@@ -175,8 +175,8 @@ export default class PatternWorkerScript extends WorkerScript {
                 return cA = data;
             if (type === "cH")
                 return cH = data;
-            if (type === "k")
-                return k = data;
+            if (type === "s")
+                return s = data;
             if (type === "mu")
                 return mu = data;
             if (type === "nu")

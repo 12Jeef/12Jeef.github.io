@@ -395,6 +395,10 @@ body {
     align-content: center;
     gap: 0.5em;
 }
+#settings span.header.lined {
+    padding-bottom: 0.25em;
+    border-bottom: 0.1rem solid #fff2;
+}
 #settings span.header > span {
     flex-basis: 100%;
 

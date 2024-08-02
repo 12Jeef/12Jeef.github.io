@@ -150,7 +150,7 @@ const createSimParameter = (sim, name, value, cast=parseFloat) => {
     const rhoH = createParameter("rhoH", 0);
     const cA = createParameter("cA", 1);
     const cH = createParameter("cH", 1);
-    const k = createParameter("k", 0);
+    const s = createParameter("s", 0);
     const mu = createParameter("mu", 1);
     const nu = createParameter("nu", 1.2);
     const D0 = createParameter("D0", 1);
@@ -162,7 +162,7 @@ const createSimParameter = (sim, name, value, cast=parseFloat) => {
         rhoH.updateWorker();
         cA.updateWorker();
         cH.updateWorker();
-        k.updateWorker();
+        s.updateWorker();
         mu.updateWorker();
         nu.updateWorker();
         D0.updateWorker();
@@ -210,6 +210,9 @@ const createSimParameter = (sim, name, value, cast=parseFloat) => {
     const U = createParameter("U", 0.5);
     const V = createParameter("V", 0.5);
     const W = createParameter("W", 0.5);
+    const D0 = createParameter("D0", 0.5);
+    const D1 = createParameter("D1", 0.5);
+    const D2 = createParameter("D2", 5);
 
     context.addHandler("update-sim", () => {
         mode.updateWorker();
@@ -229,6 +232,9 @@ const createSimParameter = (sim, name, value, cast=parseFloat) => {
         U.updateWorker();
         V.updateWorker();
         W.updateWorker();
+        D0.updateWorker();
+        D1.updateWorker();
+        D2.updateWorker();
         if (simulator !== "zebrafish") return;
         penWeight = 0.1;
         updatePenWeight();

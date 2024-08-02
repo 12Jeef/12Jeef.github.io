@@ -40,7 +40,7 @@ function H(u, v, w) {
 
 export default class ZebrafishWorkerScript extends WorkerScript {
     channels = 3;
-    channelsD = [0.5, 0.5, 5];
+    channelsD = [0, 0, 0];
     channelsDXScale = [1, 1, 1];
     channelsDYScale = [1, 1, 1];
 
