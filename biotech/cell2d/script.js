@@ -194,7 +194,41 @@ const createSimParameter = (sim, name, value, cast=parseFloat) => {
 {
     const createParameter = (name, value, cast=parseFloat) => createSimParameter("zebrafish", name, value, cast);
 
+    const mode = createParameter("mode", 0, parseInt);
+    const c1 = createParameter("c1", -0.04);
+    const c2 = createParameter("c2", -0.055);
+    const c3 = createParameter("c3", 0.37);
+    const c4 = createParameter("c4", -0.05);
+    const c5 = createParameter("c5", 0);
+    const c6 = createParameter("c6", 0.25);
+    const c7 = createParameter("c7", 0.016);
+    const c8 = createParameter("c8", -0.03);
+    const c9 = createParameter("c9", 0.24);
+    const cu = createParameter("cu", 0.02);
+    const cv = createParameter("cv", 0.025);
+    const cw = createParameter("cw", 0.06);
+    const U = createParameter("U", 0.5);
+    const V = createParameter("V", 0.5);
+    const W = createParameter("W", 0.5);
+
     context.addHandler("update-sim", () => {
+        mode.updateWorker();
+        c1.updateWorker();
+        c2.updateWorker();
+        c3.updateWorker();
+        c4.updateWorker();
+        c5.updateWorker();
+        c5.updateWorker();
+        c6.updateWorker();
+        c7.updateWorker();
+        c8.updateWorker();
+        c9.updateWorker();
+        cu.updateWorker();
+        cv.updateWorker();
+        cw.updateWorker();
+        U.updateWorker();
+        V.updateWorker();
+        W.updateWorker();
         if (simulator !== "zebrafish") return;
         penWeight = 0.1;
         updatePenWeight();

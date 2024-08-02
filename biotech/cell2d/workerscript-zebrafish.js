@@ -6,23 +6,23 @@ import WorkerScript from "./workerscript.js";
 // dv/dt = G(u,v,w) - cv*u + (diffusion)
 // dw/dt = H(u,v,w) - cw*u + (diffusion)
 
-let c1 = -0.04;
-let c2 = -0.055;
-let c3 = 0.37;
-let c4 = -0.05;
+let c1 = 0;
+let c2 = 0;
+let c3 = 0;
+let c4 = 0;
 let c5 = 0;
-let c6 = 0.25;
-let c7 = 0.016;
-let c8 = -0.03;
-let c9 = 0.24;
+let c6 = 0;
+let c7 = 0;
+let c8 = 0;
+let c9 = 0;
 
-let cu = 0.02;
-let cv = 0.025;
-let cw = 0.06;
+let cu = 0;
+let cv = 0;
+let cw = 0;
 
-let U = 0.5;
-let V = 0.5;
-let W = 0.5;
+let U = 0;
+let V = 0;
+let W = 0;
 
 function F(u, v, w) {
     let q = c1 * v + c2 * w + c3;
@@ -91,6 +91,36 @@ export default class ZebrafishWorkerScript extends WorkerScript {
                 this.fullSetup();
                 return;
             }
+            if (type === "c1")
+                return c1 = data;
+            if (type === "c2")
+                return c2 = data;
+            if (type === "c3")
+                return c3 = data;
+            if (type === "c4")
+                return c4 = data;
+            if (type === "c5")
+                return c5 = data;
+            if (type === "c6")
+                return c6 = data;
+            if (type === "c7")
+                return c7 = data;
+            if (type === "c8")
+                return c8 = data;
+            if (type === "c9")
+                return c9 = data;
+            if (type == "cu")
+                return cu = data;
+            if (type == "cv")
+                return cv = data;
+            if (type == "cw")
+                return cw = data;
+            if (type == "U")
+                return U = data;
+            if (type == "V")
+                return V = data;
+            if (type == "W")
+                return W = data;
         });
     }
 }
