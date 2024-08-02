@@ -81,7 +81,7 @@ eSimSelect.addEventListener("click", e => {
     eSims.classList.add("open");
     document.body.addEventListener("click", closeSimulatorDropdown, true);
 });
-["diffusion", "pattern", "wound-heal", "heart"].forEach(sim => {
+["diffusion", "pattern", "wound-heal", "zebrafish", "heart"].forEach(sim => {
     const elem = document.getElementById("sim-"+sim);
     elem.addEventListener("click", e => {
         simulator = sim;
@@ -187,6 +187,20 @@ const createSimParameter = (sim, name, value, cast=parseFloat) => {
         updateWorkerPenWeight();
         channels = ["n", "c", "Walls"];
         channelMappings = [0, 1, null];
+    });
+}
+
+//// ZEBRAFISH
+{
+    const createParameter = (name, value, cast=parseFloat) => createSimParameter("zebrafish", name, value, cast);
+
+    context.addHandler("update-sim", () => {
+        if (simulator !== "zebrafish") return;
+        penWeight = 0.1;
+        updatePenWeight();
+        updateWorkerPenWeight();
+        channels = ["U", "V", "W"];
+        channelMappings = [0, 1, 2];
     });
 }
 
