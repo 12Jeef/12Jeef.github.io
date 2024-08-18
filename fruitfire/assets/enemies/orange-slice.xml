@@ -1,0 +1,135 @@
+<body>
+    <name>Orange Slice</name>
+    <type>
+        <i>slice</i>
+        <i>weak</i>
+    </type>
+
+    <size>6</size>
+    <health>7.5</health>
+    <colors>
+        <i>16</i>
+        <i>17</i>
+    </colors>
+    <location x="0" y="64"/>
+
+    <textures>
+        <texture name="walk">
+            <location x="0" y="0" w="16" h="16"/>
+        </texture>
+        <texture name="eyes" crop="true">
+            <location x="16" y="0" w="8" h="8"/>
+        </texture>
+        <texture name="shadow" crop="true">
+            <location x="16" y="8" w="16" h="8"/>
+        </texture>
+    </textures>
+
+    <components>
+        <component id="shadow">
+            <texture>shadow</texture>
+            <opacity>0.5</opacity>
+            <offset x="0" y="6"/>
+        </component>
+        <component id="body" body="true">
+            <texture>walk</texture>
+            <type>outlined</type>
+        </component>
+        <component id="eyes">
+            <texture>eyes</texture>
+        </component>
+    </components>
+
+    <animations>
+        <animation name="walking" loop="true">
+        </animation>
+    </animations>
+
+    <states initial="attacking">
+        <state name="attacking">
+            <continual>
+                <call>
+                    <func>gazeAt</func>
+                    <args>
+                        <get>engine.playerEntity.pos</get>
+                        <json>0.9</json>
+                    </args>
+                </call>
+                <call>
+                    <func>knockInDir</func>
+                    <args>
+                        <json>0.005</json>
+                    </args>
+                </call>
+                <set>
+                    <prop>animation</prop>
+                    <value><json>"walking"</json></value>
+                </set>
+                <call>
+                    <func>~eyes.offset.set</func>
+                    <args>
+                        <call>
+                            <func>getLookingOffset</func>
+                            <args></args>
+                        </call>
+                    </args>
+                </call>
+                <call>
+                    <func>~eyes.offset.iadd</func>
+                    <args>
+                        <json>[0, 1]</json>
+                    </args>
+                </call>
+                <if>
+                    <cond><op>
+                        <left><call>
+                            <func>Math.random</func>
+                            <args></args>
+                        </call></left>
+                        <op>lt</op>
+                        <right><json>0.01</json></right>
+                    </op></cond>
+                    <true>
+                        <call>
+                            <func>engine.rootEntity.addEntity</func>
+                            <args>
+                                <call>
+                                    <func>createSplat</func>
+                                    <args>
+                                        <op>
+                                            <left><json>"mid-"</json></left>
+                                            <op>+</op>
+                                            <right><call>
+                                                <func>Math.ceil</func>
+                                                <args>
+                                                    <op>
+                                                        <left><call>
+                                                            <func>Math.random</func>
+                                                            <args></args>
+                                                        </call></left>
+                                                        <op>*</op>
+                                                        <right><json>3</json></right>
+                                                    </op>
+                                                </args>
+                                            </call></right>
+                                        </op>
+                                        <call>
+                                            <func>util.choose</func>
+                                            <args>
+                                                <json>[16, 17]</json>
+                                            </args>
+                                        </call>
+                                        <json>null</json>
+                                        <json>0.5</json>
+                                        <json>5</json>
+                                        <get>pos</get>
+                                    </args>
+                                </call>
+                            </args>
+                        </call>
+                    </true>
+                </if>
+            </continual>
+        </state>
+    </states>
+</body>

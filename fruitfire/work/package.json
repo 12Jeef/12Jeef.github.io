@@ -1,0 +1,17 @@
+{
+	"name": "celestial",
+	"productName": "Celestial",
+	"description": "A Game!!!",
+	"scripts": {
+		"build": "rollup -c"
+	},
+	"devDependencies": {
+		"@rollup/plugin-node-resolve": "^15.2.3",
+		"@rollup/plugin-typescript": "^11.1.6",
+		"@types/xml2js": "^0.4.14",
+		"rollup": "^4.20.0",
+		"rollup-plugin-commonjs": "^10.1.0",
+		"tslib": "^2.6.3",
+		"typescript": "^5.5.4"
+	}
+}

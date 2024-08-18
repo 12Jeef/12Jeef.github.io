@@ -501,6 +501,9 @@ export default class App extends util.Target {
                         const viewerPosLocation = viewerGl.getAttribLocation(viewerProgram, "a_pos");
                         const viewerTexCoordLocation = viewerGl.getAttribLocation(viewerProgram, "a_tex_coord");
 
+                        viewerGl.enableVertexAttribArray(viewerPosLocation);
+                        viewerGl.enableVertexAttribArray(viewerTexCoordLocation);
+
                         const viewerPosBuffer = viewerGl.createBuffer();
                         viewerGl.bindBuffer(viewerGl.ARRAY_BUFFER, viewerPosBuffer);
                         viewerGl.bufferData(
@@ -515,7 +518,6 @@ export default class App extends util.Target {
                             ]),
                             viewerGl.STATIC_DRAW,
                         );
-                        viewerGl.enableVertexAttribArray(viewerPosLocation);
                         viewerGl.vertexAttribPointer(viewerPosLocation, 2, viewerGl.FLOAT, false, 0, 0);
 
                         const viewerTexCoordBuffer = viewerGl.createBuffer();
@@ -532,7 +534,6 @@ export default class App extends util.Target {
                             ]),
                             viewerGl.STATIC_DRAW,
                         );
-                        viewerGl.enableVertexAttribArray(viewerTexCoordLocation);
                         viewerGl.vertexAttribPointer(viewerTexCoordLocation, 2, viewerGl.FLOAT, false, 0, 0);
 
                         const viewerResLocation = viewerGl.getUniformLocation(viewerProgram, "u_res");

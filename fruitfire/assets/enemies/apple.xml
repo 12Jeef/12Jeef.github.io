@@ -1,0 +1,84 @@
+<body>
+    <name>Apple</name>
+    <type>
+    </type>
+
+    <size>8</size>
+    <health>10</health>
+    <colors>
+        <i>18</i>
+        <i>19</i>
+    </colors>
+    <location x="0" y="16"/>
+
+    <textures>
+        <texture name="walk">
+            <location x="0" y="0" w="16" h="24"/>
+        </texture>
+        <texture name="eyes" crop="true">
+            <location x="16" y="0" w="8" h="8"/>
+        </texture>
+        <texture name="shadow" crop="true">
+            <location x="16" y="8" w="16" h="8"/>
+        </texture>
+    </textures>
+
+    <components>
+        <component id="shadow">
+            <texture>shadow</texture>
+            <opacity>0.5</opacity>
+            <offset x="0" y="8"/>
+        </component>
+        <component id="body" body="true">
+            <texture>walk</texture>
+            <type>outlined</type>
+        </component>
+        <component id="eyes">
+            <texture>eyes</texture>
+        </component>
+    </components>
+
+    <animations>
+        <animation name="walking" loop="true">
+        </animation>
+    </animations>
+
+    <states initial="attacking">
+        <state name="attacking">
+            <continual>
+                <call>
+                    <func>gazeAt</func>
+                    <args>
+                        <get>engine.playerEntity.pos</get>
+                        <json>0.9</json>
+                    </args>
+                </call>
+                <call>
+                    <func>knockInDir</func>
+                    <args>
+                        <json>0.0025</json>
+                    </args>
+                </call>
+                <set>
+                    <prop>animation</prop>
+                    <value><json>"walking"</json></value>
+                </set>
+                <call>
+                    <func>~eyes.offset.set</func>
+                    <args>
+                        <call>
+                            <func>getLookingOffset</func>
+                            <args></args>
+                        </call>
+                    </args>
+                </call>
+                <call>
+                    <func>~eyes.offset.iadd</func>
+                    <args>
+                        <json>[0, 5]</json>
+                    </args>
+                </call>
+            </continual>
+        </state>
+    </states>
+</body>

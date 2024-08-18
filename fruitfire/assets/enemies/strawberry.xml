@@ -1,0 +1,347 @@
+<body>
+    <name>Strawberry</name>
+    <type>
+    </type>
+
+    <size>8</size>
+    <health>10</health>
+    <colors>
+        <i>14</i>
+        <i>15</i>
+    </colors>
+    <location x="0" y="160"/>
+
+    <textures>
+        <texture name="walk">
+            <location x="0" y="0" w="16" h="16"/>
+        </texture>
+        <texture name="open-1">
+            <location x="16" y="0" w="16" h="16"/>
+        </texture>
+        <texture name="open-2">
+            <location x="32" y="0" w="16" h="16"/>
+        </texture>
+        <texture name="open-3">
+            <location x="48" y="0" w="16" h="16"/>
+        </texture>
+        <texture name="eyes" crop="true">
+            <location x="64" y="0" w="8" h="8"/>
+        </texture>
+        <texture name="shadow" crop="true">
+            <location x="64" y="8" w="16" h="8"/>
+        </texture>
+    </textures>
+
+    <components>
+        <component id="shadow">
+            <texture>shadow</texture>
+            <opacity>0.5</opacity>
+            <offset x="0" y="7"/>
+        </component>
+        <component id="body" body="true">
+            <texture>walk</texture>
+            <type>outlined</type>
+        </component>
+        <component id="eyes">
+            <texture>eyes</texture>
+        </component>
+    </components>
+
+    <animations>
+        <animation name="walking" loop="true">
+        </animation>
+    </animations>
+
+    <states initial="attacking">
+        <state name="attacking">
+            <start>
+                <set>
+                    <prop>attackingTimer</prop>
+                    <value><op>
+                        <left><json>3</json></left>
+                        <op>+</op>
+                        <right><op>
+                            <left><json>[-0.5, 0.5]</json></left>
+                            <op>lerp</op>
+                            <right><call>
+                                <func>Math.random</func>
+                                <args></args>
+                            </call></right>
+                        </op></right>
+                    </op></value>
+                </set>
+            </start>
+            <continual>
+                <set>
+                    <prop>attackingTimer</prop>
+                    <value><op>
+                        <left><get>attackingTimer</get></left>
+                        <op>-</op>
+                        <right><get>env.delta</get></right>
+                    </op></value>
+                </set>
+                <if>
+                    <cond><op>
+                        <left><get>attackingTimer</get></left>
+                        <op>lt</op>
+                        <right><json>0</json></right>
+                    </op></cond>
+                    <true>
+                        <set>
+                            <prop>state</prop>
+                            <value><json>"open"</json></value>
+                        </set>
+                    </true>
+                </if>
+                <call>
+                    <func>gazeAt</func>
+                    <args>
+                        <get>engine.playerEntity.pos</get>
+                        <json>0.9</json>
+                    </args>
+                </call>
+                <call>
+                    <func>knockInDir</func>
+                    <args>
+                        <json>0.005</json>
+                    </args>
+                </call>
+                <set>
+                    <prop>animation</prop>
+                    <value><json>"walking"</json></value>
+                </set>
+                <call>
+                    <func>~eyes.offset.set</func>
+                    <args>
+                        <call>
+                            <func>getLookingOffset</func>
+                            <args></args>
+                        </call>
+                    </args>
+                </call>
+                <call>
+                    <func>~eyes.offset.iadd</func>
+                    <args>
+                        <json>[0, 0]</json>
+                    </args>
+                </call>
+            </continual>
+        </state>
+        <state name="open">
+            <start>
+                <set>
+                    <prop>openTimer</prop>
+                    <value><json>0.5</json></value>
+                </set>
+                <call>
+                    <func>~eyes.offset.set</func>
+                    <args>
+                        <json>[0, 0]</json>
+                    </args>
+                </call>
+            </start>
+            <continual>
+                <set>
+                    <prop>openTimer</prop>
+                    <value><op>
+                        <left><get>openTimer</get></left>
+                        <op>-</op>
+                        <right><get>env.delta</get></right>
+                    </op></value>
+                </set>
+                <if>
+                    <cond><op>
+                        <left><get>openTimer</get></left>
+                        <op>lt</op>
+                        <right><json>0</json></right>
+                    </op></cond>
+                    <true>
+                        <set>
+                            <prop>state</prop>
+                            <value><json>"charging"</json></value>
+                        </set>
+                    </true>
+                </if>
+                <if>
+                    <cond><op>
+                        <left><get>openTimer</get></left>
+                        <op>lt</op>
+                        <right><json>0.167</json></right>
+                    </op></cond>
+                    <true>
+                        <set>
+                            <prop>~body.texture</prop>
+                            <value><json>"open-3"</json></value>
+                        </set>
+                    </true>
+                    <false>
+                        <if>
+                            <cond><op>
+                                <left><get>openTimer</get></left>
+                                <op>lt</op>
+                                <right><json>0.333</json></right>
+                            </op></cond>
+                            <true>
+                                <set>
+                                    <prop>~body.texture</prop>
+                                    <value><json>"open-2"</json></value>
+                                </set>
+                            </true>
+                            <false>
+                                <set>
+                                    <prop>~body.texture</prop>
+                                    <value><json>"open-1"</json></value>
+                                </set>
+                            </false>
+                        </if>
+                    </false>
+                </if>
+                <set>
+                    <prop>~body.dir</prop>
+                    <value><op>
+                        <left><op>
+                            <left><get>openTimer</get></left>
+                            <op>map-rg</op>
+                            <right><json>[[0.5, 0], [0, -1]]</json></right>
+                        </op></left>
+                        <op>*</op>
+                        <right><call>
+                            <func>util.angleRelDegrees</func>
+                            <args>
+                                <json>-90</json>
+                                <get>dir</get>
+                            </args>
+                        </call></right>
+                    </op></value>
+                </set>
+                <set>
+                    <prop>~eyes.dir</prop>
+                    <value><get>~body.dir</get></value>
+                </set>
+            </continual>
+        </state>
+        <state name="charging">
+            <start>
+                <set>
+                    <prop>chargingTimer</prop>
+                    <value><json>1.5</json></value>
+                </set>
+            </start>
+            <stop>
+                <set>
+                    <prop>~body.texture</prop>
+                    <value><json>"walk"</json></value>
+                </set>
+                <set>
+                    <prop>~body.dir</prop>
+                    <value><json>0</json></value>
+                </set>
+                <set>
+                    <prop>~eyes.dir</prop>
+                    <value><json>0</json></value>
+                </set>
+            </stop>
+            <continual>
+                <set>
+                    <prop>chargingTimer</prop>
+                    <value><op>
+                        <left><get>chargingTimer</get></left>
+                        <op>-</op>
+                        <right><get>env.delta</get></right>
+                    </op></value>
+                </set>
+                <if>
+                    <cond><op>
+                        <left><get>chargingTimer</get></left>
+                        <op>lt</op>
+                        <right><json>0</json></right>
+                    </op></cond>
+                    <true>
+                        <set>
+                            <prop>state</prop>
+                            <value><json>"attacking"</json></value>
+                        </set>
+                    </true>
+                </if>
+                <set>
+                    <prop>~body.dir</prop>
+                    <value><op>
+                        <left><op>
+                            <left><get>dir</get></left>
+                            <op>*</op>
+                            <right><json>-1</json></right>
+                        </op></left>
+                        <op>+</op>
+                        <right><json>-90</json></right>
+                    </op></value>
+                </set>
+                <set>
+                    <prop>~eyes.dir</prop>
+                    <value><get>~body.dir</get></value>
+                </set>
+                <call>
+                    <func>gazeAt</func>
+                    <args>
+                        <get>engine.playerEntity.pos</get>
+                        <json>0.25</json>
+                    </args>
+                </call>
+                <call>
+                    <func>knockInDir</func>
+                    <args>
+                        <json>0.05</json>
+                    </args>
+                </call>
+                <if>
+                    <cond><op>
+                        <left><call>
+                            <func>Math.random</func>
+                            <args></args>
+                        </call></left>
+                        <op>lt</op>
+                        <right><json>0.1</json></right>
+                    </op></cond>
+                    <true>
+                        <call>
+                            <func>engine.rootEntity.addEntity</func>
+                            <args>
+                                <call>
+                                    <func>createSplat</func>
+                                    <args>
+                                        <op>
+                                            <left><json>"small-"</json></left>
+                                            <op>+</op>
+                                            <right><call>
+                                                <func>Math.ceil</func>
+                                                <args>
+                                                    <op>
+                                                        <left><call>
+                                                            <func>Math.random</func>
+                                                            <args></args>
+                                                        </call></left>
+                                                        <op>*</op>
+                                                        <right><json>3</json></right>
+                                                    </op>
+                                                </args>
+                                            </call></right>
+                                        </op>
+                                        <call>
+                                            <func>util.choose</func>
+                                            <args>
+                                                <json>[15]</json>
+                                            </args>
+                                        </call>
+                                        <json>null</json>
+                                        <json>0.5</json>
+                                        <json>3</json>
+                                        <get>pos</get>
+                                    </args>
+                                </call>
+                            </args>
+                        </call>
+                    </true>
+                </if>
+            </continual>
+        </state>
+    </states>
+</body>

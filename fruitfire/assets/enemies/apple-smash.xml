@@ -1,0 +1,370 @@
+<body>
+    <name>Apple Smash</name>
+    <type>
+        <i>max</i>
+    </type>
+
+    <size>12</size>
+    <health>20</health>
+    <colors>
+        <i>18</i>
+        <i>19</i>
+    </colors>
+    <location x="0" y="40"/>
+
+    <textures>
+        <texture name="walk">
+            <location x="0" y="0" w="24" h="24"/>
+        </texture>
+        <texture name="squish">
+            <location x="24" y="0" w="24" h="24"/>
+        </texture>
+        <texture name="stretch">
+            <location x="48" y="-8" w="24" h="32"/>
+        </texture>
+        <texture name="eyes" crop="true">
+            <location x="72" y="0" w="16" h="8"/>
+        </texture>
+        <texture name="eyes-closed" crop="true">
+            <location x="72" y="8" w="16" h="8"/>
+        </texture>
+        <texture name="shadow" crop="true">
+            <location x="72" y="16" w="24" h="8"/>
+        </texture>
+    </textures>
+
+    <components>
+        <component id="shadow">
+            <texture>shadow</texture>
+            <opacity>0.5</opacity>
+            <offset x="0" y="12"/>
+        </component>
+        <component id="body" body="true">
+            <texture>walk</texture>
+            <type>outlined</type>
+        </component>
+        <component id="eyes">
+            <texture>eyes</texture>
+        </component>
+    </components>
+
+    <animations>
+        <animation name="walking" loop="true">
+        </animation>
+    </animations>
+
+    <states initial="attacking">
+        <state name="attacking">
+            <start>
+                <set>
+                    <prop>attackingTimer</prop>
+                    <value><op>
+                        <left><json>3</json></left>
+                        <op>+</op>
+                        <right><op>
+                            <left><json>[-0.5, 0.5]</json></left>
+                            <op>lerp</op>
+                            <right><call>
+                                <func>Math.random</func>
+                                <args></args>
+                            </call></right>
+                        </op></right>
+                    </op></value>
+                </set>
+                <set>
+                    <prop>~body.texture</prop>
+                    <value><json>"walk"</json></value>
+                </set>
+                <set>
+                    <prop>~eyes.texture</prop>
+                    <value><json>"eyes"</json></value>
+                </set>
+            </start>
+            <continual>
+                <set>
+                    <prop>attackingTimer</prop>
+                    <value><op>
+                        <left><get>attackingTimer</get></left>
+                        <op>-</op>
+                        <right><get>env.delta</get></right>
+                    </op></value>
+                </set>
+                <if>
+                    <cond><op>
+                        <left><get>attackingTimer</get></left>
+                        <op>lt</op>
+                        <right><json>0</json></right>
+                    </op></cond>
+                    <true>
+                        <set>
+                            <prop>state</prop>
+                            <value><json>"jumpcrunch"</json></value>
+                        </set>
+                    </true>
+                </if>
+                <call>
+                    <func>gazeAt</func>
+                    <args>
+                        <get>engine.playerEntity.pos</get>
+                        <json>0.9</json>
+                    </args>
+                </call>
+                <call>
+                    <func>knockInDir</func>
+                    <args>
+                        <json>0.001</json>
+                    </args>
+                </call>
+                <set>
+                    <prop>animation</prop>
+                    <value><json>"walking"</json></value>
+                </set>
+                <call>
+                    <func>~eyes.offset.set</func>
+                    <args>
+                        <call>
+                            <func>getLookingOffset</func>
+                            <args></args>
+                        </call>
+                    </args>
+                </call>
+                <call>
+                    <func>~eyes.offset.iadd</func>
+                    <args>
+                        <json>[0, 8]</json>
+                    </args>
+                </call>
+            </continual>
+        </state>
+        <state name="jumpcrunch">
+            <start>
+                <set>
+                    <prop>jumpCrunchTimer</prop>
+                    <value><json>0.5</json></value>
+                </set>
+                <set>
+                    <prop>~body.texture</prop>
+                    <value><json>"squish"</json></value>
+                </set>
+                <set>
+                    <prop>~eyes.texture</prop>
+                    <value><json>"eyes-closed"</json></value>
+                </set>
+            </start>
+            <continual>
+                <set>
+                    <prop>jumpCrunchTimer</prop>
+                    <value><op>
+                        <left><get>jumpCrunchTimer</get></left>
+                        <op>-</op>
+                        <right><get>env.delta</get></right>
+                    </op></value>
+                </set>
+                <if>
+                    <cond><op>
+                        <left><get>jumpCrunchTimer</get></left>
+                        <op>lt</op>
+                        <right><json>0</json></right>
+                    </op></cond>
+                    <true>
+                        <set>
+                            <prop>state</prop>
+                            <value><json>"jumpup"</json></value>
+                        </set>
+                    </true>
+                </if>
+            </continual>
+        </state>
+        <state name="jumpup">
+            <start>
+                <set>
+                    <prop>jumpUpTimer</prop>
+                    <value><json>0.5</json></value>
+                </set>
+                <set>
+                    <prop>~body.texture</prop>
+                    <value><json>"stretch"</json></value>
+                </set>
+                <set>
+                    <prop>~eyes.texture</prop>
+                    <value><json>"eyes-closed"</json></value>
+                </set>
+                <set>
+                    <prop>oldRadius</prop>
+                    <value><get>radius</get></value>
+                </set>
+                <set>
+                    <prop>radius</prop>
+                    <value><json>0</json></value>
+                </set>
+                <call>
+                    <func>engine.cameraEntity.addShakeFrom</func>
+                    <args>
+                        <get>pos</get>
+                        <json>1</json>
+                    </args>
+                </call>
+                <set>
+                    <prop>invincible</prop>
+                    <value><json>true</json></value>
+                </set>
+            </start>
+            <continual>
+                <set>
+                    <prop>jumpUpTimer</prop>
+                    <value><op>
+                        <left><get>jumpUpTimer</get></left>
+                        <op>-</op>
+                        <right><get>env.delta</get></right>
+                    </op></value>
+                </set>
+                <if>
+                    <cond><op>
+                        <left><get>jumpUpTimer</get></left>
+                        <op>lt</op>
+                        <right><json>0</json></right>
+                    </op></cond>
+                    <true>
+                        <set>
+                            <prop>state</prop>
+                            <value><json>"jumpdown"</json></value>
+                        </set>
+                    </true>
+                </if>
+                <set>
+                    <prop>~body.offset.y</prop>
+                    <value><op>
+                        <left><get>jumpUpTimer</get></left>
+                        <op>map-rg</op>
+                        <right><json>[[0.5, 0], [-4, -204]]</json></right>
+                    </op></value>
+                </set>
+                <set>
+                    <prop>~body.opacity</prop>
+                    <value><op>
+                        <left><get>jumpUpTimer</get></left>
+                        <op>map-rg</op>
+                        <right><json>[[0.5, 0], [4, 0]]</json></right>
+                    </op></value>
+                </set>
+                <set>
+                    <prop>~eyes.offset.y</prop>
+                    <value><op>
+                        <left><get>jumpUpTimer</get></left>
+                        <op>map-rg</op>
+                        <right><json>[[0.5, 0], [-4, -204]]</json></right>
+                    </op></value>
+                </set>
+                <set>
+                    <prop>~shadow.opacity</prop>
+                    <value><op>
+                        <left><get>jumpUpTimer</get></left>
+                        <op>map-rg</op>
+                        <right><json>[[0.5, 0], [0.5, 0]]</json></right>
+                    </op></value>
+                </set>
+            </continual>
+        </state>
+        <state name="jumpdown">
+            <start>
+                <set>
+                    <prop>jumpDownTimer</prop>
+                    <value><json>0.5</json></value>
+                </set>
+                <call>
+                    <func>moveInDir</func>
+                    <args>
+                        <op>
+                            <left><json>0.5</json></left>
+                            <op>*</op>
+                            <right>
+                                <call>
+                                    <func>pos.dist</func>
+                                    <args>
+                                        <get>engine.playerEntity.pos</get>
+                                    </args>
+                                </call>
+                            </right>
+                        </op>
+                    </args>
+                </call>
+            </start>
+            <stop>
+                <set>
+                    <prop>~body.offset.y</prop>
+                    <value><json>0</json></value>
+                </set>
+                <set>
+                    <prop>radius</prop>
+                    <value><get>oldRadius</get></value>
+                </set>
+                <call>
+                    <func>engine.cameraEntity.addShakeFrom</func>
+                    <args>
+                        <get>pos</get>
+                        <json>2.5</json>
+                    </args>
+                </call>
+                <set>
+                    <prop>invincible</prop>
+                    <value><json>false</json></value>
+                </set>
+            </stop>
+            <continual>
+                <set>
+                    <prop>jumpDownTimer</prop>
+                    <value><op>
+                        <left><get>jumpDownTimer</get></left>
+                        <op>-</op>
+                        <right><get>env.delta</get></right>
+                    </op></value>
+                </set>
+                <if>
+                    <cond><op>
+                        <left><get>jumpDownTimer</get></left>
+                        <op>lt</op>
+                        <right><json>0</json></right>
+                    </op></cond>
+                    <true>
+                        <set>
+                            <prop>state</prop>
+                            <value><json>"attacking"</json></value>
+                        </set>
+                    </true>
+                </if>
+                <set>
+                    <prop>~body.offset.y</prop>
+                    <value><op>
+                        <left><get>jumpDownTimer</get></left>
+                        <op>map-rg</op>
+                        <right><json>[[0.5, 0], [-204, -4]]</json></right>
+                    </op></value>
+                </set>
+                <set>
+                    <prop>~body.opacity</prop>
+                    <value><op>
+                        <left><get>jumpDownTimer</get></left>
+                        <op>map-rg</op>
+                        <right><json>[[0.5, 0], [0, 4]]</json></right>
+                    </op></value>
+                </set>
+                <set>
+                    <prop>~eyes.offset.y</prop>
+                    <value><op>
+                        <left><get>jumpDownTimer</get></left>
+                        <op>map-rg</op>
+                        <right><json>[[0.5, 0], [-192, 8]]</json></right>
+                    </op></value>
+                </set>
+                <set>
+                    <prop>~shadow.opacity</prop>
+                    <value><op>
+                        <left><get>jumpDownTimer</get></left>
+                        <op>map-rg</op>
+                        <right><json>[[0.5, 0], [0, 0.5]]</json></right>
+                    </op></value>
+                </set>
+            </continual>
+        </state>
+    </states>
+</body>
