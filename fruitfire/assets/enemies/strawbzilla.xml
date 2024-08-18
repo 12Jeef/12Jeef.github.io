@@ -1,34 +1,50 @@
 <body>
-    <name>Strawberry</name>
+    <name>Strawbzilla</name>
     <type>
+        <i>max</i>
     </type>
 
-    <size>8</size>
-    <health>10</health>
+    <size>16</size>
+    <health>40</health>
     <colors>
         <i>14</i>
         <i>15</i>
     </colors>
-    <location x="0" y="160"/>
+    <location x="0" y="176"/>
 
     <textures>
         <texture name="walk">
-            <location x="0" y="0" w="16" h="16"/>
+            <location x="0" y="0" w="32" h="32"/>
         </texture>
         <texture name="open-1">
-            <location x="16" y="0" w="16" h="16"/>
+            <location x="32" y="0" w="32" h="32"/>
         </texture>
         <texture name="open-2">
-            <location x="32" y="0" w="16" h="16"/>
+            <location x="64" y="0" w="32" h="32"/>
         </texture>
         <texture name="open-3">
-            <location x="48" y="0" w="16" h="16"/>
+            <location x="96" y="0" w="32" h="32"/>
+        </texture>
+        <texture name="open-4">
+            <location x="128" y="0" w="32" h="32"/>
         </texture>
         <texture name="eyes" crop="true">
-            <location x="64" y="0" w="8" h="8"/>
+            <location x="160" y="0" w="24" h="16"/>
         </texture>
-        <texture name="shadow" crop="true">
-            <location x="64" y="8" w="16" h="8"/>
+        <texture name="shadow">
+            <location x="184" y="0" w="32" h="32"/>
+        </texture>
+        <texture name="shadow-open-1">
+            <location x="216" y="0" w="32" h="32"/>
+        </texture>
+        <texture name="shadow-open-2">
+            <location x="248" y="0" w="32" h="32"/>
+        </texture>
+        <texture name="shadow-open-3">
+            <location x="280" y="0" w="32" h="32"/>
+        </texture>
+        <texture name="shadow-open-4">
+            <location x="312" y="0" w="32" h="32"/>
         </texture>
     </textures>
 
@@ -36,7 +52,7 @@
         <component id="shadow">
             <texture>shadow</texture>
             <opacity>0.5</opacity>
-            <offset x="0" y="7"/>
+            <offset x="-2" y="4"/>
         </component>
         <component id="body" body="true">
             <texture>walk</texture>
@@ -46,6 +62,51 @@
             <texture>eyes</texture>
         </component>
     </components>
+
+    <functions>
+        <function name="set-type">
+            <args>
+                <i>type</i>
+            </args>
+            <commands>
+                <if>
+                    <cond><op>
+                        <left><get>arg:type</get></left>
+                        <op>==</op>
+                        <right><json>0</json></right>
+                    </op></cond>
+                    <true>
+                        <set>
+                            <prop>~body.texture</prop>
+                            <value><json>"walk"</json></value>
+                        </set>
+                        <set>
+                            <prop>~shadow.texture</prop>
+                            <value><json>"shadow"</json></value>
+                        </set>
+                    </true>
+                    <false>
+                        <set>
+                            <prop>~body.texture</prop>
+                            <value><op>
+                                <left><json>"open-"</json></left>
+                                <op>+</op>
+                                <right><get>arg:type</get></right>
+                            </op></value>
+                        </set>
+                        <set>
+                            <prop>~shadow.texture</prop>
+                            <value><op>
+                                <left><json>"shadow-open-"</json></left>
+                                <op>+</op>
+                                <right><get>arg:type</get></right>
+                            </op></value>
+                        </set>
+                    </false>
+                </if>
+            </commands>
+        </function>
+    </functions>
 
     <animations>
         <animation name="walking" loop="true">
@@ -58,7 +119,7 @@
                 <set>
                     <prop>attackingTimer</prop>
                     <value><op>
-                        <left><json>3</json></left>
+                        <left><json>5</json></left>
                         <op>+</op>
                         <right><op>
                             <left><json>[-0.5, 0.5]</json></left>
@@ -70,6 +131,12 @@
                         </op></right>
                     </op></value>
                 </set>
+                <call>
+                    <prop>func:set-type</prop>
+                    <args>
+                        <json>0</json>
+                    </args>
+                </call>
             </start>
             <continual>
                 <set>
@@ -166,32 +233,55 @@
                     <cond><op>
                         <left><get>openTimer</get></left>
                         <op>lt</op>
-                        <right><json>0.167</json></right>
+                        <right><json>0.125</json></right>
                     </op></cond>
                     <true>
-                        <set>
-                            <prop>~body.texture</prop>
-                            <value><json>"open-3"</json></value>
-                        </set>
+                        <call>
+                            <func>func:set-type</func>
+                            <args>
+                                <json>4</json>
+                            </args>
+                        </call>
                     </true>
                     <false>
                         <if>
                             <cond><op>
                                 <left><get>openTimer</get></left>
                                 <op>lt</op>
-                                <right><json>0.333</json></right>
+                                <right><json>0.25</json></right>
                             </op></cond>
                             <true>
-                                <set>
-                                    <prop>~body.texture</prop>
-                                    <value><json>"open-2"</json></value>
-                                </set>
+                                <call>
+                                    <func>func:set-type</func>
+                                    <args>
+                                        <json>3</json>
+                                    </args>
+                                </call>
                             </true>
                             <false>
-                                <set>
-                                    <prop>~body.texture</prop>
-                                    <value><json>"open-1"</json></value>
-                                </set>
+                                <if>
+                                    <cond><op>
+                                        <left><get>openTimer</get></left>
+                                        <op>lt</op>
+                                        <right><json>0.375</json></right>
+                                    </op></cond>
+                                    <true>
+                                        <call>
+                                            <func>func:set-type</func>
+                                            <args>
+                                                <json>2</json>
+                                            </args>
+                                        </call>
+                                    </true>
+                                    <false>
+                                        <call>
+                                            <func>func:set-type</func>
+                                            <args>
+                                                <json>1</json>
+                                            </args>
+                                        </call>
+                                    </false>
+                                </if>
                             </false>
                         </if>
                     </false>
@@ -218,26 +308,36 @@
                     <prop>~eyes.dir</prop>
                     <value><get>~body.dir</get></value>
                 </set>
+                <set>
+                    <prop>~shadow.dir</prop>
+                    <value><get>~body.dir</get></value>
+                </set>
             </continual>
         </state>
         <state name="charging">
             <start>
                 <set>
                     <prop>chargingTimer</prop>
-                    <value><json>1.5</json></value>
+                    <value><json>2</json></value>
                 </set>
             </start>
             <stop>
-                <set>
-                    <prop>~body.texture</prop>
-                    <value><json>"walk"</json></value>
-                </set>
+                <call>
+                    <func>func:set-type</func>
+                    <args>
+                        <json>0</json>
+                    </args>
+                </call>
                 <set>
                     <prop>~body.dir</prop>
                     <value><json>0</json></value>
                 </set>
                 <set>
                     <prop>~eyes.dir</prop>
+                    <value><json>0</json></value>
+                </set>
+                <set>
+                    <prop>~shadow.dir</prop>
                     <value><json>0</json></value>
                 </set>
             </stop>
@@ -279,17 +379,21 @@
                     <prop>~eyes.dir</prop>
                     <value><get>~body.dir</get></value>
                 </set>
+                <set>
+                    <prop>~shadow.dir</prop>
+                    <value><get>~body.dir</get></value>
+                </set>
                 <call>
                     <func>gazeAt</func>
                     <args>
                         <get>engine.playerEntity.pos</get>
-                        <json>0.25</json>
+                        <json>0.05</json>
                     </args>
                 </call>
                 <call>
                     <func>knockInDir</func>
                     <args>
-                        <json>0.05</json>
+                        <json>0.075</json>
                     </args>
                 </call>
                 <if>
@@ -300,6 +404,56 @@
                         </call></left>
                         <op>lt</op>
                         <right><json>0.1</json></right>
+                    </op></cond>
+                    <true>
+                        <call>
+                            <func>engine.rootEntity.addEntity</func>
+                            <args>
+                                <call>
+                                    <func>createSplat</func>
+                                    <args>
+                                        <op>
+                                            <left><json>"mid-"</json></left>
+                                            <op>+</op>
+                                            <right><call>
+                                                <func>Math.ceil</func>
+                                                <args>
+                                                    <op>
+                                                        <left><call>
+                                                            <func>Math.random</func>
+                                                            <args></args>
+                                                        </call></left>
+                                                        <op>*</op>
+                                                        <right><json>3</json></right>
+                                                    </op>
+                                                </args>
+                                            </call></right>
+                                        </op>
+                                        <call>
+                                            <func>util.choose</func>
+                                            <args>
+                                                <json>[14, 15]</json>
+                                            </args>
+                                        </call>
+                                        <json>null</json>
+                                        <json>0.5</json>
+                                        <json>3</json>
+                                        <get>pos</get>
+                                        <json>0</json>
+                                    </args>
+                                </call>
+                            </args>
+                        </call>
+                    </true>
+                </if>
+                <if>
+                    <cond><op>
+                        <left><call>
+                            <func>Math.random</func>
+                            <args></args>
+                        </call></left>
+                        <op>lt</op>
+                        <right><json>0.5</json></right>
                     </op></cond>
                     <true>
                         <call>
@@ -332,16 +486,47 @@
                                             </args>
                                         </call>
                                         <json>null</json>
-                                        <json>0.75</json>
+                                        <json>0.5</json>
                                         <json>3</json>
                                         <get>pos</get>
-                                        <json>0</json>
+                                        <call>
+                                            <func>util.Vec2.dir</func>
+                                            <args>
+                                                <op>
+                                                    <left><get>dir</get></left>
+                                                    <op>+</op>
+                                                    <right><op>
+                                                        <left><json>[-15, 15]</json></left>
+                                                        <op>lerp</op>
+                                                        <right><call>
+                                                            <func>Math.random</func>
+                                                            <args></args>
+                                                        </call></right>
+                                                    </op></right>
+                                                </op>
+                                                <op>
+                                                    <left><json>[0, 8]</json></left>
+                                                    <op>lerp</op>
+                                                    <right><call>
+                                                        <func>Math.random</func>
+                                                        <args></args>
+                                                    </call></right>
+                                                </op>
+                                            </args>
+                                        </call>
                                     </args>
                                 </call>
                             </args>
                         </call>
                     </true>
                 </if>
+                <call>
+                    <func>engine.cameraEntity.addShakeFrom</func>
+                    <args>
+                        <get>pos</get>
+                        <json>0.25</json>
+                    </args>
+                </call>
             </continual>
         </state>
     </states>

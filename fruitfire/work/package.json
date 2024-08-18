@@ -3,7 +3,7 @@
 	"productName": "Celestial",
 	"description": "A Game!!!",
 	"scripts": {
-		"build": "rollup -c"
+		"build": "rollup -c; mv ~/Downloads/texturemap.png ../assets/texturemap.png"
 	},
 	"devDependencies": {
 		"@rollup/plugin-node-resolve": "^15.2.3",

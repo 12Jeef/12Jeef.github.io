@@ -81,7 +81,7 @@ export async function loadThemeData(): Promise<ThemeData> {
 }
 
 export type Command = {
-    action: "get" | "set" | "call" | "op" | "if" | "json" | "log" | "null",
+    action: "get" | "set" | "call" | "op" | "if" | "for" | "json" | "log" | "null",
 
     attr?: string,
 
@@ -98,6 +98,12 @@ export type Command = {
     cond?: Command,
     true_?: Commands,
     false_?: Commands,
+
+    start?: Command,
+    stop?: Command,
+    step?: Command,
+    of?: Command,
+    body?: Commands,
 
     json?: any,
 
@@ -126,7 +132,7 @@ function castCommand(data: Element | null): Command {
     }
     if (data.tagName === "call") {
         const func = data.querySelector(":scope > func") ?? EMPTYELEMENT;
-        const args = data.querySelector(":scope > args") ?? EMPTYELEMENT;
+        const args = data.querySelector(":scope > args");
         return {
             action: "call",
 
@@ -148,14 +154,46 @@ function castCommand(data: Element | null): Command {
     }
     if (data.tagName === "if") {
         const cond = data.querySelector(":scope > cond") ?? EMPTYELEMENT;
-        const true_ = data.querySelector(":scope > true") ?? EMPTYELEMENT;
-        const false_ = data.querySelector(":scope > false") ?? EMPTYELEMENT;
+        const true_ = data.querySelector(":scope > true");
+        const false_ = data.querySelector(":scope > false");
         return {
             action: "if",
 
             cond: castCommand(cond.children[0]),
             true_: castCommands(true_),
             false_: castCommands(false_),
+        };
+    }
+    if (data.tagName === "for") {
+        const start = data.querySelector(":scope > start") ?? EMPTYELEMENT;
+        const stop = data.querySelector(":scope > stop") ?? EMPTYELEMENT;
+        const step = data.querySelector(":scope > step") ?? EMPTYELEMENT;
+        const of = data.querySelector(":scope > of");
+        const body = data.querySelector(":scope > body");
+        if (of) return {
+            action: "for",
+
+            of: castCommand(of.children[0]),
+
+            body: castCommands(body),
+        };
+        return {
+            action: "for",
+
+            start: start.children[0] ? castCommand(start.children[0]) : {
+                action: "json",
+                json: 0,
+            },
+            stop: stop.children[0] ? castCommand(stop.children[0]) : {
+                action: "json",
+                json: 0,
+            },
+            step: step.children[0] ? castCommand(step.children[0]) : {
+                action: "json",
+                json: 1,
+            },
+
+            body: castCommands(body),
         };
     }
     if (data.tagName === "json") {
@@ -331,6 +369,7 @@ export type EnemyData = {
     size: number,
     health: number,
     colors: number[],
+    part: boolean,
     location: Location,
 
     textures: Textures,
@@ -364,6 +403,7 @@ export async function loadEnemyData(type: string): Promise<EnemyData> {
         size: parseFloat(body.querySelector(":scope > size")?.textContent ?? "0"),
         health: parseFloat(body.querySelector(":scope > health")?.textContent ?? "0"),
         colors: Array.from((body.querySelector(":scope > colors") ?? EMPTYELEMENT).children).map(child => parseInt(child.textContent ?? "0")),
+        part: !!body.querySelector(":scope > part"),
         location: location,
 
         textures: textures,
@@ -377,28 +417,38 @@ export async function loadEnemyData(type: string): Promise<EnemyData> {
     };
 }
 
-export type ParticleList = string[];
-export async function loadParticleList(): Promise<ParticleList> {
+export type ParticlesData = {
+    list: string[],
+    location: Location,
+};
+export async function loadParticleList(): Promise<ParticlesData> {
     const resp = await fetch("./assets/particles/index.xml");
     const text = await resp.text();
     const data = PARSER.parseFromString(text, "text/xml") as XMLDocument;
     const body = data.querySelector("body");
     if (!body) throw "Error loading index.xml: No body found";
-    return Array.from(body.children).filter(item => item.tagName === "i").map(item => item.textContent ?? "");
+    return {
+        list: Array.from((body.querySelector(":scope > types") ?? EMPTYELEMENT).children).filter(item => item.tagName === "i").map(item => item.textContent ?? ""),
+        location: castLocation(body.querySelector(":scope > location")),
+    };
 }
 
 export type ParticleData = {
     texture: Texture,
 };
-export async function loadParticleData(type: string): Promise<ParticleData> {
+export async function loadParticleData(type: string, particlesData: ParticlesData): Promise<ParticleData> {
     const resp = await fetch("./assets/particles/"+type+".xml");
     const text = await resp.text();
     const data = PARSER.parseFromString(text, "text/xml") as XMLDocument;
     const body = data.querySelector("body");
     if (!body) throw "Error loading "+type+".xml: No body found";
 
+    const texture = castTexture(body.querySelector(":scope > texture"));
+    texture.location.x += particlesData.location.x;
+    texture.location.y += particlesData.location.y;
+
     return {
-        texture: castTexture(body.querySelector(":scope > texture")),
+        texture: texture,
     };
 }
 
@@ -551,16 +601,18 @@ export function createTextureSource(source: HTMLImageElement, texture: Texture, 
     };
 
 }
-export type ParticleTextureSource = {
+export type ColorMappedTextureSource = {
     texture: Texture,
     padding: number,
 
     generator: (color: util.Color) => HTMLCanvasElement,
 };
-export function createParticleTextureSource(source: HTMLImageElement, texture: Texture, padding: number = 8): ParticleTextureSource {
+export function createColorMappedTextureSource(source: HTMLImageElement, texture: Texture, padding: number = 8): ColorMappedTextureSource {
     const { original } = createTextureSource(source, texture, padding);
     const originalCtx = original.getContext("2d");
     if (!originalCtx) throw "How did this happen?";
+
+    const originalImageData = originalCtx.getImageData(0, 0, original.width, original.height);
 
     const colors: util.StringMap<HTMLCanvasElement> = {};
 
@@ -570,18 +622,20 @@ export function createParticleTextureSource(source: HTMLImageElement, texture: T
 
         generator: (color: util.Color) => {
             if (color.toHex(false) in colors) return colors[color.toHex(false)];
+            const newRGB = color.rgb;
             const { canvas, ctx } = createCanvas();
             canvas.width = original.width;
             canvas.height = original.height;
-            const originalImageData = originalCtx.getImageData(0, 0, original.width, original.height);
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             for (let x = 0; x < original.width; x++) {
                 for (let y = 0; y < original.height; y++) {
-                    imageData.data[(x + y*original.width)*4 + 0] = color.r;
-                    imageData.data[(x + y*original.width)*4 + 1] = color.g;
-                    imageData.data[(x + y*original.width)*4 + 2] = color.b;
                     imageData.data[(x + y*original.width)*4 + 3] = originalImageData.data[(x + y*original.width)*4 + 3];
-                }
+                    const oldRGB = new Array(3).fill(null).map((_, i) => originalImageData.data[(x + y*original.width)*4 + i]) as util.vec3;
+                    if (oldRGB[0] !== oldRGB[1]) continue;
+                    if (oldRGB[1] !== oldRGB[2]) continue;
+                    const p = oldRGB[0] / 255;
+                    for (let i = 0; i < 3; i++)
+                        imageData.data[(x + y*original.width)*4 + i] = util.lerp(newRGB[i], 255, p);                }
             }
             ctx.putImageData(imageData, 0, 0);
             return colors[color.toHex(false)] = canvas;

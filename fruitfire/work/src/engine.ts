@@ -32,7 +32,6 @@ export class Entity extends util.Target {
     public readonly realPos;
     public readonly realVel;
     private _realDir;
-    public readonly chunkPos;
     private readonly collidings;
 
     private _maxHealth;
@@ -47,7 +46,10 @@ export class Entity extends util.Target {
     public group;
 
     private _z;
+    public alwaysRender;
+    protected inRenderDistance;
     private readonly _entities: Entity[];
+    private entitySort;
 
     public constructor(options: EntityOptions) {
         super();
@@ -75,7 +77,6 @@ export class Entity extends util.Target {
         this.realVel = new util.Vec2();
         this._realDir = 0;
 
-        this.chunkPos = new util.Vec2();
         this.collidings = new Set<string>();
 
         this._maxHealth = 0;
@@ -90,7 +91,10 @@ export class Entity extends util.Target {
         this.group = "";
 
         this._z = 0;
+        this.alwaysRender = false;
+        this.inRenderDistance = true;
         this._entities = [];
+        this.entitySort = false;
 
         this.pos.set(options.pos);
         this.vel.set(options.vel);
@@ -131,12 +135,10 @@ export class Entity extends util.Target {
     public get realDir() { return this._realDir; }
 
     private computeReals() {
+        this.engine.remFromChunks(this);
         this.realPos.set(this.getRealPos());
         this.realVel.set(this.getRealVel());
         this._realDir = this.getRealDir();
-
-        this.engine.remFromChunks(this);
-        this.chunkPos.set(this.realPos.div(this.engine.collisionChunkSize).iround());
         this.engine.addToChunks(this);
 
         this._entities.forEach(entity => entity.computeReals());
@@ -170,7 +172,10 @@ export class Entity extends util.Target {
         this._radius = value;
         if (this.addedToParent) this.engine.addToChunks(this);
     }
-    public get chunkRadius() { return Math.ceil(this.radius / this.engine.collisionChunkSize); }
+    public get chunkMinX() { return Math.round((this.realPos.x - this.radius) / this.engine.collisionChunkSize); }
+    public get chunkMaxX() { return Math.round((this.realPos.x + this.radius) / this.engine.collisionChunkSize); }
+    public get chunkMinY() { return Math.round((this.realPos.y - this.radius) / this.engine.collisionChunkSize); }
+    public get chunkMaxY() { return Math.round((this.realPos.y + this.radius) / this.engine.collisionChunkSize); }
 
     public get density() { return this._density; }
     public set density(value) { this._density = Math.max(0, value); }
@@ -199,8 +204,14 @@ export class Entity extends util.Target {
         if (entity.parent !== this) return null;
         if (this.hasEntity(entity)) return entity;
         this._entities.push(entity);
-        entity.addLinkedHandler(this, "z-change", () => this.sortEntities());
-        this.sortEntities();
+        entity.addLinkedHandler(this, "z-change", () => {
+            const index = this._entities.indexOf(entity);
+            if (index-1 >= 0 && entity.z < this._entities[index-1].z)
+                return this.entitySort = true;
+            if (index+1 < this._entities.length && entity.z > this._entities[index+1].z)
+                return this.entitySort = true;
+        });
+        this.entitySort = true;
         entity.onAdd();
         return entity;
     }
@@ -249,12 +260,13 @@ export class Entity extends util.Target {
     }
 
     private handleCollision(other: Entity, dist: number, rule: number) {
+        const knock = -dist*other.knockScale*(this.knockIgnoreMass ? 1 : (other.mass/this.mass));
         if (rule & Engine.COLLISIONPUSH) {
-            this.knockDir(other.realPos.towards(this.realPos), -dist*other.knockScale*(this.knockIgnoreMass ? 1 : (other.mass/this.mass))*0.01);
+            this.knockDir(other.realPos.towards(this.realPos), Math.min(8, knock*0.01));
         }
         if (rule & Engine.COLLISIONDAMAGE) {
             if (!this.invincible) this.health -= other.damage;
-            this.knockDir(other.realPos.towards(this.realPos), -dist*other.knockScale*(this.knockIgnoreMass ? 1 : (other.mass/this.mass))*0.05);
+            this.knockDir(other.realPos.towards(this.realPos), Math.min(8, knock*0.05));
         }
     }
 
@@ -270,17 +282,21 @@ export class Entity extends util.Target {
             this.computeReals();
         }
         this.collidings.clear();
+        if (this.entitySort) {
+            this.entitySort = false;
+            this.sortEntities();
+        }
         this._entities.forEach(entity => entity.preUpdate());
     }
     public update(delta: number) {
         if (this.radius) {
-            this.engine.getChunkEntities(this).forEach(entity => {
+            this.engine.forEachChunkEntity(this, entity => {
                 if (entity === this) return;
 
                 if (!entity.radius) return;
 
                 const rule1 = this.engine.getCollisionRule(this.group, entity.group);
-                const rule2 = this.engine.getCollisionRule(this.group, entity.group);
+                const rule2 = this.engine.getCollisionRule(entity.group, this.group);
                 if (!rule1 && !rule2) return;
 
                 if (this.collidings.has(entity.id)) return;
@@ -304,20 +320,27 @@ export class Entity extends util.Target {
         this.internalUpdate(delta);
         this._entities.forEach(entity => entity.update(delta));
     }
-    protected internalUpdate(delta: number) {}
+    protected internalUpdate(delta: number) {
+        this.inRenderDistance = this.realPos.distSquared(this.engine.cameraEntity?.getPos() ?? 0) < this.engine.renderDistanceSquared;
+    }
     public render() {
+        const doRender = this.alwaysRender || this.inRenderDistance;
         this._entities.forEach((entity, i) => {
             if (entity.z >= 0) {
                 if (i <= 0 || this._entities[i-1].z < 0)
-                    this.internalRender();
+                    if (doRender)
+                        this.internalRender();
             }
             entity.render();
             if (entity.z < 0) {
                 if (i >= this._entities.length-1)
-                    this.internalRender();
+                    if (doRender)
+                        this.internalRender();
             }
         });
-        if (this._entities.length <= 0) this.internalRender();
+        if (this._entities.length <= 0)
+            if (doRender)
+                this.internalRender();
     }
     protected internalRender() {}
 }
@@ -478,7 +501,7 @@ export default class Engine extends util.Target {
     private readonly onMouseDown;
     private readonly onMouseUp;
 
-    private readonly collisionMatrix: Map<string, Map<string, number>>;
+    private readonly collisionMatrix: util.StringMap<util.StringMap<number>>;
     private readonly collisionChunks: Map<number, Map<number, Set<Entity>>>;
     public readonly collisionChunkSize;
 
@@ -517,9 +540,9 @@ export default class Engine extends util.Target {
             this.post("mouseup", e);
         };
 
-        this.collisionMatrix = new Map();
+        this.collisionMatrix = {};
         this.collisionChunks = new Map();
-        this.collisionChunkSize = 100;
+        this.collisionChunkSize = 25;
 
         this._ctx = options.ctx;
         this._bindTarget = null;
@@ -576,80 +599,65 @@ export default class Engine extends util.Target {
     public setCollisionRule(target: string, other: string, rule: number) {
         if (rule < 0) return;
         if (rule % 1 !== 0) return;
-        if (!this.collisionMatrix.has(target))
-            this.collisionMatrix.set(target, new Map());
-        this.collisionMatrix.get(target)?.set(other, rule);
+        if (!this.collisionMatrix[target])
+            this.collisionMatrix[target] = {};
+        this.collisionMatrix[target][other] = rule;
     }
     public getCollisionRule(target: string, other: string) {
-        if (!this.collisionMatrix.has(target))
+        if (!this.collisionMatrix[target])
             return 0;
-        return this.collisionMatrix.get(target)?.get(other) ?? 0;
+        return this.collisionMatrix[target][other] ?? 0;
     }
     public setMutualCollisionRule(group1: string, group2: string, rule: number) {
         this.setCollisionRule(group1, group2, rule);
         this.setCollisionRule(group2, group1, rule);
     }
     public addToChunks(entity: Entity) {
-        const chunkPos = entity.chunkPos;
-        for (let x = -entity.chunkRadius; x <= entity.chunkRadius; x++) {
-            for (let y = -entity.chunkRadius; y <= entity.chunkRadius; y++) {
-                let rx = x + chunkPos.x;
-                let ry = y + chunkPos.y;
+        for (let x = entity.chunkMinX; x <= entity.chunkMaxX; x++) {
+            for (let y = entity.chunkMinY; y <= entity.chunkMaxY; y++) {
+                if (!this.collisionChunks.has(x))
+                    this.collisionChunks.set(x, new Map());
 
-                if (!this.collisionChunks.has(rx))
-                    this.collisionChunks.set(rx, new Map());
+                if (!this.collisionChunks.get(x)?.has(y))
+                    this.collisionChunks.get(x)?.set(y, new Set());
 
-                if (!this.collisionChunks.get(rx)?.has(ry))
-                    this.collisionChunks.get(rx)?.set(ry, new Set());
-
-                this.collisionChunks.get(rx)?.get(ry)?.add(entity);
+                this.collisionChunks.get(x)?.get(y)?.add(entity);
             }
         }
     }
     public remFromChunks(entity: Entity) {
-        const chunkPos = entity.chunkPos;
-        for (let x = -entity.chunkRadius; x <= entity.chunkRadius; x++) {
-            for (let y = -entity.chunkRadius; y <= entity.chunkRadius; y++) {
-                let rx = x + chunkPos.x;
-                let ry = y + chunkPos.y;
+        for (let x = entity.chunkMinX; x <= entity.chunkMaxX; x++) {
+            for (let y = entity.chunkMinY; y <= entity.chunkMaxY; y++) {
+                if (!this.collisionChunks.has(x)) continue;
+                if (!this.collisionChunks.get(x)?.has(y)) continue;
 
-                if (!this.collisionChunks.has(rx)) continue;
-                if (!this.collisionChunks.get(rx)?.has(ry)) continue;
+                this.collisionChunks.get(x)?.get(y)?.delete(entity);
 
-                this.collisionChunks.get(rx)?.get(ry)?.delete(entity);
+                if (this.collisionChunks.get(x)?.get(y)?.size ?? 0 > 0) continue;
+                this.collisionChunks.get(x)?.delete(y);
 
-                if (this.collisionChunks.get(rx)?.get(ry)?.size ?? 0 > 0) continue;
-                this.collisionChunks.get(rx)?.delete(ry);
-
-                if (this.collisionChunks.get(rx)?.size ?? 0 > 0) continue;
-                this.collisionChunks.delete(rx);
+                if (this.collisionChunks.get(x)?.size ?? 0 > 0) continue;
+                this.collisionChunks.delete(x);
             }
         }
     }
-    public getChunkEntities(entity: Entity) {
-        let entities = [];
-        const chunkPos = entity.chunkPos;
-        for (let x = -entity.chunkRadius; x <= entity.chunkRadius; x++) {
-            for (let y = -entity.chunkRadius; y <= entity.chunkRadius; y++) {
-                let rx = chunkPos.x + x;
-                let ry = chunkPos.y + y;
-
-                if (!this.collisionChunks.has(rx)) continue;
-                if (!this.collisionChunks.get(rx)?.has(ry)) continue;
-
-                entities.push(...this.collisionChunks.get(rx)?.get(ry) ?? []);
+    public forEachChunkEntity(entity: Entity, callback: (entity: Entity) => void) {
+        for (let x = entity.chunkMinX; x <= entity.chunkMaxX; x++) {
+            for (let y = entity.chunkMinY; y <= entity.chunkMaxY; y++) {
+                if (!this.collisionChunks.has(x)) continue;
+                if (!this.collisionChunks.get(x)?.has(y)) continue;
+                (this.collisionChunks.get(x)?.get(y) ?? []).forEach(callback);
             }
         }
-        return entities;
     }
 
-    private get cameraFov() { return this.cameraEntity ? this.cameraEntity.getFov() : 1; }
+    private get cameraFov() { return this.cameraEntity?.getFov() ?? 1; }
     public worldToCtxLen(value: number) {
         return value / this.cameraFov;
     }
     public worldToCtxPos(value: util.Vec2) {
         return value
-            .sub(this.cameraEntity ? this.cameraEntity.getPos() : 0)
+            .sub(this.cameraEntity?.getPos() ?? 0)
             .imul([1, -1])
             .idiv(this.cameraFov)
             .iadd([this.ctx.canvas.width/2, this.ctx.canvas.height/2]);
@@ -662,8 +670,13 @@ export default class Engine extends util.Target {
             .sub([this.ctx.canvas.width/2, this.ctx.canvas.height/2])
             .imul(this.cameraFov)
             .imul([1, -1])
-            .iadd(this.cameraEntity ? this.cameraEntity.getPos() : 0);
+            .iadd(this.cameraEntity?.getPos() ?? 0);
     }
+
+    public get renderDistanceSquared() {
+        return (this.ctxToWorldLen(this.ctx.canvas.width)**2 + this.ctxToWorldLen(this.ctx.canvas.height)**2) * (0.75 ** 2);
+    }
+    public get renderDistance() { return Math.sqrt(this.renderDistanceSquared); }
 
     public update(delta: number) {
         this.rootEntity.preUpdate();

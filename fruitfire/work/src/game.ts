@@ -30,8 +30,10 @@ class Background extends ModifiedEntity {
 
             group: "deco",
 
-            z: -1,
+            z: -1e10,
         });
+
+        this.alwaysRender = true;
     }
 
     protected internalRender() {
@@ -75,6 +77,7 @@ type ParticleOptions = {
     time?: number,
 
     pos?: util.VectorLike,
+    vel?: util.VectorLike,
     dir?: number,
 };
 class Particle extends Entity {
@@ -89,6 +92,7 @@ class Particle extends Entity {
             parent: options.parent,
 
             pos: options.pos,
+            vel: options.vel,
             dir: options.dir,
 
             maxHealth: 1,
@@ -119,6 +123,8 @@ class Particle extends Entity {
 
     protected internalUpdate(delta: number) {
         super.internalUpdate(delta);
+
+        if (!this.inRenderDistance) this.health = 0;
 
         this.time -= delta;
         if (this.time <= 0) this.health = 0;
@@ -164,6 +170,7 @@ type SplatOptions = {
     time?: number,
 
     pos?: util.VectorLike,
+    vel?: util.VectorLike,
 };
 class Splat extends Particle {
     private readonly maxTime;
@@ -180,6 +187,7 @@ class Splat extends Particle {
             time: options.time,
 
             pos: options.pos,
+            vel: options.vel,
             dir: 360 * Math.random(),
         });
 
@@ -280,10 +288,13 @@ class Command extends util.Target {
     }
     private static compileCommand(commandObject: Command, command: loader.Command): () => any {
         if (command.action === "get") {
-            const objectAndKey = this.getObjectAndKey(commandObject, command.attr ?? "");
-            if (!objectAndKey) return () => null;
-            const { object, key } = objectAndKey;
+            // const objectAndKey = this.getObjectAndKey(commandObject, command.attr ?? "");
+            // if (!objectAndKey) return () => null;
+            // const { object, key } = objectAndKey;
             return () => {
+                const objectAndKey = this.getObjectAndKey(commandObject, command.attr ?? "");
+                if (!objectAndKey) return null;
+                const { object, key } = objectAndKey;
                 let value = object[key];
                 if (typeof(value) === "function") value = value.bind(object);
                 return value;
@@ -292,20 +303,26 @@ class Command extends util.Target {
         if (command.action === "set") {
             if (!command.value) return () => null;
             const value = this.compileCommand(commandObject, command.value);
-            const objectAndKey = this.getObjectAndKey(commandObject, command.prop ?? "");
-            if (!objectAndKey) return () => null;
-            const { object, key } = objectAndKey;
+            // const objectAndKey = this.getObjectAndKey(commandObject, command.prop ?? "");
+            // if (!objectAndKey) return () => null;
+            // const { object, key } = objectAndKey;
             return () => {
+                const objectAndKey = this.getObjectAndKey(commandObject, command.prop ?? "");
+                if (!objectAndKey) return null;
+                const { object, key } = objectAndKey;
                 object[key] = value();
             };
         }
         if (command.action === "call") {
             if (!command.args) return () => null;
             const args = this.compileCommands(commandObject, command.args);
-            const objectAndKey = this.getObjectAndKey(commandObject, command.func ?? "");
-            if (!objectAndKey) return () => null;
-            const { object, key } = objectAndKey;
+            // const objectAndKey = this.getObjectAndKey(commandObject, command.func ?? "");
+            // if (!objectAndKey) return () => null;
+            // const { object, key } = objectAndKey;
             return () => {
+                const objectAndKey = this.getObjectAndKey(commandObject, command.func ?? "");
+                if (!objectAndKey) return null;
+                const { object, key } = objectAndKey;
                 let value = object[key];
                 if (typeof(value) !== "function") return null;
                 return value.bind(object)(...args.map(arg => arg()));
@@ -384,6 +401,30 @@ class Command extends util.Target {
                 return (cond() ? true_ : false_).map(cmd => cmd());
             };
         }
+        if (command.action === "for") {
+            if (!command.of && !command.stop) return () => null;
+            if (!command.body) return () => null;
+            const start = command.start ? this.compileCommand(commandObject, command.start) : (() => 0);
+            const stop = command.stop ? this.compileCommand(commandObject, command.stop) : (() => 0);
+            const step = command.step ? this.compileCommand(commandObject, command.step) : (() => 1);
+            const body = new Command(commandObject, command.body ?? []);
+            if (command.of) {
+                body.args = ["i", "value"];
+                const of = this.compileCommand(commandObject, command.of);
+                return () => {
+                    const results: any[] = [];
+                    util.castArray(of()).forEach((value, i) => results.push(body.executeWithArgs(i, value)));
+                    return results;
+                };
+            }
+            body.args = ["i"];
+            return () => {
+                const results = [];
+                for (let i = start(); i < stop(); i += step())
+                    results.push(body.executeWithArgs(i));
+                return results;
+            };
+        }
         if (command.action === "json") {
             return () => (command.json ?? null);
         }
@@ -397,16 +438,16 @@ class Command extends util.Target {
         return commands.map(command => this.compileCommand(commandObject, command));
     }
 
-    public readonly enemy;
+    public readonly enemy: Enemy;
     private readonly _args: string[];
     private readonly argValues: util.StringMap<any>;
 
     private readonly compiled: (() => any)[];
 
-    constructor(enemy: Enemy, commands: loader.Commands) {
+    constructor(enemyOrCommand: Enemy | Command, commands: loader.Commands) {
         super();
 
-        this.enemy = enemy;
+        this.enemy = (enemyOrCommand instanceof Enemy) ? enemyOrCommand : enemyOrCommand.enemy;
         this._args = [];
         this.argValues = {};
 
@@ -427,7 +468,7 @@ class Command extends util.Target {
     }
 
     public execute() {
-        this.compiled.forEach(cmd => cmd());
+        return this.compiled.map(cmd => cmd());
     }
     public executeWithArgs(...args: any[]) {
         this.clearArgValues();
@@ -699,6 +740,8 @@ class Enemy extends ModifiedEntity {
         super.health = value;
     }
 
+    public get damageFlash() { return util.getTime() - this.latestDamage < 50; }
+
     public get animation() { return this._animation; }
     public set animation(value) {
         if (this.animation === value) return;
@@ -755,7 +798,7 @@ class Enemy extends ModifiedEntity {
             const textureSource = (this.engine as Game).getEnemyTextureSource(this.type, component.texture);
             if (!textureSource) continue;
             const texture =
-                (component.isBody && util.getTime() - this.latestDamage < 50) ? textureSource.whiteAndOutline :
+                (component.isBody && this.damageFlash) ? textureSource.whiteAndOutline :
                 (component.type === "original") ? textureSource.original :
                 (component.type === "outlined") ? textureSource.originalAndOutline :
                 (component.type === "white") ? textureSource.white :
@@ -784,6 +827,23 @@ class Enemy extends ModifiedEntity {
         ctx.restore();
     }
 
+    public copy(args: any[]) {
+        return [...args];
+    }
+    public concat(...args: any[]) {
+        return args;
+    }
+    public push(array: any[], value: any) {
+        array.push(value);
+        return array;
+    }
+    public pop(array: any[]) {
+        return array.pop();
+    }
+    public get(array: any[], i: number) {
+        return array[i];
+    }
+
     public getLookingOffset() {
         let x = 0, y = 0;
         if (Math.abs(util.angleRelDegrees(this.dir, 0)) < 45+22.5) x++;
@@ -792,11 +852,11 @@ class Enemy extends ModifiedEntity {
         if (Math.abs(util.angleRelDegrees(this.dir, 270)) < 45+22.5) y++;
         return new util.Vec2([x, y]);
     }
-    public createSplat(type?: string, color?: number, scale?: number, opacity?: number, time?: number, pos?: util.VectorLike) {
+    public createSplat(type?: string, color?: number, scale?: number, opacity?: number, time?: number, pos?: util.VectorLike, vel?: util.VectorLike) {
         return new Splat({
             parent: this.engine.rootEntity,
 
-            type: (type ?? ""),
+            type: type ?? "",
             color: color ?? [0, 0, 0, 255],
 
             scale: (scale ?? 1) * util.lerp(0.9, 1.1, Math.random()),
@@ -805,6 +865,18 @@ class Enemy extends ModifiedEntity {
             time: (time ?? 0) * 1000,
 
             pos: pos,
+            vel: vel,
+        });
+    }
+    public createEnemy(type?: string, pos?: util.VectorLike, vel?: util.VectorLike, dir?: number) {
+        return new Enemy({
+            parent: this.engine.rootEntity,
+
+            pos: pos,
+            vel: vel,
+            dir: dir,
+
+            type: type ?? "",
         });
     }
 }
@@ -814,13 +886,13 @@ export default class Game extends Engine {
     private _themeData: loader.ThemeData | null;
     private _enemyList: loader.EnemyList | null;
     private _enemyDatas: util.StringMap<loader.EnemyData> | null;
-    private _particleList: loader.ParticleList | null;
+    private _particlesData: loader.ParticlesData | null;
     private _particleDatas: util.StringMap<loader.ParticleData> | null;
     private _textureMap: HTMLImageElement | null;
 
     private readonly themeColors: util.Color[];
     private readonly enemyTextures: util.StringMap<util.StringMap<loader.TextureSource>>;
-    private readonly particleTextures: util.StringMap<loader.ParticleTextureSource>;
+    private readonly particleTextures: util.StringMap<loader.ColorMappedTextureSource>;
 
     private playerEntity: Player | null;
 
@@ -830,7 +902,7 @@ export default class Game extends Engine {
         this._themeData = null;
         this._enemyList = null;
         this._enemyDatas = null;
-        this._particleList = null;
+        this._particlesData = null;
         this._particleDatas = null;
         this._textureMap = null;
         
@@ -863,11 +935,13 @@ export default class Game extends Engine {
         }));
 
         this.enemyList.forEach(type => {
+            if (this.enemyDatas[type].part) return;
             const types = this.enemyDatas[type].type;
             let n = 3;
             if (types.includes("explosive")) n = 5;
             if (types.includes("swarm")) n = 10;
-            if (types.includes("max")) n = 1;
+            if (types.includes("max") || types.includes("boss")) n = 1;
+            n *= 10;
             for (let i = 0; i < n; i++)
                 this.rootEntity.addEntity(new Enemy({
                     parent: this.rootEntity,
@@ -887,10 +961,10 @@ export default class Game extends Engine {
         await Promise.all(this.enemyList.map(async type => {
             this.enemyDatas[type] = await loader.loadEnemyData(type);
         }));
-        this._particleList = await loader.loadParticleList();
+        this._particlesData = await loader.loadParticleList();
         this._particleDatas = {};
-        await Promise.all(this.particleList.map(async type => {
-            this.particleDatas[type] = await loader.loadParticleData(type);
+        await Promise.all(this.particlesData.list.map(async type => {
+            this.particleDatas[type] = await loader.loadParticleData(type, this.particlesData);
         }));
         this._textureMap = await loader.loadFile();
 
@@ -914,8 +988,8 @@ export default class Game extends Engine {
                 this.enemyTextures[type][name] = loader.createTextureSource(this.textureMap, this.enemyDatas[type].textures[name]);
         });
 
-        this.particleList.forEach(type => {
-            this.particleTextures[type] = loader.createParticleTextureSource(this.textureMap, this.particleDatas[type].texture);
+        this.particlesData.list.forEach(type => {
+            this.particleTextures[type] = loader.createColorMappedTextureSource(this.textureMap, this.particleDatas[type].texture);
         });
 
         this.init();
@@ -933,9 +1007,9 @@ export default class Game extends Engine {
         if (!this._enemyDatas) throw "Enemy datas not fully loaded yet";
         return this._enemyDatas;
     }
-    public get particleList() {
-        if (!this._particleList) throw "Particle list not fully loaded yet";
-        return this._particleList;
+    public get particlesData() {
+        if (!this._particlesData) throw "Particles data not fully loaded yet";
+        return this._particlesData;
     }
     public get particleDatas() {
         if (!this._particleDatas) throw "Particle datas not fully loaded yet";
@@ -957,7 +1031,7 @@ export default class Game extends Engine {
         if (!this.enemyTextures[type][textureName]) return null;
         return this.enemyTextures[type][textureName];
     }
-    public getParticleTextureSource(type: string): loader.ParticleTextureSource | null {
+    public getParticleTextureSource(type: string): loader.ColorMappedTextureSource | null {
         if (!this.particleTextures[type]) return null;
         return this.particleTextures[type];
     }

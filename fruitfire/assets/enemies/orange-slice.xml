@@ -123,6 +123,7 @@
                                         <json>0.5</json>
                                         <json>5</json>
                                         <get>pos</get>
+                                        <json>0</json>
                                     </args>
                                 </call>
                             </args>

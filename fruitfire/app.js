@@ -1779,7 +1779,6 @@ class Entity extends Target {
     realPos;
     realVel;
     _realDir;
-    chunkPos;
     collidings;
     _maxHealth;
     _health;
@@ -1791,7 +1790,10 @@ class Entity extends Target {
     invincible;
     group;
     _z;
+    alwaysRender;
+    inRenderDistance;
     _entities;
+    entitySort;
     constructor(options) {
         super();
         this.id = jargonBase64(1 << 8);
@@ -1812,7 +1814,6 @@ class Entity extends Target {
         this.realPos = new Vec2();
         this.realVel = new Vec2();
         this._realDir = 0;
-        this.chunkPos = new Vec2();
         this.collidings = new Set();
         this._maxHealth = 0;
         this._health = 0;
@@ -1824,7 +1825,10 @@ class Entity extends Target {
         this.invincible = false;
         this.group = "";
         this._z = 0;
+        this.alwaysRender = false;
+        this.inRenderDistance = true;
         this._entities = [];
+        this.entitySort = false;
         this.pos.set(options.pos);
         this.vel.set(options.vel);
         this.dir = options.dir ?? 0;
@@ -1858,11 +1862,10 @@ class Entity extends Target {
     }
     get realDir() { return this._realDir; }
     computeReals() {
+        this.engine.remFromChunks(this);
         this.realPos.set(this.getRealPos());
         this.realVel.set(this.getRealVel());
         this._realDir = this.getRealDir();
-        this.engine.remFromChunks(this);
-        this.chunkPos.set(this.realPos.div(this.engine.collisionChunkSize).iround());
         this.engine.addToChunks(this);
         this._entities.forEach(entity => entity.computeReals());
     }
@@ -1899,7 +1902,10 @@ class Entity extends Target {
         if (this.addedToParent)
             this.engine.addToChunks(this);
     }
-    get chunkRadius() { return Math.ceil(this.radius / this.engine.collisionChunkSize); }
+    get chunkMinX() { return Math.round((this.realPos.x - this.radius) / this.engine.collisionChunkSize); }
+    get chunkMaxX() { return Math.round((this.realPos.x + this.radius) / this.engine.collisionChunkSize); }
+    get chunkMinY() { return Math.round((this.realPos.y - this.radius) / this.engine.collisionChunkSize); }
+    get chunkMaxY() { return Math.round((this.realPos.y + this.radius) / this.engine.collisionChunkSize); }
     get density() { return this._density; }
     set density(value) { this._density = Math.max(0, value); }
     get mass() { return this.density * (4 / 3) * Math.PI * (this.radius ** 3); }
@@ -1927,8 +1933,14 @@ class Entity extends Target {
         if (this.hasEntity(entity))
             return entity;
         this._entities.push(entity);
-        entity.addLinkedHandler(this, "z-change", () => this.sortEntities());
-        this.sortEntities();
+        entity.addLinkedHandler(this, "z-change", () => {
+            const index = this._entities.indexOf(entity);
+            if (index - 1 >= 0 && entity.z < this._entities[index - 1].z)
+                return this.entitySort = true;
+            if (index + 1 < this._entities.length && entity.z > this._entities[index + 1].z)
+                return this.entitySort = true;
+        });
+        this.entitySort = true;
         entity.onAdd();
         return entity;
     }
@@ -1973,13 +1985,14 @@ class Entity extends Target {
         return this.gaze(angleRel);
     }
     handleCollision(other, dist, rule) {
+        const knock = -dist * other.knockScale * (this.knockIgnoreMass ? 1 : (other.mass / this.mass));
         if (rule & Engine.COLLISIONPUSH) {
-            this.knockDir(other.realPos.towards(this.realPos), -dist * other.knockScale * (this.knockIgnoreMass ? 1 : (other.mass / this.mass)) * 0.01);
+            this.knockDir(other.realPos.towards(this.realPos), Math.min(8, knock * 0.01));
         }
         if (rule & Engine.COLLISIONDAMAGE) {
             if (!this.invincible)
                 this.health -= other.damage;
-            this.knockDir(other.realPos.towards(this.realPos), -dist * other.knockScale * (this.knockIgnoreMass ? 1 : (other.mass / this.mass)) * 0.05);
+            this.knockDir(other.realPos.towards(this.realPos), Math.min(8, knock * 0.05));
         }
     }
     preUpdate() {
@@ -1994,17 +2007,21 @@ class Entity extends Target {
             this.computeReals();
         }
         this.collidings.clear();
+        if (this.entitySort) {
+            this.entitySort = false;
+            this.sortEntities();
+        }
         this._entities.forEach(entity => entity.preUpdate());
     }
     update(delta) {
         if (this.radius) {
-            this.engine.getChunkEntities(this).forEach(entity => {
+            this.engine.forEachChunkEntity(this, entity => {
                 if (entity === this)
                     return;
                 if (!entity.radius)
                     return;
                 const rule1 = this.engine.getCollisionRule(this.group, entity.group);
-                const rule2 = this.engine.getCollisionRule(this.group, entity.group);
+                const rule2 = this.engine.getCollisionRule(entity.group, this.group);
                 if (!rule1 && !rule2)
                     return;
                 if (this.collidings.has(entity.id))
@@ -2032,21 +2049,27 @@ class Entity extends Target {
         this.internalUpdate(delta);
         this._entities.forEach(entity => entity.update(delta));
     }
-    internalUpdate(delta) { }
+    internalUpdate(delta) {
+        this.inRenderDistance = this.realPos.distSquared(this.engine.cameraEntity?.getPos() ?? 0) < this.engine.renderDistanceSquared;
+    }
     render() {
+        const doRender = this.alwaysRender || this.inRenderDistance;
         this._entities.forEach((entity, i) => {
             if (entity.z >= 0) {
                 if (i <= 0 || this._entities[i - 1].z < 0)
-                    this.internalRender();
+                    if (doRender)
+                        this.internalRender();
             }
             entity.render();
             if (entity.z < 0) {
                 if (i >= this._entities.length - 1)
-                    this.internalRender();
+                    if (doRender)
+                        this.internalRender();
             }
         });
         if (this._entities.length <= 0)
-            this.internalRender();
+            if (doRender)
+                this.internalRender();
     }
     internalRender() { }
 }
@@ -2194,9 +2217,9 @@ class Engine extends Target {
             this._buttonsUpNow.add(e.button);
             this.post("mouseup", e);
         };
-        this.collisionMatrix = new Map();
+        this.collisionMatrix = {};
         this.collisionChunks = new Map();
-        this.collisionChunkSize = 100;
+        this.collisionChunkSize = 25;
         this._ctx = options.ctx;
         this._bindTarget = null;
         if (options.bindTarget)
@@ -2253,76 +2276,65 @@ class Engine extends Target {
             return;
         if (rule % 1 !== 0)
             return;
-        if (!this.collisionMatrix.has(target))
-            this.collisionMatrix.set(target, new Map());
-        this.collisionMatrix.get(target)?.set(other, rule);
+        if (!this.collisionMatrix[target])
+            this.collisionMatrix[target] = {};
+        this.collisionMatrix[target][other] = rule;
     }
     getCollisionRule(target, other) {
-        if (!this.collisionMatrix.has(target))
+        if (!this.collisionMatrix[target])
             return 0;
-        return this.collisionMatrix.get(target)?.get(other) ?? 0;
+        return this.collisionMatrix[target][other] ?? 0;
     }
     setMutualCollisionRule(group1, group2, rule) {
         this.setCollisionRule(group1, group2, rule);
         this.setCollisionRule(group2, group1, rule);
     }
     addToChunks(entity) {
-        const chunkPos = entity.chunkPos;
-        for (let x = -entity.chunkRadius; x <= entity.chunkRadius; x++) {
-            for (let y = -entity.chunkRadius; y <= entity.chunkRadius; y++) {
-                let rx = x + chunkPos.x;
-                let ry = y + chunkPos.y;
-                if (!this.collisionChunks.has(rx))
-                    this.collisionChunks.set(rx, new Map());
-                if (!this.collisionChunks.get(rx)?.has(ry))
-                    this.collisionChunks.get(rx)?.set(ry, new Set());
-                this.collisionChunks.get(rx)?.get(ry)?.add(entity);
+        for (let x = entity.chunkMinX; x <= entity.chunkMaxX; x++) {
+            for (let y = entity.chunkMinY; y <= entity.chunkMaxY; y++) {
+                if (!this.collisionChunks.has(x))
+                    this.collisionChunks.set(x, new Map());
+                if (!this.collisionChunks.get(x)?.has(y))
+                    this.collisionChunks.get(x)?.set(y, new Set());
+                this.collisionChunks.get(x)?.get(y)?.add(entity);
             }
         }
     }
     remFromChunks(entity) {
-        const chunkPos = entity.chunkPos;
-        for (let x = -entity.chunkRadius; x <= entity.chunkRadius; x++) {
-            for (let y = -entity.chunkRadius; y <= entity.chunkRadius; y++) {
-                let rx = x + chunkPos.x;
-                let ry = y + chunkPos.y;
-                if (!this.collisionChunks.has(rx))
+        for (let x = entity.chunkMinX; x <= entity.chunkMaxX; x++) {
+            for (let y = entity.chunkMinY; y <= entity.chunkMaxY; y++) {
+                if (!this.collisionChunks.has(x))
                     continue;
-                if (!this.collisionChunks.get(rx)?.has(ry))
+                if (!this.collisionChunks.get(x)?.has(y))
                     continue;
-                this.collisionChunks.get(rx)?.get(ry)?.delete(entity);
-                if (this.collisionChunks.get(rx)?.get(ry)?.size ?? 0 > 0)
+                this.collisionChunks.get(x)?.get(y)?.delete(entity);
+                if (this.collisionChunks.get(x)?.get(y)?.size ?? 0 > 0)
                     continue;
-                this.collisionChunks.get(rx)?.delete(ry);
-                if (this.collisionChunks.get(rx)?.size ?? 0 > 0)
+                this.collisionChunks.get(x)?.delete(y);
+                if (this.collisionChunks.get(x)?.size ?? 0 > 0)
                     continue;
-                this.collisionChunks.delete(rx);
+                this.collisionChunks.delete(x);
             }
         }
     }
-    getChunkEntities(entity) {
-        let entities = [];
-        const chunkPos = entity.chunkPos;
-        for (let x = -entity.chunkRadius; x <= entity.chunkRadius; x++) {
-            for (let y = -entity.chunkRadius; y <= entity.chunkRadius; y++) {
-                let rx = chunkPos.x + x;
-                let ry = chunkPos.y + y;
-                if (!this.collisionChunks.has(rx))
+    forEachChunkEntity(entity, callback) {
+        for (let x = entity.chunkMinX; x <= entity.chunkMaxX; x++) {
+            for (let y = entity.chunkMinY; y <= entity.chunkMaxY; y++) {
+                if (!this.collisionChunks.has(x))
                     continue;
-                if (!this.collisionChunks.get(rx)?.has(ry))
+                if (!this.collisionChunks.get(x)?.has(y))
                     continue;
-                entities.push(...this.collisionChunks.get(rx)?.get(ry) ?? []);
+                (this.collisionChunks.get(x)?.get(y) ?? []).forEach(callback);
             }
         }
-        return entities;
     }
-    get cameraFov() { return this.cameraEntity ? this.cameraEntity.getFov() : 1; }
+    get cameraFov() { return this.cameraEntity?.getFov() ?? 1; }
     worldToCtxLen(value) {
         return value / this.cameraFov;
     }
     worldToCtxPos(value) {
         return value
-            .sub(this.cameraEntity ? this.cameraEntity.getPos() : 0)
+            .sub(this.cameraEntity?.getPos() ?? 0)
             .imul([1, -1])
             .idiv(this.cameraFov)
             .iadd([this.ctx.canvas.width / 2, this.ctx.canvas.height / 2]);
@@ -2335,8 +2347,12 @@ class Engine extends Target {
             .sub([this.ctx.canvas.width / 2, this.ctx.canvas.height / 2])
             .imul(this.cameraFov)
             .imul([1, -1])
-            .iadd(this.cameraEntity ? this.cameraEntity.getPos() : 0);
+            .iadd(this.cameraEntity?.getPos() ?? 0);
     }
+    get renderDistanceSquared() {
+        return (this.ctxToWorldLen(this.ctx.canvas.width) ** 2 + this.ctxToWorldLen(this.ctx.canvas.height) ** 2) * (0.75 ** 2);
+    }
+    get renderDistance() { return Math.sqrt(this.renderDistanceSquared); }
     update(delta) {
         this.rootEntity.preUpdate();
         this.rootEntity.update(delta);
@@ -2437,7 +2453,7 @@ function castCommand(data) {
     }
     if (data.tagName === "call") {
         const func = data.querySelector(":scope > func") ?? EMPTYELEMENT;
-        const args = data.querySelector(":scope > args") ?? EMPTYELEMENT;
+        const args = data.querySelector(":scope > args");
         return {
             action: "call",
             func: func.textContent ?? "",
@@ -2457,13 +2473,42 @@ function castCommand(data) {
     }
     if (data.tagName === "if") {
         const cond = data.querySelector(":scope > cond") ?? EMPTYELEMENT;
-        const true_ = data.querySelector(":scope > true") ?? EMPTYELEMENT;
-        const false_ = data.querySelector(":scope > false") ?? EMPTYELEMENT;
+        const true_ = data.querySelector(":scope > true");
+        const false_ = data.querySelector(":scope > false");
         return {
             action: "if",
             cond: castCommand(cond.children[0]),
             true_: castCommands(true_),
             false_: castCommands(false_),
+        };
+    }
+    if (data.tagName === "for") {
+        const start = data.querySelector(":scope > start") ?? EMPTYELEMENT;
+        const stop = data.querySelector(":scope > stop") ?? EMPTYELEMENT;
+        const step = data.querySelector(":scope > step") ?? EMPTYELEMENT;
+        const of = data.querySelector(":scope > of");
+        const body = data.querySelector(":scope > body");
+        if (of)
+            return {
+                action: "for",
+                of: castCommand(of.children[0]),
+                body: castCommands(body),
+            };
+        return {
+            action: "for",
+            start: start.children[0] ? castCommand(start.children[0]) : {
+                action: "json",
+                json: 0,
+            },
+            stop: stop.children[0] ? castCommand(stop.children[0]) : {
+                action: "json",
+                json: 0,
+            },
+            step: step.children[0] ? castCommand(step.children[0]) : {
+                action: "json",
+                json: 1,
+            },
+            body: castCommands(body),
         };
     }
     if (data.tagName === "json") {
@@ -2609,6 +2654,7 @@ async function loadEnemyData(type) {
         size: parseFloat(body.querySelector(":scope > size")?.textContent ?? "0"),
         health: parseFloat(body.querySelector(":scope > health")?.textContent ?? "0"),
         colors: Array.from((body.querySelector(":scope > colors") ?? EMPTYELEMENT).children).map(child => parseInt(child.textContent ?? "0")),
+        part: !!body.querySelector(":scope > part"),
         location: location,
         textures: textures,
         components: castEnemyComponentDatas(body.querySelector(":scope > components")),
@@ -2625,17 +2671,23 @@ async function loadParticleList() {
     const body = data.querySelector("body");
     if (!body)
         throw "Error loading index.xml: No body found";
-    return Array.from(body.children).filter(item => item.tagName === "i").map(item => item.textContent ?? "");
+    return {
+        list: Array.from((body.querySelector(":scope > types") ?? EMPTYELEMENT).children).filter(item => item.tagName === "i").map(item => item.textContent ?? ""),
+        location: castLocation(body.querySelector(":scope > location")),
+    };
 }
-async function loadParticleData(type) {
+async function loadParticleData(type, particlesData) {
     const resp = await fetch("./assets/particles/" + type + ".xml");
     const text = await resp.text();
     const data = PARSER.parseFromString(text, "text/xml");
     const body = data.querySelector("body");
     if (!body)
         throw "Error loading " + type + ".xml: No body found";
+    const texture = castTexture(body.querySelector(":scope > texture"));
+    texture.location.x += particlesData.location.x;
+    texture.location.y += particlesData.location.y;
     return {
-        texture: castTexture(body.querySelector(":scope > texture")),
+        texture: texture,
     };
 }
 async function loadFile(file = DEFAULTFILE) {
@@ -2767,11 +2819,12 @@ function createTextureSource(source, texture, padding = 8) {
         whiteAndOutline: whiteAndOutlineCanvas,
     };
 }
-function createParticleTextureSource(source, texture, padding = 8) {
+function createColorMappedTextureSource(source, texture, padding = 8) {
     const { original } = createTextureSource(source, texture, padding);
     const originalCtx = original.getContext("2d");
     if (!originalCtx)
         throw "How did this happen?";
+    const originalImageData = originalCtx.getImageData(0, 0, original.width, original.height);
     const colors = {};
     return {
         texture: texture,
@@ -2779,17 +2832,22 @@ function createParticleTextureSource(source, texture, padding = 8) {
         generator: (color) => {
             if (color.toHex(false) in colors)
                 return colors[color.toHex(false)];
+            const newRGB = color.rgb;
             const { canvas, ctx } = createCanvas();
             canvas.width = original.width;
             canvas.height = original.height;
-            const originalImageData = originalCtx.getImageData(0, 0, original.width, original.height);
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             for (let x = 0; x < original.width; x++) {
                 for (let y = 0; y < original.height; y++) {
-                    imageData.data[(x + y * original.width) * 4 + 0] = color.r;
-                    imageData.data[(x + y * original.width) * 4 + 1] = color.g;
-                    imageData.data[(x + y * original.width) * 4 + 2] = color.b;
                     imageData.data[(x + y * original.width) * 4 + 3] = originalImageData.data[(x + y * original.width) * 4 + 3];
+                    const oldRGB = new Array(3).fill(null).map((_, i) => originalImageData.data[(x + y * original.width) * 4 + i]);
+                    if (oldRGB[0] !== oldRGB[1])
+                        continue;
+                    if (oldRGB[1] !== oldRGB[2])
+                        continue;
+                    const p = oldRGB[0] / 255;
+                    for (let i = 0; i < 3; i++)
+                        imageData.data[(x + y * original.width) * 4 + i] = lerp(newRGB[i], 255, p);
                 }
             }
             ctx.putImageData(imageData, 0, 0);
@@ -2813,8 +2871,9 @@ class Background extends ModifiedEntity {
             parent: options.parent,
             maxHealth: 1,
             group: "deco",
-            z: -1,
+            z: -1e10,
         });
+        this.alwaysRender = true;
     }
     internalRender() {
         super.internalRender();
@@ -2847,6 +2906,7 @@ class Particle extends Entity {
         super({
             parent: options.parent,
             pos: options.pos,
+            vel: options.vel,
             dir: options.dir,
             maxHealth: 1,
             radius: options.scale ?? 1,
@@ -2869,6 +2929,8 @@ class Particle extends Entity {
     set opacity(value) { this._opacity = Math.min(1, Math.max(0, value)); }
     internalUpdate(delta) {
         super.internalUpdate(delta);
+        if (!this.inRenderDistance)
+            this.health = 0;
         this.time -= delta;
         if (this.time <= 0)
             this.health = 0;
@@ -2905,6 +2967,7 @@ class Splat extends Particle {
             opacity: options.opacity,
             time: options.time,
             pos: options.pos,
+            vel: options.vel,
             dir: 360 * Math.random(),
         });
         this.maxTime = this.time;
@@ -2995,11 +3058,11 @@ class Command extends Target {
     }
     static compileCommand(commandObject, command) {
         if (command.action === "get") {
-            const objectAndKey = this.getObjectAndKey(commandObject, command.attr ?? "");
-            if (!objectAndKey)
-                return () => null;
-            const { object, key } = objectAndKey;
             return () => {
+                const objectAndKey = this.getObjectAndKey(commandObject, command.attr ?? "");
+                if (!objectAndKey)
+                    return null;
+                const { object, key } = objectAndKey;
                 let value = object[key];
                 if (typeof (value) === "function")
                     value = value.bind(object);
@@ -3010,11 +3073,11 @@ class Command extends Target {
             if (!command.value)
                 return () => null;
             const value = this.compileCommand(commandObject, command.value);
-            const objectAndKey = this.getObjectAndKey(commandObject, command.prop ?? "");
-            if (!objectAndKey)
-                return () => null;
-            const { object, key } = objectAndKey;
             return () => {
+                const objectAndKey = this.getObjectAndKey(commandObject, command.prop ?? "");
+                if (!objectAndKey)
+                    return null;
+                const { object, key } = objectAndKey;
                 object[key] = value();
             };
         }
@@ -3022,11 +3085,11 @@ class Command extends Target {
             if (!command.args)
                 return () => null;
             const args = this.compileCommands(commandObject, command.args);
-            const objectAndKey = this.getObjectAndKey(commandObject, command.func ?? "");
-            if (!objectAndKey)
-                return () => null;
-            const { object, key } = objectAndKey;
             return () => {
+                const objectAndKey = this.getObjectAndKey(commandObject, command.func ?? "");
+                if (!objectAndKey)
+                    return null;
+                const { object, key } = objectAndKey;
                 let value = object[key];
                 if (typeof (value) !== "function")
                     return null;
@@ -3137,6 +3200,32 @@ class Command extends Target {
                 return (cond() ? true_ : false_).map(cmd => cmd());
             };
         }
+        if (command.action === "for") {
+            if (!command.of && !command.stop)
+                return () => null;
+            if (!command.body)
+                return () => null;
+            const start = command.start ? this.compileCommand(commandObject, command.start) : (() => 0);
+            const stop = command.stop ? this.compileCommand(commandObject, command.stop) : (() => 0);
+            const step = command.step ? this.compileCommand(commandObject, command.step) : (() => 1);
+            const body = new Command(commandObject, command.body ?? []);
+            if (command.of) {
+                body.args = ["i", "value"];
+                const of = this.compileCommand(commandObject, command.of);
+                return () => {
+                    const results = [];
+                    castArray(of()).forEach((value, i) => results.push(body.executeWithArgs(i, value)));
+                    return results;
+                };
+            }
+            body.args = ["i"];
+            return () => {
+                const results = [];
+                for (let i = start(); i < stop(); i += step())
+                    results.push(body.executeWithArgs(i));
+                return results;
+            };
+        }
         if (command.action === "json") {
             return () => (command.json ?? null);
         }
@@ -3153,9 +3242,9 @@ class Command extends Target {
     _args;
     argValues;
     compiled;
-    constructor(enemy, commands) {
+    constructor(enemyOrCommand, commands) {
         super();
-        this.enemy = enemy;
+        this.enemy = (enemyOrCommand instanceof Enemy) ? enemyOrCommand : enemyOrCommand.enemy;
         this._args = [];
         this.argValues = {};
         this.compiled = Command.compileCommands(this, commands);
@@ -3172,7 +3261,7 @@ class Command extends Target {
         this.clearArgValues();
     }
     execute() {
-        this.compiled.forEach(cmd => cmd());
+        return this.compiled.map(cmd => cmd());
     }
     executeWithArgs(...args) {
         this.clearArgValues();
@@ -3381,6 +3470,7 @@ class Enemy extends ModifiedEntity {
             this.latestDamage = getTime();
         super.health = value;
     }
+    get damageFlash() { return getTime() - this.latestDamage < 50; }
     get animation() { return this._animation; }
     set animation(value) {
         if (this.animation === value)
@@ -3432,7 +3522,7 @@ class Enemy extends ModifiedEntity {
             const textureSource = this.engine.getEnemyTextureSource(this.type, component.texture);
             if (!textureSource)
                 continue;
-            const texture = (component.isBody && getTime() - this.latestDamage < 50) ? textureSource.whiteAndOutline :
+            const texture = (component.isBody && this.damageFlash) ? textureSource.whiteAndOutline :
                 (component.type === "original") ? textureSource.original :
                     (component.type === "outlined") ? textureSource.originalAndOutline :
                         (component.type === "white") ? textureSource.white :
@@ -3449,6 +3539,22 @@ class Enemy extends ModifiedEntity {
         }
         ctx.restore();
     }
+    copy(args) {
+        return [...args];
+    }
+    concat(...args) {
+        return args;
+    }
+    push(array, value) {
+        array.push(value);
+        return array;
+    }
+    pop(array) {
+        return array.pop();
+    }
+    get(array, i) {
+        return array[i];
+    }
     getLookingOffset() {
         let x = 0, y = 0;
         if (Math.abs(angleRelDegrees(this.dir, 0)) < 45 + 22.5)
@@ -3461,15 +3567,25 @@ class Enemy extends ModifiedEntity {
             y++;
         return new Vec2([x, y]);
     }
-    createSplat(type, color, scale, opacity, time, pos) {
+    createSplat(type, color, scale, opacity, time, pos, vel) {
         return new Splat({
             parent: this.engine.rootEntity,
-            type: (type ?? ""),
+            type: type ?? "",
             color: color ?? [0, 0, 0, 255],
             scale: (scale ?? 1) * lerp(0.9, 1.1, Math.random()),
             opacity: opacity,
             time: (time ?? 0) * 1000,
             pos: pos,
+            vel: vel,
+        });
+    }
+    createEnemy(type, pos, vel, dir) {
+        return new Enemy({
+            parent: this.engine.rootEntity,
+            pos: pos,
+            vel: vel,
+            dir: dir,
+            type: type ?? "",
         });
     }
 }
@@ -3477,7 +3593,7 @@ class Game extends Engine {
     _themeData;
     _enemyList;
     _enemyDatas;
-    _particleList;
+    _particlesData;
     _particleDatas;
     _textureMap;
     themeColors;
@@ -3489,7 +3605,7 @@ class Game extends Engine {
         this._themeData = null;
         this._enemyList = null;
         this._enemyDatas = null;
-        this._particleList = null;
+        this._particlesData = null;
         this._particleDatas = null;
         this._textureMap = null;
         this.themeColors = [];
@@ -3512,14 +3628,17 @@ class Game extends Engine {
             parent: this.rootEntity,
         }));
         this.enemyList.forEach(type => {
+            if (this.enemyDatas[type].part)
+                return;
             const types = this.enemyDatas[type].type;
             let n = 3;
             if (types.includes("explosive"))
                 n = 5;
             if (types.includes("swarm"))
                 n = 10;
-            if (types.includes("max"))
+            if (types.includes("max") || types.includes("boss"))
                 n = 1;
+            n *= 10;
             for (let i = 0; i < n; i++)
                 this.rootEntity.addEntity(new Enemy({
                     parent: this.rootEntity,
@@ -3538,10 +3657,10 @@ class Game extends Engine {
         await Promise.all(this.enemyList.map(async (type) => {
             this.enemyDatas[type] = await loadEnemyData(type);
         }));
-        this._particleList = await loadParticleList();
+        this._particlesData = await loadParticleList();
         this._particleDatas = {};
-        await Promise.all(this.particleList.map(async (type) => {
-            this.particleDatas[type] = await loadParticleData(type);
+        await Promise.all(this.particlesData.list.map(async (type) => {
+            this.particleDatas[type] = await loadParticleData(type, this.particlesData);
         }));
         this._textureMap = await loadFile();
         const themeSource = createTextureSource(this.textureMap, this.themeData.texture, 0);
@@ -3562,8 +3681,8 @@ class Game extends Engine {
             for (let name in this.enemyDatas[type].textures)
                 this.enemyTextures[type][name] = createTextureSource(this.textureMap, this.enemyDatas[type].textures[name]);
         });
-        this.particleList.forEach(type => {
-            this.particleTextures[type] = createParticleTextureSource(this.textureMap, this.particleDatas[type].texture);
+        this.particlesData.list.forEach(type => {
+            this.particleTextures[type] = createColorMappedTextureSource(this.textureMap, this.particleDatas[type].texture);
         });
         this.init();
     }
@@ -3582,10 +3701,10 @@ class Game extends Engine {
             throw "Enemy datas not fully loaded yet";
         return this._enemyDatas;
     }
-    get particleList() {
-        if (!this._particleList)
-            throw "Particle list not fully loaded yet";
-        return this._particleList;
+    get particlesData() {
+        if (!this._particlesData)
+            throw "Particles data not fully loaded yet";
+        return this._particlesData;
     }
     get particleDatas() {
         if (!this._particleDatas)

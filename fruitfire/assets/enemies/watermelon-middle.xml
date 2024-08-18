@@ -1,0 +1,66 @@
+<body>
+    <name>Watermelon</name>
+    <type>
+        <i>boss</i>
+    </type>
+
+    <size>0</size>
+    <health>1</health>
+    <colors>
+        <i>14</i>
+        <i>15</i>
+    </colors>
+    <part/>
+    <location x="0" y="232"/>
+
+    <textures>
+        <texture name="middle">
+            <location x="48" y="0" w="8" h="48"/>
+        </texture>
+        <texture name="shadow">
+            <location x="120" y="0" w="8" h="48"/>
+        </texture>
+    </textures>
+
+    <components>
+        <component id="shadow">
+            <texture>shadow</texture>
+            <opacity>0.5</opacity>
+            <offset x="-2" y="4"/>
+        </component>
+        <component id="body">
+            <texture>middle</texture>
+            <type>outlined</type>
+        </component>
+    </components>
+
+    <animations>
+        <animation name="walking" loop="true">
+        </animation>
+    </animations>
+
+    <states initial="attacking">
+        <state name="attacking">
+            <start>
+                <set>
+                    <prop>invincible</prop>
+                    <value><json>true</json></value>
+                </set>
+            </start>
+            <continual>
+                <set>
+                    <prop>~body.dir</prop>
+                    <value><op>
+                        <left><get>dir</get></left>
+                        <op>*</op>
+                        <right><json>-1</json></right>
+                    </op></value>
+                </set>
+                <set>
+                    <prop>~shadow.dir</prop>
+                    <value><get>~body.dir</get></value>
+                </set>
+            </continual>
+        </state>
+    </states>
+</body>
