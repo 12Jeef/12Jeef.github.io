@@ -45,7 +45,72 @@
 
     <states initial="attacking">
         <state name="attacking">
+            <start>
+                <set>
+                    <prop>shootTimer</prop>
+                    <value><op>
+                        <left><json>5</json></left>
+                        <op>+</op>
+                        <right><op>
+                            <left><json>[-0.25, 0.25]</json></left>
+                            <op>lerp</op>
+                            <right><call>
+                                <func>Math.random</func>
+                                <args></args>
+                            </call></right>
+                        </op></right>
+                    </op></value>
+                </set>
+            </start>
             <continual>
+                <set>
+                    <prop>shootTimer</prop>
+                    <value><op>
+                        <left><get>shootTimer</get></left>
+                        <op>+</op>
+                        <right><get>env.delta</get></right>
+                    </op></value>
+                </set>
+                <if>
+                    <cond><op>
+                        <left><get>shootTimer</get></left>
+                        <op>gt</op>
+                        <right><json>1</json></right>
+                    </op></cond>
+                    <true>
+                        <set>
+                            <prop>shootTimer</prop>
+                            <value><json>0</json></value>
+                        </set>
+                        <call>
+                            <func>engine.rootEntity.addEntity</func>
+                            <args>
+                                <call>
+                                    <func>createProjectile</func>
+                                    <args>
+                                        <json>"brown-seed"</json>
+                                        <json>null</json>
+                                        <json>0.075</json>
+                                        <json>1</json>
+                                        <json>null</json>
+                                        <op>
+                                            <left><get>dir</get></left>
+                                            <op>+</op>
+                                            <right><op>
+                                                <left><json>[-10, 10]</json></left>
+                                                <op>lerp</op>
+                                                <right><call>
+                                                    <func>Math.random</func>
+                                                    <args></args>
+                                                </call></right>
+                                            </op></right>
+                                        </op>
+                                    </args>
+                                </call>
+                            </args>
+                        </call>
+                    </true>
+                </if>
                 <call>
                     <func>gazeAt</func>
                     <args>

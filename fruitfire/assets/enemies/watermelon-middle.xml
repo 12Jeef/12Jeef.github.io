@@ -60,6 +60,27 @@
                     <prop>~shadow.dir</prop>
                     <value><get>~body.dir</get></value>
                 </set>
+                <set>
+                    <prop>delayDeath</prop>
+                    <value><op>
+                        <left><get>delayDeath</get></left>
+                        <op>+</op>
+                        <right><json>1</json></right>
+                    </op></value>
+                </set>
+                <if>
+                    <cond><op>
+                        <left><get>delayDeath</get></left>
+                        <op>gt</op>
+                        <right><json>2</json></right>
+                    </op></cond>
+                    <true>
+                        <set>
+                            <prop>health</prop>
+                            <value><json>0</json></value>
+                        </set>
+                    </true>
+                </if>
             </continual>
         </state>
     </states>

@@ -6,14 +6,25 @@ import * as loader from "./loader";
 
 
 class ModifiedEntity extends Entity {
+    protected zOffsetY;
+
     constructor(options: EntityOptions) {
         super(options);
+
+        this.zOffsetY = 0;
     }
 
     protected internalUpdate(delta: number) {
         super.internalUpdate(delta);
 
-        this.z = (this.hasEngineParent ? 0 : ((this.parent as Entity).pos.y - (this.parent as Entity).radius)) - (this.pos.y - this.radius);
+        let parentZ = 0;
+        if (!this.hasEngineParent) {
+            const parent = this.parent as Entity;
+            parentZ = parent.pos.y - parent.radius + ((parent as ModifiedEntity).zOffsetY ?? 0);
+        }
+        let thisZ = this.pos.y - this.radius + this.zOffsetY;
+
+        this.z = parentZ - thisZ;
     }
 }
 
@@ -29,9 +40,9 @@ class Background extends ModifiedEntity {
             maxHealth: 1,
 
             group: "deco",
-
-            z: -1e10,
         });
+
+        this.zOffsetY = 1e10;
 
         this.alwaysRender = true;
     }
@@ -80,8 +91,8 @@ type ParticleOptions = {
     vel?: util.VectorLike,
     dir?: number,
 };
-class Particle extends Entity {
-    public type;
+class Particle extends ModifiedEntity {
+    public readonly type;
     public readonly color;
     private _opacity;
 
@@ -145,7 +156,7 @@ class Particle extends Entity {
         const pos = this.engine.worldToCtxPos(this.realPos);
         ctx.translate(Math.round(pos.x), Math.round(pos.y));
         ctx.globalAlpha = this.opacity;
-        if (this.dir !== 0) ctx.rotate(this.dir * (Math.PI / 180));
+        if (this.dir !== 0) ctx.rotate(-this.dir * (Math.PI / 180));
         const textureWidth = this.engine.worldToCtxLen(texture.width * this.scale);
         const textureHeight = this.engine.worldToCtxLen(texture.height * this.scale);
         ctx.drawImage(
@@ -191,6 +202,8 @@ class Splat extends Particle {
             dir: 360 * Math.random(),
         });
 
+        this.zOffsetY = 1e10;
+
         this.maxTime = this.time;
     }
 
@@ -200,6 +213,183 @@ class Splat extends Particle {
     }
     public get opacity() { return super.opacity * this.opacityScale; }
     public set opacity(value) { super.opacity = value / this.opacityScale; }
+};
+
+
+type ProjectileOptions = {
+    parent: Entity,
+
+    source: Entity,
+
+    type: string,
+    color: util.ColorLike | number,
+    speed: number,
+    time: number,
+    damage?: number,
+
+    pos?: util.VectorLike,
+    dir?: number,
+};
+class Projectile extends ModifiedEntity {
+    public readonly type;
+    public readonly color;
+
+    public readonly speed;
+    private time;
+    private readonly rotate;
+
+    constructor(options: ProjectileOptions) {
+        super({
+            parent: options.parent,
+
+            pos: options.pos ?? options.source.pos,
+            dir: options.dir ?? options.source.dir,
+
+            maxHealth: 1,
+
+            group: options.source.group+"-spawn",
+        });
+
+        this.damage = options.damage ?? 1;
+
+        this.speed = Math.max(0, options.speed);
+        this.time = options.time;
+
+        this.type = options.type;
+        this.color = new util.Color();
+        if (typeof(options.color) === "number")
+            this.color.set((this.engine as Game).getThemeColor(options.color) ?? 0);
+        else this.color.set(options.color);
+
+        this.radius = (this.engine as Game).projectileDatas[this.type]?.size ?? 0;
+        this.rotate = (this.engine as Game).projectileDatas[this.type]?.rotate ?? false;
+    }
+
+    protected internalUpdate(delta: number) {
+        super.internalUpdate(delta);
+
+        if (!this.inRenderDistance) this.health = 0;
+
+        this.time -= delta;
+        if (this.time <= 0) this.health = 0;
+
+        this.knockInDir(this.speed);
+        this.dir = 180 + this.vel.towards(0);
+    }
+    protected internalRender() {
+        super.internalRender();
+
+        const textureSource = (this.engine as Game).getProjectileTextureSource(this.type);
+        if (!textureSource) return;
+        const texture = textureSource.generator(this.color, (this.engine as Game).projectileDatas[this.type]?.outline);
+        
+        const ctx = this.engine.ctx;
+
+        ctx.save();
+
+        const pos = this.engine.worldToCtxPos(this.realPos);
+        ctx.translate(Math.round(pos.x), Math.round(pos.y));
+        if (this.rotate && this.dir !== 0)
+            ctx.rotate(-this.dir * (Math.PI / 180));
+        const textureWidth = this.engine.worldToCtxLen(texture.width);
+        const textureHeight = this.engine.worldToCtxLen(texture.height);
+        ctx.drawImage(
+            texture,
+            Math.round(-textureWidth/2),
+            Math.round(-textureHeight/2),
+            textureWidth, textureHeight,
+        );
+
+        ctx.restore();
+    }
+}
+class LaunchedProjectile extends Projectile {
+    constructor(options: ProjectileOptions) {
+        super({
+            parent: options.parent,
+
+            source: options.source,
+
+            type: options.type,
+            color: options.color,
+            speed: 0,
+            time: options.time,
+            damage: options.damage,
+
+            pos: options.pos,
+            dir: options.dir,
+        });
+
+        this.vel.set(util.Vec2.dir(this.dir, options.speed));
+    }
+
+    protected internalUpdate(delta: number) {
+        super.internalUpdate(delta);
+
+        if (this.vel.distSquared(0) < 0.1**2) this.health = 0;
+    }
+}
+
+
+type ExplosionOptions = {
+    parent: Entity,
+
+    source: Entity,
+
+    color: util.ColorLike | number,
+    damage?: number,
+
+    pos?: util.VectorLike,
+    radius?: number,
+};
+class Explosion extends ModifiedEntity {
+    public readonly color;
+
+    private time;
+
+    constructor(options: ExplosionOptions) {
+        super({
+            parent: options.parent,
+
+            pos: options.pos ?? options.source.pos,
+
+            maxHealth: 1,
+
+            radius: options.radius,
+            group: options.source.group+"-spawn",
+        });
+
+        this.zOffsetY = this.radius;
+
+        this.knockScale = 0.01;
+
+        this.invincible = true;
+
+        this.color = new util.Color();
+        if (typeof(options.color) === "number")
+            this.color.set((this.engine as Game).getThemeColor(options.color) ?? 0);
+        else this.color.set(options.color);
+
+        this.time = 500;
+    }
+
+    protected internalUpdate(delta: number) {
+        super.internalUpdate(delta);
+
+        this.time -= delta;
+        if (this.time <= 0) this.health = 0;
+    }
+    protected internalRender() {
+        super.internalRender();
+
+        const ctx = this.engine.ctx;
+
+        ctx.fillStyle = [this.color.toHex(false), this.color.toHex(false), "#fff"][Math.floor(((this.time/100)%1)*3)];
+        ctx.beginPath();
+        ctx.arc(...this.engine.worldToCtxPos(this.realPos).xy, this.engine.worldToCtxLen(this.radius), 0, 2*Math.PI);
+        ctx.closePath();
+        ctx.fill();
+    }
 };
 
 
@@ -232,6 +422,19 @@ class Player extends ModifiedEntity {
 
     protected internalUpdate(delta: number) {
         super.internalUpdate(delta);
+
+        if (this.engine.isButtonDown(0))
+            this.engine.rootEntity.addEntity(new Projectile({
+                parent: this.engine.rootEntity,
+
+                source: this,
+
+                type: "power-4",
+                color: 19,
+                speed: 0.25,
+                time: 5000,
+                damage: 1,
+            }));
     }
     protected internalRender() {
         super.internalRender();
@@ -531,13 +734,12 @@ class EnemyAnimation extends util.Target {
 
         this.timer = 0;
         this.index = 0;
-
-        this.start();
     }
 
     public start() {
         this.timer = 0;
         this.index = 0;
+        this.startKeyframe();
     }
 
     private continualKeyframe() {
@@ -633,6 +835,7 @@ class Enemy extends ModifiedEntity {
     private readonly functions: util.StringMap<Command>;
     private readonly animations: util.StringMap<EnemyAnimation>;
     private readonly states: util.StringMap<EnemyState>;
+    private readonly events: util.StringMap<Command>;
     private _animation;
     private _state;
     private _nextState;
@@ -663,11 +866,19 @@ class Enemy extends ModifiedEntity {
         this.functions = {};
         this.animations = {};
         this.states = {};
+        this.events = {};
         this._animation = "";
         this._state = "";
         this._nextState = "";
 
         this.latestDamage = 0;
+
+        this.addHandler("push", (enemy: Enemy, dist: number) => {
+            this.triggerEvent("push", { enemy, dist });
+        });
+        this.addHandler("damage", (enemy: Enemy, dist: number) => {
+            this.triggerEvent("damage", { enemy, dist });
+        });
 
         const enemyData = (this.engine as Game).enemyDatas[this.type];
         if (!enemyData) return;
@@ -687,6 +898,8 @@ class Enemy extends ModifiedEntity {
         for (let name in enemyData.states)
             this.states[name] = new EnemyState(this, enemyData.states[name]);
         this.state = enemyData.initialState;
+        for (let name in enemyData.events)
+            this.events[name] = new Command(this, enemyData.events[name]);
 
         this.addHandler("rem", () => {
             if (enemyData.colors.length <= 0) return;
@@ -699,7 +912,7 @@ class Enemy extends ModifiedEntity {
                 if (size >= 10) {
                     this.engine.rootEntity.addEntity(this.createSplat(
                         "large-1",
-                        color, 2, 0.25, time,
+                        color, 2, 0.5, time,
                         this.pos,
                     ));
                     size -= 8;
@@ -708,7 +921,7 @@ class Enemy extends ModifiedEntity {
                 if (size >= 8) {
                     this.engine.rootEntity.addEntity(this.createSplat(
                         "large-1",
-                        color, 1, 0.25, time,
+                        color, 1, 0.5, time,
                         this.pos.add(util.Vec2.dir(360*Math.random(), 2)),
                     ));
                     size -= 6;
@@ -717,7 +930,7 @@ class Enemy extends ModifiedEntity {
                 if (size >= 4) {
                     this.engine.rootEntity.addEntity(this.createSplat(
                         "mid-"+Math.ceil(3*Math.random()),
-                        color, 1, 0.25, time,
+                        color, 1, 0.5, time,
                         this.pos.add(util.Vec2.dir(360*Math.random(), 4)),
                     ));
                     size -= 3;
@@ -725,7 +938,7 @@ class Enemy extends ModifiedEntity {
                 }
                 this.engine.rootEntity.addEntity(this.createSplat(
                     "small-"+Math.ceil(3*Math.random()),
-                    color, 1, 0.25, time,
+                    color, 1, 0.5, time,
                     this.pos.add(util.Vec2.dir(360*Math.random(), 2)),
                 ));
                 size -= 1;
@@ -737,6 +950,7 @@ class Enemy extends ModifiedEntity {
     public get health() { return super.health; }
     public set health(value) {
         if (value < super.health) this.latestDamage = util.getTime();
+        if (value === 0) this.triggerEvent("death", {});
         super.health = value;
     }
 
@@ -768,6 +982,18 @@ class Enemy extends ModifiedEntity {
     public getFunction(name: string): Command | null {
         if (!(name in this.functions)) return null;
         return this.functions[name];
+    }
+    public getEvent(name: string): Command | null {
+        if (!this.events) return null;
+        if (!(name in this.events)) return null;
+        return this.events[name];
+    }
+
+    private triggerEvent(name: string, args: util.StringMap<any>) {
+        const command = this.getEvent(name);
+        if (!command) return;
+        command.args = Object.keys(args);
+        command.executeWithArgs(Object.values(args));
     }
 
     protected internalUpdate(delta: number) {
@@ -879,6 +1105,51 @@ class Enemy extends ModifiedEntity {
             type: type ?? "",
         });
     }
+    public createProjectile(type?: string, color?: number, speed?: number, damage?: number, pos?: util.VectorLike, dir?: number) {
+        return new Projectile({
+            parent: this.engine.rootEntity,
+
+            source: this,
+
+            type: type ?? "",
+            color: color ?? 0,
+            speed: speed ?? 0,
+            time: 5000,
+            damage: damage,
+        
+            pos: pos,
+            dir: dir,
+        });
+    }
+    public createLaunchedProjectile(type?: string, color?: number, speed?: number, damage?: number, pos?: util.VectorLike, dir?: number) {
+        return new LaunchedProjectile({
+            parent: this.engine.rootEntity,
+
+            source: this,
+
+            type: type ?? "",
+            color: color ?? 0,
+            speed: speed ?? 0,
+            time: 5000,
+            damage: damage,
+        
+            pos: pos,
+            dir: dir,
+        });
+    }
+    public createExplosion(color?: number, damage?: number, radius?: number, pos?: util.VectorLike) {
+        return new Explosion({
+            parent: this.engine.rootEntity,
+
+            source: this,
+
+            color: color ?? 0,
+            damage: damage,
+
+            pos: pos,
+            radius: radius,
+        });
+    }
 }
 
 
@@ -888,11 +1159,14 @@ export default class Game extends Engine {
     private _enemyDatas: util.StringMap<loader.EnemyData> | null;
     private _particlesData: loader.ParticlesData | null;
     private _particleDatas: util.StringMap<loader.ParticleData> | null;
+    private _projectilesData: loader.ProjectilesData | null;
+    private _projectileDatas: util.StringMap<loader.ProjectileData> | null;
     private _textureMap: HTMLImageElement | null;
 
     private readonly themeColors: util.Color[];
     private readonly enemyTextures: util.StringMap<util.StringMap<loader.TextureSource>>;
     private readonly particleTextures: util.StringMap<loader.ColorMappedTextureSource>;
+    private readonly projectileTextures: util.StringMap<loader.ColorMappedTextureSource>;
 
     private playerEntity: Player | null;
 
@@ -904,11 +1178,14 @@ export default class Game extends Engine {
         this._enemyDatas = null;
         this._particlesData = null;
         this._particleDatas = null;
+        this._projectilesData = null;
+        this._projectileDatas = null;
         this._textureMap = null;
         
         this.themeColors = [];
         this.enemyTextures = {};
         this.particleTextures = {};
+        this.projectileTextures = {};
 
         this.playerEntity = null;
     }
@@ -924,11 +1201,18 @@ export default class Game extends Engine {
         this.setCollisionRule("player", "enemy", Engine.COLLISIONPUSH | Engine.COLLISIONDAMAGE);
         this.setCollisionRule("enemy", "player", Engine.COLLISIONPUSH | Engine.COLLISIONDAMAGE);
 
+        this.setCollisionRule("player-spawn", "enemy", Engine.COLLISIONPUSH | Engine.COLLISIONDAMAGE);
+        this.setCollisionRule("player", "enemy-spawn", Engine.COLLISIONPUSH | Engine.COLLISIONDAMAGE);
+        this.setCollisionRule("enemy-spawn", "player", Engine.COLLISIONPUSH | Engine.COLLISIONDAMAGE);
+        this.setCollisionRule("enemy", "player-spawn", Engine.COLLISIONPUSH | Engine.COLLISIONDAMAGE);
+
         this.rootEntity.addEntity(new Background({ parent: this.rootEntity }));
 
         this.cameraEntity = this.rootEntity.addEntity(new Camera({
             parent: this.rootEntity,
         }));
+        if (this.cameraEntity)
+            this.cameraEntity.targetFov = 1;
 
         this.playerEntity = this.rootEntity.addEntity(new Player({
             parent: this.rootEntity,
@@ -941,7 +1225,7 @@ export default class Game extends Engine {
             if (types.includes("explosive")) n = 5;
             if (types.includes("swarm")) n = 10;
             if (types.includes("max") || types.includes("boss")) n = 1;
-            n *= 10;
+            // n *= 10;
             for (let i = 0; i < n; i++)
                 this.rootEntity.addEntity(new Enemy({
                     parent: this.rootEntity,
@@ -961,10 +1245,15 @@ export default class Game extends Engine {
         await Promise.all(this.enemyList.map(async type => {
             this.enemyDatas[type] = await loader.loadEnemyData(type);
         }));
-        this._particlesData = await loader.loadParticleList();
+        this._particlesData = await loader.loadParticlesData();
         this._particleDatas = {};
         await Promise.all(this.particlesData.list.map(async type => {
             this.particleDatas[type] = await loader.loadParticleData(type, this.particlesData);
+        }));
+        this._projectilesData = await loader.loadProjectilesData();
+        this._projectileDatas = {};
+        await Promise.all(this.projectilesData.list.map(async type => {
+            this.projectileDatas[type] = await loader.loadProjectileData(type, this.projectilesData);
         }));
         this._textureMap = await loader.loadFile();
 
@@ -990,6 +1279,10 @@ export default class Game extends Engine {
 
         this.particlesData.list.forEach(type => {
             this.particleTextures[type] = loader.createColorMappedTextureSource(this.textureMap, this.particleDatas[type].texture);
+        });
+
+        this.projectilesData.list.forEach(type => {
+            this.projectileTextures[type] = loader.createColorMappedTextureSource(this.textureMap, this.projectileDatas[type].texture);
         });
 
         this.init();
@@ -1019,6 +1312,14 @@ export default class Game extends Engine {
         if (!this._textureMap) throw "Texture map not fully loaded yet";
         return this._textureMap;
     }
+    public get projectilesData() {
+        if (!this._projectilesData) throw "Projectiles data not fully loaded yet";
+        return this._projectilesData;
+    }
+    public get projectileDatas() {
+        if (!this._projectileDatas) throw "Projectile datas not fully loaded yet";
+        return this._projectileDatas;
+    }
 
     public get nThemeColors() { return this.themeColors.length; }
     public getThemeColor(i: number): util.Color | null {
@@ -1034,6 +1335,10 @@ export default class Game extends Engine {
     public getParticleTextureSource(type: string): loader.ColorMappedTextureSource | null {
         if (!this.particleTextures[type]) return null;
         return this.particleTextures[type];
+    }
+    public getProjectileTextureSource(type: string): loader.ColorMappedTextureSource | null {
+        if (!this.projectileTextures[type]) return null;
+        return this.projectileTextures[type];
     }
 
     protected internalUpdate(delta: number) {
@@ -1055,6 +1360,10 @@ export default class Game extends Engine {
             sy *= speed;
             this.playerEntity.vel.x += sx;
             this.playerEntity.vel.y += sy;
+            this.playerEntity.dir = this.playerEntity.realPos.towards(this.ctxToWorldPos(this.mouse.mul([
+                this.ctx.canvas.width,
+                this.ctx.canvas.height,
+            ])));
         }
 
         if (this.cameraEntity && this.playerEntity)

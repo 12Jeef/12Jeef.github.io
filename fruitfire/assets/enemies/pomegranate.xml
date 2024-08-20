@@ -7,8 +7,8 @@
     <size>12</size>
     <health>20</health>
     <colors>
+        <i>59</i>
         <i>60</i>
-        <i>61</i>
     </colors>
     <location x="0" y="208"/>
 
@@ -138,9 +138,13 @@
                             </args>
                         </call></left>
                         <op>lt</op>
-                        <right><json>20</json></right>
+                        <right><json>32</json></right>
                     </op></cond>
                     <true>
+                        <set>
+                            <prop>immortal</prop>
+                            <value><json>true</json></value>
+                        </set>
                         <set>
                             <prop>state</prop>
                             <value><json>"fuse"</json></value>
@@ -151,6 +155,10 @@
         </state>
         <state name="fuse">
             <start>
+                <set>
+                    <prop>health</prop>
+                    <value><json>0</json></value>
+                </set>
                 <set>
                     <prop>fuseTimer</prop>
                     <value><json>1</json></value>
@@ -172,6 +180,12 @@
                     <value><json>true</json></value>
                 </set>
             </start>
+            <stop>
+                <set>
+                    <prop>immortal</prop>
+                    <value><json>false</json></value>
+                </set>
+            </stop>
             <continual>
                 <set>
                     <prop>fuseTimer</prop>
@@ -198,10 +212,6 @@
         </state>
         <state name="explode">
             <start>
-                <set>
-                    <prop>health</prop>
-                    <value><json>0</json></value>
-                </set>
                 <call>
                     <func>engine.cameraEntity.addShakeFrom</func>
                     <args>
@@ -209,7 +219,90 @@
                         <json>5</json>
                     </args>
                 </call>
+                <call>
+                    <func>engine.rootEntity.addEntity</func>
+                    <args>
+                        <call>
+                            <func>createExplosion</func>
+                            <args>
+                                <json>61</json>
+                                <json>3</json>
+                                <json>24</json>
+                            </args>
+                        </call>
+                    </args>
+                </call>
+                <set>
+                    <prop>dirOffset</prop>
+                    <value><op>
+                        <left><json>360</json></left>
+                        <op>*</op>
+                        <right><call>
+                            <func>Math.random</func>
+                            <args></args>
+                        </call></right>
+                    </op></value>
+                </set>
+                <for>
+                    <start><json>0</json></start>
+                    <stop><json>36</json></stop>
+                    <body>
+                        <call>
+                            <func>engine.rootEntity.addEntity</func>
+                            <args>
+                                <call>
+                                    <func>createLaunchedProjectile</func>
+                                    <args>
+                                        <op>
+                                            <left><json>"power-"</json></left>
+                                            <op>+</op>
+                                            <right><call>
+                                                <func>util.choose</func>
+                                                <args>
+                                                    <json>[2, 2, 4]</json>
+                                                </args>
+                                            </call></right>
+                                        </op>
+                                        <json>61</json>
+                                        <op>
+                                            <left><call>
+                                                <func>Math.random</func>
+                                                <args></args>
+                                            </call></left>
+                                            <op>map-rg</op>
+                                            <right><json>[[0, 1], [1, 5]]</json></right>
+                                        </op>
+                                        <json>1</json>
+                                        <json>null</json>
+                                        <op>
+                                            <left><get>dirOffset</get></left>
+                                            <op>+</op>
+                                            <right><op>
+                                                <left><json>10</json></left>
+                                                <op>*</op>
+                                                <right><get>arg:i</get></right>
+                                            </op></right>
+                                        </op>
+                                    </args>
+                                </call>
+                            </args>
+                        </call>
+                    </body>
+                </for>
             </start>
         </state>
     </states>
+
+    <events>
+        <event name="death">
+            <set>
+                <prop>immortal</prop>
+                <value><json>true</json></value>
+            </set>
+            <set>
+                <prop>state</prop>
+                <value><json>"fuse"</json></value>
+            </set>
+        </event>
+    </events>
 </body>

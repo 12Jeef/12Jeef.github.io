@@ -1788,6 +1788,7 @@ class Entity extends Target {
     knockIgnoreMass;
     damage;
     invincible;
+    immortal;
     group;
     _z;
     alwaysRender;
@@ -1823,6 +1824,7 @@ class Entity extends Target {
         this.knockIgnoreMass = false;
         this.damage = 1;
         this.invincible = false;
+        this.immortal = false;
         this.group = "";
         this._z = 0;
         this.alwaysRender = false;
@@ -1985,19 +1987,21 @@ class Entity extends Target {
         return this.gaze(angleRel);
     }
     handleCollision(other, dist, rule) {
-        const knock = -dist * other.knockScale * (this.knockIgnoreMass ? 1 : (other.mass / this.mass));
+        const knock = -dist * this.knockScale * other.knockScale * (this.knockIgnoreMass ? 1 : (other.mass / this.mass));
         if (rule & Engine.COLLISIONPUSH) {
             this.knockDir(other.realPos.towards(this.realPos), Math.min(8, knock * 0.01));
+            this.post("push", other, dist);
         }
         if (rule & Engine.COLLISIONDAMAGE) {
             if (!this.invincible)
                 this.health -= other.damage;
             this.knockDir(other.realPos.towards(this.realPos), Math.min(8, knock * 0.05));
+            this.post("damage", other, dist);
         }
     }
     preUpdate() {
         if (!this.hasEngineParent) {
-            if (this.health <= 0) {
+            if (this.health <= 0 && !this.immortal) {
                 this.parent.remEntity(this);
                 return;
             }
@@ -2181,8 +2185,10 @@ class Engine extends Target {
     _buttonsDown;
     _buttonsDownNow;
     _buttonsUpNow;
+    mouse;
     onMouseDown;
     onMouseUp;
+    onMouseMove;
     collisionMatrix;
     collisionChunks;
     collisionChunkSize;
@@ -2207,6 +2213,7 @@ class Engine extends Target {
         this._buttonsDown = new Set();
         this._buttonsDownNow = new Set();
         this._buttonsUpNow = new Set();
+        this.mouse = new Vec2();
         this.onMouseDown = (e) => {
             this._buttonsDown.add(e.button);
             this._buttonsDownNow.add(e.button);
@@ -2216,6 +2223,10 @@ class Engine extends Target {
             this._buttonsDown.delete(e.button);
             this._buttonsUpNow.add(e.button);
             this.post("mouseup", e);
+        };
+        this.onMouseMove = (e) => {
+            this.mouse.x = e.offsetX / this.ctx.canvas.offsetWidth;
+            this.mouse.y = e.offsetY / this.ctx.canvas.offsetHeight;
         };
         this.collisionMatrix = {};
         this.collisionChunks = new Map();
@@ -2250,6 +2261,7 @@ class Engine extends Target {
         this.bindTarget.addEventListener("keyup", this.onKeyUp);
         this.bindTarget.addEventListener("mousedown", this.onMouseDown);
         this.bindTarget.addEventListener("mouseup", this.onMouseUp);
+        this.bindTarget.addEventListener("mousemove", this.onMouseMove);
     }
     unbind() {
         if (!this.bindTarget)
@@ -2258,6 +2270,7 @@ class Engine extends Target {
         this.bindTarget.removeEventListener("keyup", this.onKeyUp);
         this.bindTarget.removeEventListener("mousedown", this.onMouseDown);
         this.bindTarget.removeEventListener("mouseup", this.onMouseUp);
+        this.bindTarget.removeEventListener("mousemove", this.onMouseMove);
     }
     get keysDown() { return [...this._keysDown]; }
     get keysDownNow() { return [...this._keysDownNow]; }
@@ -2648,6 +2661,14 @@ async function loadEnemyData(type) {
         textures[name].location.x += location.x;
         textures[name].location.y += location.y;
     }
+    const eventsElem = body.querySelector(":scope > events") ?? EMPTYELEMENT;
+    const events = {};
+    for (const child of eventsElem.children) {
+        const name = child.getAttribute("name");
+        if (!name)
+            continue;
+        events[name] = castCommands(child);
+    }
     return {
         name: data.querySelector(":scope > name")?.textContent ?? "",
         type: Array.from(body.querySelector(":scope > type")?.children ?? []).map(child => child.textContent ?? ""),
@@ -2662,9 +2683,10 @@ async function loadEnemyData(type) {
         animations: castEnemyAnimationDatas(body.querySelector(":scope > animations")),
         states: castEnemyStateDatas(body.querySelector(":scope > states")),
         initialState: body.querySelector(":scope > states")?.getAttribute("initial") ?? "",
+        events: events,
     };
 }
-async function loadParticleList() {
+async function loadParticlesData() {
     const resp = await fetch("./assets/particles/index.xml");
     const text = await resp.text();
     const data = PARSER.parseFromString(text, "text/xml");
@@ -2690,6 +2712,35 @@ async function loadParticleData(type, particlesData) {
         texture: texture,
     };
 }
+async function loadProjectilesData() {
+    const resp = await fetch("./assets/projectiles/index.xml");
+    const text = await resp.text();
+    const data = PARSER.parseFromString(text, "text/xml");
+    const body = data.querySelector("body");
+    if (!body)
+        throw "Error loading index.xml: No body found";
+    return {
+        list: Array.from((body.querySelector(":scope > types") ?? EMPTYELEMENT).children).filter(item => item.tagName === "i").map(item => item.textContent ?? ""),
+        location: castLocation(body.querySelector(":scope > location")),
+    };
+}
+async function loadProjectileData(type, projectilesData) {
+    const resp = await fetch("./assets/projectiles/" + type + ".xml");
+    const text = await resp.text();
+    const data = PARSER.parseFromString(text, "text/xml");
+    const body = data.querySelector("body");
+    if (!body)
+        throw "Error loading " + type + ".xml: No body found";
+    const texture = castTexture(body.querySelector(":scope > texture"));
+    texture.location.x += projectilesData.location.x;
+    texture.location.y += projectilesData.location.y;
+    return {
+        texture: texture,
+        size: parseFloat(body.querySelector(":scope > size")?.textContent ?? "0"),
+        rotate: !!body.querySelector(":scope > rotate"),
+        outline: !!body.querySelector(":scope > outline"),
+    };
+}
 async function loadFile(file = DEFAULTFILE) {
     return await loadImage("./assets/" + file + ".png");
 }
@@ -2700,11 +2751,53 @@ function createCanvas() {
         throw "Canvas not supported";
     return { canvas, ctx };
 }
+function createOutline(canvas) {
+    const ctx = canvas.getContext("2d");
+    if (!ctx)
+        throw "How did we get here?";
+    const width = canvas.width;
+    const height = canvas.height;
+    const { canvas: outlineCanvas, ctx: outlineCtx } = createCanvas();
+    outlineCanvas.width = width;
+    outlineCanvas.height = height;
+    outlineCtx.drawImage(canvas, 0, 0);
+    const outlineImageData = outlineCtx.getImageData(0, 0, width, height);
+    const outline = new Array(width).fill(null).map(_ => new Array(height).fill(0));
+    for (let x = 0; x < width; x++)
+        for (let y = 0; y < height; y++)
+            outline[x][y] = (outlineImageData.data[(x + y * width) * 4 + 3] > 0) ? 0 : 1;
+    for (let x = 0; x < width; x++) {
+        for (let y = 0; y < height; y++) {
+            if (outline[x][y])
+                continue;
+            for (let i = 0; i < 4; i++) {
+                let rx = x + [1, -1, 0, 0][i];
+                let ry = y + [0, 0, 1, -1][i];
+                if (rx < 0 || rx >= width)
+                    continue;
+                if (ry < 0 || ry >= height)
+                    continue;
+                if (!outline[rx][ry])
+                    continue;
+                outline[rx][ry] = 2;
+            }
+        }
+    }
+    for (let x = 0; x < width; x++) {
+        for (let y = 0; y < height; y++) {
+            let i = (x + y * width) * 4;
+            for (let j = 0; j < 3; j++)
+                outlineImageData.data[i + j] = 0;
+            outlineImageData.data[i + 3] = (outline[x][y] == 2) ? 255 : 0;
+        }
+    }
+    outlineCtx.putImageData(outlineImageData, 0, 0);
+    return outlineCanvas;
+}
 function createTextureSource(source, texture, padding = 8) {
     const { canvas: canvas, ctx: ctx } = createCanvas();
     const { canvas: originalCanvas, ctx: originalCtx } = createCanvas();
     const { canvas: whiteCanvas, ctx: whiteCtx } = createCanvas();
-    const { canvas: outlineCanvas, ctx: outlineCtx } = createCanvas();
     const { canvas: originalAndOutlineCanvas, ctx: originalAndOutlineCtx } = createCanvas();
     const { canvas: whiteAndOutlineCanvas, ctx: whiteAndOutlineCtx } = createCanvas();
     canvas.width = source.width;
@@ -2763,8 +2856,8 @@ function createTextureSource(source, texture, padding = 8) {
     }
     const width = textureWidth + padding * 2;
     const height = textureHeight + padding * 2;
-    originalCanvas.width = whiteCanvas.width = outlineCanvas.width = originalAndOutlineCanvas.width = whiteAndOutlineCanvas.width = width;
-    originalCanvas.height = whiteCanvas.height = outlineCanvas.height = originalAndOutlineCanvas.height = whiteAndOutlineCanvas.height = height;
+    originalCanvas.width = whiteCanvas.width = originalAndOutlineCanvas.width = whiteAndOutlineCanvas.width = width;
+    originalCanvas.height = whiteCanvas.height = originalAndOutlineCanvas.height = whiteAndOutlineCanvas.height = height;
     originalCtx.drawImage(source, textureX, textureY, textureWidth, textureHeight, padding, padding, textureWidth, textureHeight);
     whiteCtx.drawImage(originalCanvas, 0, 0);
     const whiteImageData = whiteCtx.getImageData(0, 0, width, height);
@@ -2773,38 +2866,7 @@ function createTextureSource(source, texture, padding = 8) {
             for (let i = 0; i < 3; i++)
                 whiteImageData.data[(x + y * width) * 4 + i] = 255;
     whiteCtx.putImageData(whiteImageData, 0, 0);
-    outlineCtx.drawImage(whiteCanvas, 0, 0);
-    const outlineImageData = outlineCtx.getImageData(0, 0, width, height);
-    const outline = new Array(width).fill(null).map(_ => new Array(height).fill(0));
-    for (let x = 0; x < width; x++)
-        for (let y = 0; y < height; y++)
-            outline[x][y] = (outlineImageData.data[(x + y * width) * 4 + 3] > 0) ? 0 : 1;
-    for (let x = 0; x < width; x++) {
-        for (let y = 0; y < height; y++) {
-            if (outline[x][y])
-                continue;
-            for (let i = 0; i < 4; i++) {
-                let rx = x + [1, -1, 0, 0][i];
-                let ry = y + [0, 0, 1, -1][i];
-                if (rx < 0 || rx >= width)
-                    continue;
-                if (ry < 0 || ry >= height)
-                    continue;
-                if (!outline[rx][ry])
-                    continue;
-                outline[rx][ry] = 2;
-            }
-        }
-    }
-    for (let x = 0; x < width; x++) {
-        for (let y = 0; y < height; y++) {
-            let i = (x + y * width) * 4;
-            for (let j = 0; j < 3; j++)
-                outlineImageData.data[i + j] = 0;
-            outlineImageData.data[i + 3] = (outline[x][y] == 2) ? 255 : 0;
-        }
-    }
-    outlineCtx.putImageData(outlineImageData, 0, 0);
+    const outlineCanvas = createOutline(originalCanvas);
     originalAndOutlineCtx.drawImage(outlineCanvas, 0, 0);
     originalAndOutlineCtx.drawImage(originalCanvas, 0, 0);
     whiteAndOutlineCtx.drawImage(outlineCanvas, 0, 0);
@@ -2829,40 +2891,55 @@ function createColorMappedTextureSource(source, texture, padding = 8) {
     return {
         texture: texture,
         padding: padding,
-        generator: (color) => {
+        generator: (color, outline) => {
+            outline ??= false;
             if (color.toHex(false) in colors)
-                return colors[color.toHex(false)];
+                return colors[color.toHex(false)][+outline];
             const newRGB = color.rgb;
             const { canvas, ctx } = createCanvas();
             canvas.width = original.width;
             canvas.height = original.height;
+            ctx.putImageData(originalImageData, 0, 0);
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            for (let x = 0; x < original.width; x++) {
-                for (let y = 0; y < original.height; y++) {
-                    imageData.data[(x + y * original.width) * 4 + 3] = originalImageData.data[(x + y * original.width) * 4 + 3];
-                    const oldRGB = new Array(3).fill(null).map((_, i) => originalImageData.data[(x + y * original.width) * 4 + i]);
+            for (let x = 0; x < canvas.width; x++) {
+                for (let y = 0; y < canvas.height; y++) {
+                    const oldRGB = new Array(3).fill(null).map((_, i) => imageData.data[(x + y * canvas.width) * 4 + i]);
                     if (oldRGB[0] !== oldRGB[1])
                         continue;
                     if (oldRGB[1] !== oldRGB[2])
                         continue;
                     const p = oldRGB[0] / 255;
                     for (let i = 0; i < 3; i++)
-                        imageData.data[(x + y * original.width) * 4 + i] = lerp(newRGB[i], 255, p);
+                        imageData.data[(x + y * canvas.width) * 4 + i] = lerp(newRGB[i], 255, p);
                 }
             }
             ctx.putImageData(imageData, 0, 0);
-            return colors[color.toHex(false)] = canvas;
+            const outlineCanvas = createOutline(canvas);
+            const { canvas: canvasOutlined, ctx: ctxOutlined } = createCanvas();
+            canvasOutlined.width = canvas.width;
+            canvasOutlined.height = canvas.height;
+            ctxOutlined.drawImage(outlineCanvas, 0, 0);
+            ctxOutlined.drawImage(canvas, 0, 0);
+            return (colors[color.toHex(false)] = [canvas, canvasOutlined])[+outline];
         },
     };
 }
 
 class ModifiedEntity extends Entity {
+    zOffsetY;
     constructor(options) {
         super(options);
+        this.zOffsetY = 0;
     }
     internalUpdate(delta) {
         super.internalUpdate(delta);
-        this.z = (this.hasEngineParent ? 0 : (this.parent.pos.y - this.parent.radius)) - (this.pos.y - this.radius);
+        let parentZ = 0;
+        if (!this.hasEngineParent) {
+            const parent = this.parent;
+            parentZ = parent.pos.y - parent.radius + (parent.zOffsetY ?? 0);
+        }
+        let thisZ = this.pos.y - this.radius + this.zOffsetY;
+        this.z = parentZ - thisZ;
     }
 }
 class Background extends ModifiedEntity {
@@ -2871,8 +2948,8 @@ class Background extends ModifiedEntity {
             parent: options.parent,
             maxHealth: 1,
             group: "deco",
-            z: -1e10,
         });
+        this.zOffsetY = 1e10;
         this.alwaysRender = true;
     }
     internalRender() {
@@ -2897,7 +2974,7 @@ class Background extends ModifiedEntity {
         }
     }
 }
-class Particle extends Entity {
+class Particle extends ModifiedEntity {
     type;
     color;
     _opacity;
@@ -2949,7 +3026,7 @@ class Particle extends Entity {
         ctx.translate(Math.round(pos.x), Math.round(pos.y));
         ctx.globalAlpha = this.opacity;
         if (this.dir !== 0)
-            ctx.rotate(this.dir * (Math.PI / 180));
+            ctx.rotate(-this.dir * (Math.PI / 180));
         const textureWidth = this.engine.worldToCtxLen(texture.width * this.scale);
         const textureHeight = this.engine.worldToCtxLen(texture.height * this.scale);
         ctx.drawImage(texture, Math.round(-textureWidth / 2), Math.round(-textureHeight / 2), textureWidth, textureHeight);
@@ -2970,6 +3047,7 @@ class Splat extends Particle {
             vel: options.vel,
             dir: 360 * Math.random(),
         });
+        this.zOffsetY = 1e10;
         this.maxTime = this.time;
     }
     get opacityScale() {
@@ -2979,6 +3057,118 @@ class Splat extends Particle {
     }
     get opacity() { return super.opacity * this.opacityScale; }
     set opacity(value) { super.opacity = value / this.opacityScale; }
+}
+class Projectile extends ModifiedEntity {
+    type;
+    color;
+    speed;
+    time;
+    rotate;
+    constructor(options) {
+        super({
+            parent: options.parent,
+            pos: options.pos ?? options.source.pos,
+            dir: options.dir ?? options.source.dir,
+            maxHealth: 1,
+            group: options.source.group + "-spawn",
+        });
+        this.damage = options.damage ?? 1;
+        this.speed = Math.max(0, options.speed);
+        this.time = options.time;
+        this.type = options.type;
+        this.color = new Color();
+        if (typeof (options.color) === "number")
+            this.color.set(this.engine.getThemeColor(options.color) ?? 0);
+        else
+            this.color.set(options.color);
+        this.radius = this.engine.projectileDatas[this.type]?.size ?? 0;
+        this.rotate = this.engine.projectileDatas[this.type]?.rotate ?? false;
+    }
+    internalUpdate(delta) {
+        super.internalUpdate(delta);
+        if (!this.inRenderDistance)
+            this.health = 0;
+        this.time -= delta;
+        if (this.time <= 0)
+            this.health = 0;
+        this.knockInDir(this.speed);
+        this.dir = 180 + this.vel.towards(0);
+    }
+    internalRender() {
+        super.internalRender();
+        const textureSource = this.engine.getProjectileTextureSource(this.type);
+        if (!textureSource)
+            return;
+        const texture = textureSource.generator(this.color, this.engine.projectileDatas[this.type]?.outline);
+        const ctx = this.engine.ctx;
+        ctx.save();
+        const pos = this.engine.worldToCtxPos(this.realPos);
+        ctx.translate(Math.round(pos.x), Math.round(pos.y));
+        if (this.rotate && this.dir !== 0)
+            ctx.rotate(-this.dir * (Math.PI / 180));
+        const textureWidth = this.engine.worldToCtxLen(texture.width);
+        const textureHeight = this.engine.worldToCtxLen(texture.height);
+        ctx.drawImage(texture, Math.round(-textureWidth / 2), Math.round(-textureHeight / 2), textureWidth, textureHeight);
+        ctx.restore();
+    }
+}
+class LaunchedProjectile extends Projectile {
+    constructor(options) {
+        super({
+            parent: options.parent,
+            source: options.source,
+            type: options.type,
+            color: options.color,
+            speed: 0,
+            time: options.time,
+            damage: options.damage,
+            pos: options.pos,
+            dir: options.dir,
+        });
+        this.vel.set(Vec2.dir(this.dir, options.speed));
+    }
+    internalUpdate(delta) {
+        super.internalUpdate(delta);
+        if (this.vel.distSquared(0) < 0.1 ** 2)
+            this.health = 0;
+    }
+}
+class Explosion extends ModifiedEntity {
+    color;
+    time;
+    constructor(options) {
+        super({
+            parent: options.parent,
+            pos: options.pos ?? options.source.pos,
+            maxHealth: 1,
+            radius: options.radius,
+            group: options.source.group + "-spawn",
+        });
+        this.zOffsetY = this.radius;
+        this.knockScale = 0.01;
+        this.invincible = true;
+        this.color = new Color();
+        if (typeof (options.color) === "number")
+            this.color.set(this.engine.getThemeColor(options.color) ?? 0);
+        else
+            this.color.set(options.color);
+        this.time = 500;
+    }
+    internalUpdate(delta) {
+        super.internalUpdate(delta);
+        this.time -= delta;
+        if (this.time <= 0)
+            this.health = 0;
+    }
+    internalRender() {
+        super.internalRender();
+        const ctx = this.engine.ctx;
+        ctx.fillStyle = [this.color.toHex(false), this.color.toHex(false), "#fff"][Math.floor(((this.time / 100) % 1) * 3)];
+        ctx.beginPath();
+        ctx.arc(...this.engine.worldToCtxPos(this.realPos).xy, this.engine.worldToCtxLen(this.radius), 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.fill();
+    }
 }
 class Player extends ModifiedEntity {
     constructor(options) {
@@ -2996,6 +3186,16 @@ class Player extends ModifiedEntity {
     }
     internalUpdate(delta) {
         super.internalUpdate(delta);
+        if (this.engine.isButtonDown(0))
+            this.engine.rootEntity.addEntity(new Projectile({
+                parent: this.engine.rootEntity,
+                source: this,
+                type: "power-4",
+                color: 19,
+                speed: 0.25,
+                time: 5000,
+                damage: 1,
+            }));
     }
     internalRender() {
         super.internalRender();
@@ -3310,11 +3510,11 @@ class EnemyAnimation extends Target {
         this.loop = data.loop;
         this.timer = 0;
         this.index = 0;
-        this.start();
     }
     start() {
         this.timer = 0;
         this.index = 0;
+        this.startKeyframe();
     }
     continualKeyframe() {
         if (this.index < 0 || this.index >= this.keyframes.length)
@@ -3391,6 +3591,7 @@ class Enemy extends ModifiedEntity {
     functions;
     animations;
     states;
+    events;
     _animation;
     _state;
     _nextState;
@@ -3413,10 +3614,17 @@ class Enemy extends ModifiedEntity {
         this.functions = {};
         this.animations = {};
         this.states = {};
+        this.events = {};
         this._animation = "";
         this._state = "";
         this._nextState = "";
         this.latestDamage = 0;
+        this.addHandler("push", (enemy, dist) => {
+            this.triggerEvent("push", { enemy, dist });
+        });
+        this.addHandler("damage", (enemy, dist) => {
+            this.triggerEvent("damage", { enemy, dist });
+        });
         const enemyData = this.engine.enemyDatas[this.type];
         if (!enemyData)
             return;
@@ -3434,6 +3642,8 @@ class Enemy extends ModifiedEntity {
         for (let name in enemyData.states)
             this.states[name] = new EnemyState(this, enemyData.states[name]);
         this.state = enemyData.initialState;
+        for (let name in enemyData.events)
+            this.events[name] = new Command(this, enemyData.events[name]);
         this.addHandler("rem", () => {
             if (enemyData.colors.length <= 0)
                 return;
@@ -3444,21 +3654,21 @@ class Enemy extends ModifiedEntity {
                 const color = choose(enemyData.colors);
                 const time = lerp(5, 7.5, Math.random());
                 if (size >= 10) {
-                    this.engine.rootEntity.addEntity(this.createSplat("large-1", color, 2, 0.25, time, this.pos));
+                    this.engine.rootEntity.addEntity(this.createSplat("large-1", color, 2, 0.5, time, this.pos));
                     size -= 8;
                     continue;
                 }
                 if (size >= 8) {
-                    this.engine.rootEntity.addEntity(this.createSplat("large-1", color, 1, 0.25, time, this.pos.add(Vec2.dir(360 * Math.random(), 2))));
+                    this.engine.rootEntity.addEntity(this.createSplat("large-1", color, 1, 0.5, time, this.pos.add(Vec2.dir(360 * Math.random(), 2))));
                     size -= 6;
                     continue;
                 }
                 if (size >= 4) {
-                    this.engine.rootEntity.addEntity(this.createSplat("mid-" + Math.ceil(3 * Math.random()), color, 1, 0.25, time, this.pos.add(Vec2.dir(360 * Math.random(), 4))));
+                    this.engine.rootEntity.addEntity(this.createSplat("mid-" + Math.ceil(3 * Math.random()), color, 1, 0.5, time, this.pos.add(Vec2.dir(360 * Math.random(), 4))));
                     size -= 3;
                     continue;
                 }
-                this.engine.rootEntity.addEntity(this.createSplat("small-" + Math.ceil(3 * Math.random()), color, 1, 0.25, time, this.pos.add(Vec2.dir(360 * Math.random(), 2))));
+                this.engine.rootEntity.addEntity(this.createSplat("small-" + Math.ceil(3 * Math.random()), color, 1, 0.5, time, this.pos.add(Vec2.dir(360 * Math.random(), 2))));
                 size -= 1;
                 continue;
             }
@@ -3468,6 +3678,8 @@ class Enemy extends ModifiedEntity {
     set health(value) {
         if (value < super.health)
             this.latestDamage = getTime();
+        if (value === 0)
+            this.triggerEvent("death", {});
         super.health = value;
     }
     get damageFlash() { return getTime() - this.latestDamage < 50; }
@@ -3499,6 +3711,20 @@ class Enemy extends ModifiedEntity {
         if (!(name in this.functions))
             return null;
         return this.functions[name];
+    }
+    getEvent(name) {
+        if (!this.events)
+            return null;
+        if (!(name in this.events))
+            return null;
+        return this.events[name];
+    }
+    triggerEvent(name, args) {
+        const command = this.getEvent(name);
+        if (!command)
+            return;
+        command.args = Object.keys(args);
+        command.executeWithArgs(Object.values(args));
     }
     internalUpdate(delta) {
         super.internalUpdate(delta);
@@ -3588,6 +3814,42 @@ class Enemy extends ModifiedEntity {
             type: type ?? "",
         });
     }
+    createProjectile(type, color, speed, damage, pos, dir) {
+        return new Projectile({
+            parent: this.engine.rootEntity,
+            source: this,
+            type: type ?? "",
+            color: color ?? 0,
+            speed: speed ?? 0,
+            time: 5000,
+            damage: damage,
+            pos: pos,
+            dir: dir,
+        });
+    }
+    createLaunchedProjectile(type, color, speed, damage, pos, dir) {
+        return new LaunchedProjectile({
+            parent: this.engine.rootEntity,
+            source: this,
+            type: type ?? "",
+            color: color ?? 0,
+            speed: speed ?? 0,
+            time: 5000,
+            damage: damage,
+            pos: pos,
+            dir: dir,
+        });
+    }
+    createExplosion(color, damage, radius, pos) {
+        return new Explosion({
+            parent: this.engine.rootEntity,
+            source: this,
+            color: color ?? 0,
+            damage: damage,
+            pos: pos,
+            radius: radius,
+        });
+    }
 }
 class Game extends Engine {
     _themeData;
@@ -3595,10 +3857,13 @@ class Game extends Engine {
     _enemyDatas;
     _particlesData;
     _particleDatas;
+    _projectilesData;
+    _projectileDatas;
     _textureMap;
     themeColors;
     enemyTextures;
     particleTextures;
+    projectileTextures;
     playerEntity;
     constructor(options) {
         super(options);
@@ -3607,10 +3872,13 @@ class Game extends Engine {
         this._enemyDatas = null;
         this._particlesData = null;
         this._particleDatas = null;
+        this._projectilesData = null;
+        this._projectileDatas = null;
         this._textureMap = null;
         this.themeColors = [];
         this.enemyTextures = {};
         this.particleTextures = {};
+        this.projectileTextures = {};
         this.playerEntity = null;
     }
     init() {
@@ -3620,10 +3888,16 @@ class Game extends Engine {
         this.setCollisionRule("enemy", "enemy", Engine.COLLISIONPUSH);
         this.setCollisionRule("player", "enemy", Engine.COLLISIONPUSH | Engine.COLLISIONDAMAGE);
         this.setCollisionRule("enemy", "player", Engine.COLLISIONPUSH | Engine.COLLISIONDAMAGE);
+        this.setCollisionRule("player-spawn", "enemy", Engine.COLLISIONPUSH | Engine.COLLISIONDAMAGE);
+        this.setCollisionRule("player", "enemy-spawn", Engine.COLLISIONPUSH | Engine.COLLISIONDAMAGE);
+        this.setCollisionRule("enemy-spawn", "player", Engine.COLLISIONPUSH | Engine.COLLISIONDAMAGE);
+        this.setCollisionRule("enemy", "player-spawn", Engine.COLLISIONPUSH | Engine.COLLISIONDAMAGE);
         this.rootEntity.addEntity(new Background({ parent: this.rootEntity }));
         this.cameraEntity = this.rootEntity.addEntity(new Camera({
             parent: this.rootEntity,
         }));
+        if (this.cameraEntity)
+            this.cameraEntity.targetFov = 1;
         this.playerEntity = this.rootEntity.addEntity(new Player({
             parent: this.rootEntity,
         }));
@@ -3638,7 +3912,6 @@ class Game extends Engine {
                 n = 10;
             if (types.includes("max") || types.includes("boss"))
                 n = 1;
-            n *= 10;
             for (let i = 0; i < n; i++)
                 this.rootEntity.addEntity(new Enemy({
                     parent: this.rootEntity,
@@ -3657,10 +3930,15 @@ class Game extends Engine {
         await Promise.all(this.enemyList.map(async (type) => {
             this.enemyDatas[type] = await loadEnemyData(type);
         }));
-        this._particlesData = await loadParticleList();
+        this._particlesData = await loadParticlesData();
         this._particleDatas = {};
         await Promise.all(this.particlesData.list.map(async (type) => {
             this.particleDatas[type] = await loadParticleData(type, this.particlesData);
+        }));
+        this._projectilesData = await loadProjectilesData();
+        this._projectileDatas = {};
+        await Promise.all(this.projectilesData.list.map(async (type) => {
+            this.projectileDatas[type] = await loadProjectileData(type, this.projectilesData);
         }));
         this._textureMap = await loadFile();
         const themeSource = createTextureSource(this.textureMap, this.themeData.texture, 0);
@@ -3683,6 +3961,9 @@ class Game extends Engine {
         });
         this.particlesData.list.forEach(type => {
             this.particleTextures[type] = createColorMappedTextureSource(this.textureMap, this.particleDatas[type].texture);
+        });
+        this.projectilesData.list.forEach(type => {
+            this.projectileTextures[type] = createColorMappedTextureSource(this.textureMap, this.projectileDatas[type].texture);
         });
         this.init();
     }
@@ -3716,6 +3997,16 @@ class Game extends Engine {
             throw "Texture map not fully loaded yet";
         return this._textureMap;
     }
+    get projectilesData() {
+        if (!this._projectilesData)
+            throw "Projectiles data not fully loaded yet";
+        return this._projectilesData;
+    }
+    get projectileDatas() {
+        if (!this._projectileDatas)
+            throw "Projectile datas not fully loaded yet";
+        return this._projectileDatas;
+    }
     get nThemeColors() { return this.themeColors.length; }
     getThemeColor(i) {
         if (i % 1 !== 0)
@@ -3736,6 +4027,11 @@ class Game extends Engine {
             return null;
         return this.particleTextures[type];
     }
+    getProjectileTextureSource(type) {
+        if (!this.projectileTextures[type])
+            return null;
+        return this.projectileTextures[type];
+    }
     internalUpdate(delta) {
         super.internalUpdate(delta);
         if (this.playerEntity && !this.playerEntity.addedToEngine)
@@ -3752,6 +4048,10 @@ class Game extends Engine {
             sy *= speed;
             this.playerEntity.vel.x += sx;
             this.playerEntity.vel.y += sy;
+            this.playerEntity.dir = this.playerEntity.realPos.towards(this.ctxToWorldPos(this.mouse.mul([
+                this.ctx.canvas.width,
+                this.ctx.canvas.height,
+            ])));
         }
         if (this.cameraEntity && this.playerEntity)
             this.cameraEntity.target = this.playerEntity.pos;

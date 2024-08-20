@@ -380,6 +380,8 @@ export type EnemyData = {
 
     states: EnemyStateDatas,
     initialState: string,
+
+    events: util.StringMap<Commands>,
 };
 export async function loadEnemyData(type: string): Promise<EnemyData> {
     const resp = await fetch("./assets/enemies/"+type+".xml");
@@ -394,6 +396,14 @@ export async function loadEnemyData(type: string): Promise<EnemyData> {
     for (const name in textures) {
         textures[name].location.x += location.x;
         textures[name].location.y += location.y;
+    }
+
+    const eventsElem = body.querySelector(":scope > events") ?? EMPTYELEMENT;
+    const events: util.StringMap<Commands> = {};
+    for (const child of eventsElem.children) {
+        const name = child.getAttribute("name");
+        if (!name) continue;
+        events[name] = castCommands(child);
     }
 
     return {
@@ -414,6 +424,8 @@ export async function loadEnemyData(type: string): Promise<EnemyData> {
 
         states: castEnemyStateDatas(body.querySelector(":scope > states")),
         initialState: body.querySelector(":scope > states")?.getAttribute("initial") ?? "",
+
+        events: events,
     };
 }
 
@@ -421,7 +433,7 @@ export type ParticlesData = {
     list: string[],
     location: Location,
 };
-export async function loadParticleList(): Promise<ParticlesData> {
+export async function loadParticlesData(): Promise<ParticlesData> {
     const resp = await fetch("./assets/particles/index.xml");
     const text = await resp.text();
     const data = PARSER.parseFromString(text, "text/xml") as XMLDocument;
@@ -452,6 +464,49 @@ export async function loadParticleData(type: string, particlesData: ParticlesDat
     };
 }
 
+export type ProjectilesData = {
+    list: string[],
+    location: Location,
+};
+export async function loadProjectilesData(): Promise<ProjectilesData> {
+    const resp = await fetch("./assets/projectiles/index.xml");
+    const text = await resp.text();
+    const data = PARSER.parseFromString(text, "text/xml") as XMLDocument;
+    const body = data.querySelector("body");
+    if (!body) throw "Error loading index.xml: No body found";
+    return {
+        list: Array.from((body.querySelector(":scope > types") ?? EMPTYELEMENT).children).filter(item => item.tagName === "i").map(item => item.textContent ?? ""),
+        location: castLocation(body.querySelector(":scope > location")),
+    };
+}
+
+export type ProjectileData = {
+    texture: Texture,
+
+    size: number,
+    rotate: boolean,
+    outline: boolean,
+};
+export async function loadProjectileData(type: string, projectilesData: ProjectilesData): Promise<ProjectileData> {
+    const resp = await fetch("./assets/projectiles/"+type+".xml");
+    const text = await resp.text();
+    const data = PARSER.parseFromString(text, "text/xml") as XMLDocument;
+    const body = data.querySelector("body");
+    if (!body) throw "Error loading "+type+".xml: No body found";
+
+    const texture = castTexture(body.querySelector(":scope > texture"));
+    texture.location.x += projectilesData.location.x;
+    texture.location.y += projectilesData.location.y;
+
+    return {
+        texture: texture,
+
+        size: parseFloat(body.querySelector(":scope > size")?.textContent ?? "0"),
+        rotate: !!body.querySelector(":scope > rotate"),
+        outline: !!body.querySelector(":scope > outline"),
+    };
+}
+
 export async function loadFile(file: string = DEFAULTFILE) {
     return await util.loadImage("./assets/"+file+".png");
 }
@@ -472,12 +527,51 @@ function createCanvas() {
     if (!ctx) throw "Canvas not supported";
     return { canvas, ctx };
 }
+function createOutline(canvas: HTMLCanvasElement) {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw "How did we get here?";
+
+    const width = canvas.width;
+    const height = canvas.height;
+
+    const { canvas: outlineCanvas, ctx: outlineCtx } = createCanvas();
+    outlineCanvas.width = width;
+    outlineCanvas.height = height;
+    outlineCtx.drawImage(canvas, 0, 0);
+    const outlineImageData = outlineCtx.getImageData(0, 0, width, height);
+    const outline: number[][] = new Array(width).fill(null).map(_ => new Array(height).fill(0));
+    for (let x = 0; x < width; x++)
+        for (let y = 0; y < height; y++)
+            outline[x][y] = (outlineImageData.data[(x + y*width)*4 + 3] > 0) ? 0 : 1;
+    for (let x = 0; x < width; x++) {
+        for (let y = 0; y < height; y++) {
+            if (outline[x][y]) continue;
+            for (let i = 0; i < 4; i++) {
+                let rx = x + [1, -1, 0, 0][i];
+                let ry = y + [0, 0, 1, -1][i];
+                if (rx < 0 || rx >= width) continue;
+                if (ry < 0 || ry >= height) continue;
+                if (!outline[rx][ry]) continue;
+                outline[rx][ry] = 2;
+            }
+        }
+    }
+    for (let x = 0; x < width; x++) {
+        for (let y = 0; y < height; y++) {
+            let i = (x + y*width)*4;
+            for (let j = 0; j < 3; j++)
+                outlineImageData.data[i + j] = 0;
+            outlineImageData.data[i + 3] = (outline[x][y] == 2) ? 255 : 0;
+        }
+    }
+    outlineCtx.putImageData(outlineImageData, 0, 0);
+    return outlineCanvas;
+}
 export function createTextureSource(source: HTMLImageElement, texture: Texture, padding: number = 8): TextureSource {
 
     const { canvas: canvas, ctx: ctx } = createCanvas();
     const { canvas: originalCanvas, ctx: originalCtx } = createCanvas();
     const { canvas: whiteCanvas, ctx: whiteCtx } = createCanvas();
-    const { canvas: outlineCanvas, ctx: outlineCtx } = createCanvas();
     const { canvas: originalAndOutlineCanvas, ctx: originalAndOutlineCtx } = createCanvas();
     const { canvas: whiteAndOutlineCanvas, ctx: whiteAndOutlineCtx } = createCanvas();
 
@@ -536,8 +630,8 @@ export function createTextureSource(source: HTMLImageElement, texture: Texture, 
     const width = textureWidth + padding * 2;
     const height = textureHeight + padding * 2;
 
-    originalCanvas.width = whiteCanvas.width = outlineCanvas.width = originalAndOutlineCanvas.width = whiteAndOutlineCanvas.width = width;
-    originalCanvas.height = whiteCanvas.height = outlineCanvas.height = originalAndOutlineCanvas.height = whiteAndOutlineCanvas.height = height;
+    originalCanvas.width = whiteCanvas.width = originalAndOutlineCanvas.width = whiteAndOutlineCanvas.width = width;
+    originalCanvas.height = whiteCanvas.height = originalAndOutlineCanvas.height = whiteAndOutlineCanvas.height = height;
 
     originalCtx.drawImage(
         source,
@@ -553,35 +647,7 @@ export function createTextureSource(source: HTMLImageElement, texture: Texture, 
                 whiteImageData.data[(x + y*width)*4 + i] = 255;
     whiteCtx.putImageData(whiteImageData, 0, 0);
 
-    outlineCtx.drawImage(whiteCanvas, 0, 0);
-    const outlineImageData = outlineCtx.getImageData(0, 0, width, height);
-    const outline: number[][] = new Array(width).fill(null).map(_ => new Array(height).fill(0));
-    // 0 = filled, 1 = empty, 2 = outline
-    for (let x = 0; x < width; x++)
-        for (let y = 0; y < height; y++)
-            outline[x][y] = (outlineImageData.data[(x + y*width)*4 + 3] > 0) ? 0 : 1;
-    for (let x = 0; x < width; x++) {
-        for (let y = 0; y < height; y++) {
-            if (outline[x][y]) continue;
-            for (let i = 0; i < 4; i++) {
-                let rx = x + [1, -1, 0, 0][i];
-                let ry = y + [0, 0, 1, -1][i];
-                if (rx < 0 || rx >= width) continue;
-                if (ry < 0 || ry >= height) continue;
-                if (!outline[rx][ry]) continue;
-                outline[rx][ry] = 2;
-            }
-        }
-    }
-    for (let x = 0; x < width; x++) {
-        for (let y = 0; y < height; y++) {
-            let i = (x + y*width)*4;
-            for (let j = 0; j < 3; j++)
-                outlineImageData.data[i + j] = 0;
-            outlineImageData.data[i + 3] = (outline[x][y] == 2) ? 255 : 0;
-        }
-    }
-    outlineCtx.putImageData(outlineImageData, 0, 0);
+    const outlineCanvas = createOutline(originalCanvas);
 
     originalAndOutlineCtx.drawImage(outlineCanvas, 0, 0);
     originalAndOutlineCtx.drawImage(originalCanvas, 0, 0);
@@ -605,7 +671,7 @@ export type ColorMappedTextureSource = {
     texture: Texture,
     padding: number,
 
-    generator: (color: util.Color) => HTMLCanvasElement,
+    generator: (color: util.Color, outline?: boolean) => HTMLCanvasElement,
 };
 export function createColorMappedTextureSource(source: HTMLImageElement, texture: Texture, padding: number = 8): ColorMappedTextureSource {
     const { original } = createTextureSource(source, texture, padding);
@@ -614,31 +680,39 @@ export function createColorMappedTextureSource(source: HTMLImageElement, texture
 
     const originalImageData = originalCtx.getImageData(0, 0, original.width, original.height);
 
-    const colors: util.StringMap<HTMLCanvasElement> = {};
+    const colors: util.StringMap<[HTMLCanvasElement, HTMLCanvasElement]> = {};
 
     return {
         texture: texture,
         padding: padding,
 
-        generator: (color: util.Color) => {
-            if (color.toHex(false) in colors) return colors[color.toHex(false)];
+        generator: (color: util.Color, outline?: boolean) => {
+            outline ??= false;
+            if (color.toHex(false) in colors) return colors[color.toHex(false)][+outline];
             const newRGB = color.rgb;
             const { canvas, ctx } = createCanvas();
             canvas.width = original.width;
             canvas.height = original.height;
+            ctx.putImageData(originalImageData, 0, 0);
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            for (let x = 0; x < original.width; x++) {
-                for (let y = 0; y < original.height; y++) {
-                    imageData.data[(x + y*original.width)*4 + 3] = originalImageData.data[(x + y*original.width)*4 + 3];
-                    const oldRGB = new Array(3).fill(null).map((_, i) => originalImageData.data[(x + y*original.width)*4 + i]) as util.vec3;
+            for (let x = 0; x < canvas.width; x++) {
+                for (let y = 0; y < canvas.height; y++) {
+                    const oldRGB = new Array(3).fill(null).map((_, i) => imageData.data[(x + y*canvas.width)*4 + i]) as util.vec3;
                     if (oldRGB[0] !== oldRGB[1]) continue;
                     if (oldRGB[1] !== oldRGB[2]) continue;
                     const p = oldRGB[0] / 255;
                     for (let i = 0; i < 3; i++)
-                        imageData.data[(x + y*original.width)*4 + i] = util.lerp(newRGB[i], 255, p);                }
+                        imageData.data[(x + y*canvas.width)*4 + i] = util.lerp(newRGB[i], 255, p);
+                }
             }
             ctx.putImageData(imageData, 0, 0);
-            return colors[color.toHex(false)] = canvas;
+            const outlineCanvas = createOutline(canvas);
+            const { canvas: canvasOutlined, ctx: ctxOutlined } = createCanvas();
+            canvasOutlined.width = canvas.width;
+            canvasOutlined.height = canvas.height;
+            ctxOutlined.drawImage(outlineCanvas, 0, 0);
+            ctxOutlined.drawImage(canvas, 0, 0);
+            return (colors[color.toHex(false)] = [canvas, canvasOutlined])[+outline];
         },
     };
 }

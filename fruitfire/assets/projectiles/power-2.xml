@@ -1,0 +1,6 @@
+<body>
+    <texture crop="true">
+        <location x="8" y="8" w="8" h="8"/>
+    </texture>
+    <size>2</size>
+</body>

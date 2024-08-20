@@ -436,7 +436,7 @@
                                             </args>
                                         </call>
                                         <json>null</json>
-                                        <json>0.5</json>
+                                        <json>0.75</json>
                                         <json>3</json>
                                         <get>pos</get>
                                         <json>0</json>
@@ -486,7 +486,7 @@
                                             </args>
                                         </call>
                                         <json>null</json>
-                                        <json>0.5</json>
+                                        <json>0.75</json>
                                         <json>3</json>
                                         <get>pos</get>
                                         <call>

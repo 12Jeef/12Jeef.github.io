@@ -405,6 +405,10 @@
                             </op></value>
                         </set>
                         <set>
+                            <prop>slice.delayDeath</prop>
+                            <value><json>0</json></value>
+                        </set>
+                        <set>
                             <prop>sliceBodyComponent</prop>
                             <value><call>
                                 <func>slice.getComponent</func>
@@ -437,6 +441,115 @@
     <animations>
         <animation name="walking" loop="true">
         </animation>
+        <animation name="attack3">
+            <keyframes>
+                <keyframe wait="0.25">
+                    <start>
+                        <set>
+                            <prop>_attack3DirOffset</prop>
+                            <value><op>
+                                <left><call>
+                                    <func>Math.random</func>
+                                    <args></args>
+                                </call></left>
+                                <op>map-rg</op>
+                                <right><json>[[0, 1], [0, 360]]</json></right>
+                            </op></value>
+                        </set>
+                        <for>
+                            <start><json>0</json></start>
+                            <stop><json>12</json></stop>
+                            <body>
+                                <call>
+                                    <func>engine.rootEntity.addEntity</func>
+                                    <args>
+                                        <call>
+                                            <func>createProjectile</func>
+                                            <args>
+                                                <json>"power-5"</json>
+                                                <call>
+                                                    <func>util.choose</func>
+                                                    <args>
+                                                        <json>[15, 16, 19]</json>
+                                                    </args>
+                                                </call>
+                                                <json>0.05</json>
+                                                <json>1</json>
+                                                <get>pos</get>
+                                                <op>
+                                                    <left><get>_attack3DirOffset</get></left>
+                                                    <op>+</op>
+                                                    <right><op>
+                                                        <left><json>30</json></left>
+                                                        <op>*</op>
+                                                        <right><get>arg:i</get></right>
+                                                    </op></right>
+                                                </op>
+                                            </args>
+                                        </call>
+                                    </args>
+                                </call>
+                            </body>
+                        </for>
+                    </start>
+                </keyframe>
+                <keyframe wait="0.25">
+                    <start>
+                        <set>
+                            <prop>_attack3DirOffset</prop>
+                            <value><op>
+                                <left><get>_attack3DirOffset</get></left>
+                                <op>+</op>
+                                <right><json>7.5</json></right>
+                            </op></value>
+                        </set>
+                        <for>
+                            <start><json>0</json></start>
+                            <stop><json>12</json></stop>
+                            <body>
+                                <call>
+                                    <func>engine.rootEntity.addEntity</func>
+                                    <args>
+                                        <call>
+                                            <func>createProjectile</func>
+                                            <args>
+                                                <json>"power-5"</json>
+                                                <call>
+                                                    <func>util.choose</func>
+                                                    <args>
+                                                        <json>[15, 16, 19]</json>
+                                                    </args>
+                                                </call>
+                                                <json>0.05</json>
+                                                <json>1</json>
+                                                <get>pos</get>
+                                                <op>
+                                                    <left><get>_attack3DirOffset</get></left>
+                                                    <op>+</op>
+                                                    <right><op>
+                                                        <left><json>30</json></left>
+                                                        <op>*</op>
+                                                        <right><get>arg:i</get></right>
+                                                    </op></right>
+                                                </op>
+                                            </args>
+                                        </call>
+                                    </args>
+                                </call>
+                            </body>
+                        </for>
+                    </start>
+                </keyframe>
+                <keyframe wait="0">
+                    <start>
+                        <set>
+                            <prop>animation</prop>
+                            <value><json>"walking"</json></value>
+                        </set>
+                    </start>
+                </keyframe>
+            </keyframes>
+        </animation>
     </animations>
 
     <states initial="attacking">
@@ -445,7 +558,7 @@
                 <set>
                     <prop>attackingTimer</prop>
                     <value><op>
-                        <left><json>5</json></left>
+                        <left><json>1</json></left>
                         <op>+</op>
                         <right><op>
                             <left><json>[-0.5, 0.5]</json></left>
@@ -466,7 +579,7 @@
                     <true>
                         <set>
                             <prop>nSlices</prop>
-                            <value><json>3</json></value>
+                            <value><json>5</json></value>
                         </set>
                         <set>
                             <prop>slices</prop>
@@ -478,7 +591,7 @@
                             </call></value>
                         </set>
                         <for>
-                            <start>0</start>
+                            <start><json>0</json></start>
                             <stop><get>nSlices</get></stop>
                             <body>
                                 <call>
@@ -529,6 +642,15 @@
                     </op></cond>
                     <true>
                         <set>
+                            <prop>attackType</prop>
+                            <value><call>
+                                <func>util.choose</func>
+                                <args>
+                                    <json>[2, 3]</json>
+                                </args>
+                            </call></value>
+                        </set>
+                        <set>
                             <prop>state</prop>
                             <value><json>"opening"</json></value>
                         </set>
@@ -547,10 +669,6 @@
                         <json>0.001</json>
                     </args>
                 </call>
-                <set>
-                    <prop>animation</prop>
-                    <value><json>"walking"</json></value>
-                </set>
                 <call>
                     <func>func:place-sides</func>
                     <args>
@@ -564,8 +682,26 @@
             <start>
                 <set>
                     <prop>openingTimer</prop>
-                    <value><json>0.5</json></value>
+                    <value><json>0.25</json></value>
                 </set>
+                <set>
+                    <prop>dirResetTypes</prop>
+                    <value><json>[3]</json></value>
+                </set>
+                <if>
+                    <cond><call>
+                        <func>dirResetTypes.includes</func>
+                        <args>
+                            <get>attackType</get>
+                        </args>
+                    </call></cond>
+                    <true>
+                        <set>
+                            <prop>dir</prop>
+                            <value><json>-90</json></value>
+                        </set>
+                    </true>
+                </if>
             </start>
             <continual>
                 <set>
@@ -585,7 +721,11 @@
                     <true>
                         <set>
                             <prop>state</prop>
-                            <value><json>"shooting"</json></value>
+                            <value><op>
+                                <left><json>"attack"</json></left>
+                                <op>+</op>
+                                <right><get>attackType</get></right>
+                            </op></value>
                         </set>
                     </true>
                 </if>
@@ -608,13 +748,13 @@
                             <right><op>
                                 <left><get>openingTimer</get></left>
                                 <op>map-rg</op>
-                                <right><json>[[0.5, 0], [0, 1]]</json></right>
+                                <right><json>[[0.25, 0], [0, 1]]</json></right>
                             </op></right>
                         </op>
                         <op>
                             <left><get>openingTimer</get></left>
                             <op>map-rg</op>
-                            <right><json>[[0.5, 0], [0, 8]]</json></right>
+                            <right><json>[[0.25, 0], [0, 10]]</json></right>
                         </op>
                     </args>
                 </call>
@@ -624,7 +764,7 @@
             <start>
                 <set>
                     <prop>closingTimer</prop>
-                    <value><json>0.5</json></value>
+                    <value><json>0.25</json></value>
                 </set>
             </start>
             <continual>
@@ -668,19 +808,19 @@
                             <right><op>
                                 <left><get>closingTimer</get></left>
                                 <op>map-rg</op>
-                                <right><json>[[0.5, 0], [1, 0]]</json></right>
+                                <right><json>[[0.25, 0], [1, 0]]</json></right>
                             </op></right>
                         </op>
                         <op>
                             <left><get>closingTimer</get></left>
                             <op>map-rg</op>
-                            <right><json>[[0.5, 0], [6, 0]]</json></right>
+                            <right><json>[[0.25, 0], [6, 0]]</json></right>
                         </op>
                     </args>
                 </call>
             </continual>
         </state>
-        <state name="shooting">
+        <state name="attack1">
             <start>
                 <set>
                     <prop>shootingTimer</prop>
@@ -735,6 +875,289 @@
                     </args>
                 </call>
             </continual>
+        </state>
+        <state name="attack2">
+            <start>
+                <set>
+                    <prop>shootingTimer</prop>
+                    <value><json>0.5</json></value>
+                </set>
+                <call>
+                    <func>engine.cameraEntity.addShakeFrom</func>
+                    <args>
+                        <get>pos</get>
+                        <json>5</json>
+                    </args>
+                </call>
+                <call>
+                    <func>func:place-sides</func>
+                    <args>
+                        <op>
+                            <left><get>dir</get></left>
+                            <op>+</op>
+                            <right><json>90</json></right>
+                        </op>
+                        <json>6</json>
+                    </args>
+                </call>
+                <for>
+                    <start><json>-1</json></start>
+                    <stop><get>nSlices</get></stop>
+                    <body>
+                        <set>
+                            <prop>projX</prop>
+                            <value><op>
+                                <left><op>
+                                    <left><get>innerWidth</get></left>
+                                    <op>/</op>
+                                    <right><json>-2</json></right>
+                                </op></left>
+                                <op>+</op>
+                                <right><op>
+                                    <left><op>
+                                        <left><op>
+                                            <left><get>arg:i</get></left>
+                                            <op>+</op>
+                                            <right><json>1.5</json></right>
+                                        </op></left>
+                                        <op>*</op>
+                                        <right><json>6</json></right>
+                                    </op></left>
+                                    <op>+</op>
+                                    <right><op>
+                                        <left><op>
+                                            <left><get>arg:i</get></left>
+                                            <op>+</op>
+                                            <right><json>1</json></right>
+                                        </op></left>
+                                        <op>*</op>
+                                        <right><json>8</json></right>
+                                    </op></right>
+                                </op></right>
+                            </op></value>
+                        </set>
+                        <set>
+                            <prop>projPos</prop>
+                            <value><call>
+                                <func>concat</func>
+                                <args>
+                                    <op>
+                                        <left><op>
+                                            <left><op>
+                                                <left><get>dirX</get></left>
+                                                <op>*</op>
+                                                <right><json>1</json></right>
+                                            </op></left>
+                                            <op>*</op>
+                                            <right><get>projX</get></right>
+                                        </op></left>
+                                        <op>+</op>
+                                        <right><get>pos.x</get></right>
+                                    </op>
+                                    <op>
+                                        <left><op>
+                                            <left><op>
+                                                <left><get>dirY</get></left>
+                                                <op>*</op>
+                                                <right><json>-1</json></right>
+                                            </op></left>
+                                            <op>*</op>
+                                            <right><get>projX</get></right>
+                                        </op></left>
+                                        <op>+</op>
+                                        <right><get>pos.y</get></right>
+                                    </op>
+                                </args>
+                            </call></value>
+                        </set>
+                        <set>
+                            <prop>explosionEntity</prop>
+                            <value><call>
+                                <func>createExplosion</func>
+                                <args>
+                                    <json>15</json>
+                                    <json>3</json>
+                                    <json>12</json>
+                                    <get>projPos</get>
+                                </args>
+                            </call></value>
+                        </set>
+                        <set>
+                            <prop>explosionEntity.zOffsetY</prop>
+                            <value><json>10000000000</json></value>
+                        </set>
+                        <call>
+                            <func>engine.rootEntity.addEntity</func>
+                            <args>
+                                <get>explosionEntity</get>
+                            </args>
+                        </call>
+                        <call>
+                            <func>engine.rootEntity.addEntity</func>
+                            <args>
+                                <call>
+                                    <func>createProjectile</func>
+                                    <args>
+                                        <json>"yellow-seed"</json>
+                                        <json>null</json>
+                                        <json>0.2</json>
+                                        <json>1</json>
+                                        <get>projPos</get>
+                                        <op>
+                                            <left><get>dir</get></left>
+                                            <op>+</op>
+                                            <right><op>
+                                                <left><json>[-1, 1]</json></left>
+                                                <op>lerp</op>
+                                                <right><call>
+                                                    <func>Math.random</func>
+                                                    <args></args>
+                                                </call></right>
+                                            </op></right>
+                                        </op>
+                                    </args>
+                                </call>
+                            </args>
+                        </call>
+                    </body>
+                </for>
+            </start>
+            <continual>
+                <set>
+                    <prop>shootingTimer</prop>
+                    <value><op>
+                        <left><get>shootingTimer</get></left>
+                        <op>-</op>
+                        <right><get>env.delta</get></right>
+                    </op></value>
+                </set>
+                <if>
+                    <cond><op>
+                        <left><get>shootingTimer</get></left>
+                        <op>lt</op>
+                        <right><json>0</json></right>
+                    </op></cond>
+                    <true>
+                        <set>
+                            <prop>state</prop>
+                            <value><json>"closing"</json></value>
+                        </set>
+                    </true>
+                </if>
+                <call>
+                    <func>func:place-sides</func>
+                    <args>
+                        <op>
+                            <left><get>dir</get></left>
+                            <op>+</op>
+                            <right><json>90</json></right>
+                        </op>
+                        <json>6</json>
+                    </args>
+                </call>
+            </continual>
+        </state>
+        <state name="attack3">
+            <start>
+                <call>
+                    <func>engine.cameraEntity.addShakeFrom</func>
+                    <args>
+                        <get>pos</get>
+                        <json>5</json>
+                    </args>
+                </call>
+                <set>
+                    <prop>explosionEntity</prop>
+                    <value><call>
+                        <func>createExplosion</func>
+                        <args>
+                            <json>15</json>
+                            <json>3</json>
+                            <json>48</json>
+                        </args>
+                    </call></value>
+                </set>
+                <set>
+                    <prop>explosionEntity.zOffsetY</prop>
+                    <value><json>10000000000</json></value>
+                </set>
+                <call>
+                    <func>engine.rootEntity.addEntity</func>
+                    <args>
+                        <get>explosionEntity</get>
+                    </args>
+                </call>
+                <set>
+                    <prop>dirOffset</prop>
+                    <value><op>
+                        <left><json>360</json></left>
+                        <op>*</op>
+                        <right><call>
+                            <func>Math.random</func>
+                            <args></args>
+                        </call></right>
+                    </op></value>
+                </set>
+                <set>
+                    <prop>animation</prop>
+                    <value><json>"attack3"</json></value>
+                </set>
+                <for>
+                    <start><json>0</json></start>
+                    <stop><json>72</json></stop>
+                    <body>
+                        <call>
+                            <func>engine.rootEntity.addEntity</func>
+                            <args>
+                                <call>
+                                    <func>createLaunchedProjectile</func>
+                                    <args>
+                                        <op>
+                                            <left><json>"power-"</json></left>
+                                            <op>+</op>
+                                            <right><call>
+                                                <func>util.choose</func>
+                                                <args>
+                                                    <json>[2, 2, 4]</json>
+                                                </args>
+                                            </call></right>
+                                        </op>
+                                        <call>
+                                            <func>util.choose</func>
+                                            <args>
+                                                <json>[15, 16, 19]</json>
+                                            </args>
+                                        </call>
+                                        <op>
+                                            <left><call>
+                                                <func>Math.random</func>
+                                                <args></args>
+                                            </call></left>
+                                            <op>map-rg</op>
+                                            <right><json>[[0, 1], [1, 5]]</json></right>
+                                        </op>
+                                        <json>1</json>
+                                        <json>null</json>
+                                        <op>
+                                            <left><get>dirOffset</get></left>
+                                            <op>+</op>
+                                            <right><op>
+                                                <left><json>5</json></left>
+                                                <op>*</op>
+                                                <right><get>arg:i</get></right>
+                                            </op></right>
+                                        </op>
+                                    </args>
+                                </call>
+                            </args>
+                        </call>
+                    </body>
+                </for>
+                <set>
+                    <prop>state</prop>
+                    <value><json>"attacking"</json></value>
+                </set>
+            </start>
         </state>
     </states>
 </body>

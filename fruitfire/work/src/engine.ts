@@ -43,6 +43,7 @@ export class Entity extends util.Target {
     public knockIgnoreMass;
     public damage;
     public invincible;
+    public immortal;
     public group;
 
     private _z;
@@ -88,6 +89,7 @@ export class Entity extends util.Target {
         this.knockIgnoreMass = false;
         this.damage = 1;
         this.invincible = false;
+        this.immortal = false;
         this.group = "";
 
         this._z = 0;
@@ -260,19 +262,21 @@ export class Entity extends util.Target {
     }
 
     private handleCollision(other: Entity, dist: number, rule: number) {
-        const knock = -dist*other.knockScale*(this.knockIgnoreMass ? 1 : (other.mass/this.mass));
+        const knock = -dist * this.knockScale * other.knockScale * (this.knockIgnoreMass ? 1 : (other.mass/this.mass));
         if (rule & Engine.COLLISIONPUSH) {
             this.knockDir(other.realPos.towards(this.realPos), Math.min(8, knock*0.01));
+            this.post("push", other, dist);
         }
         if (rule & Engine.COLLISIONDAMAGE) {
             if (!this.invincible) this.health -= other.damage;
             this.knockDir(other.realPos.towards(this.realPos), Math.min(8, knock*0.05));
+            this.post("damage", other, dist);
         }
     }
 
     public preUpdate() {
         if (!this.hasEngineParent) {
-            if (this.health <= 0) {
+            if (this.health <= 0 && !this.immortal) {
                 (this.parent as Entity).remEntity(this);
                 return;
             }
@@ -498,8 +502,10 @@ export default class Engine extends util.Target {
     private readonly _buttonsDown;
     private readonly _buttonsDownNow;
     private readonly _buttonsUpNow;
+    public readonly mouse;
     private readonly onMouseDown;
     private readonly onMouseUp;
+    private readonly onMouseMove;
 
     private readonly collisionMatrix: util.StringMap<util.StringMap<number>>;
     private readonly collisionChunks: Map<number, Map<number, Set<Entity>>>;
@@ -529,6 +535,7 @@ export default class Engine extends util.Target {
         this._buttonsDown = new Set<number>();
         this._buttonsDownNow = new Set<number>();
         this._buttonsUpNow = new Set<number>();
+        this.mouse = new util.Vec2();
         this.onMouseDown = (e: MouseEvent) => {
             this._buttonsDown.add(e.button);
             this._buttonsDownNow.add(e.button);
@@ -538,6 +545,10 @@ export default class Engine extends util.Target {
             this._buttonsDown.delete(e.button);
             this._buttonsUpNow.add(e.button);
             this.post("mouseup", e);
+        };
+        this.onMouseMove = (e: MouseEvent) => {
+            this.mouse.x = e.offsetX / this.ctx.canvas.offsetWidth;
+            this.mouse.y = e.offsetY / this.ctx.canvas.offsetHeight;
         };
 
         this.collisionMatrix = {};
@@ -574,6 +585,7 @@ export default class Engine extends util.Target {
         this.bindTarget.addEventListener("keyup", this.onKeyUp);
         this.bindTarget.addEventListener("mousedown", this.onMouseDown);
         this.bindTarget.addEventListener("mouseup", this.onMouseUp);
+        this.bindTarget.addEventListener("mousemove", this.onMouseMove);
     }
     private unbind() {
         if (!this.bindTarget) return;
@@ -581,6 +593,7 @@ export default class Engine extends util.Target {
         this.bindTarget.removeEventListener("keyup", this.onKeyUp);
         this.bindTarget.removeEventListener("mousedown", this.onMouseDown);
         this.bindTarget.removeEventListener("mouseup", this.onMouseUp);
+        this.bindTarget.removeEventListener("mousemove", this.onMouseMove);
     }
     public get keysDown() { return [...this._keysDown]; }
     public get keysDownNow() { return [...this._keysDownNow]; }
