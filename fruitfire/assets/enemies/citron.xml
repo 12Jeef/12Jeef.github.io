@@ -44,7 +44,7 @@
         </component>
         <component id="body" body="true">
             <texture>walk</texture>
-            <type>outlined</type>
+            <type>og+outline</type>
         </component>
         <component id="eyes">
             <texture>eyes</texture>
@@ -52,28 +52,28 @@
 
         <component id="piece-tl-in" body="true">
             <texture>piece-in</texture>
-            <type>outlined</type>
+            <type>og+outline</type>
             <offset x="-8" y="-8"/>
             <opacity>0</opacity>
             <dir>0</dir>
         </component>
         <component id="piece-tr-in" body="true">
             <texture>piece-in</texture>
-            <type>outlined</type>
+            <type>og+outline</type>
             <offset x="8" y="-8"/>
             <opacity>0</opacity>
             <dir>90</dir>
         </component>
         <component id="piece-br-in" body="true">
             <texture>piece-in</texture>
-            <type>outlined</type>
+            <type>og+outline</type>
             <offset x="8" y="8"/>
             <opacity>0</opacity>
             <dir>180</dir>
         </component>
         <component id="piece-bl-in" body="true">
             <texture>piece-in</texture>
-            <type>outlined</type>
+            <type>og+outline</type>
             <offset x="-8" y="8"/>
             <opacity>0</opacity>
             <dir>270</dir>
@@ -81,28 +81,28 @@
 
         <component id="piece-tl-out" body="true">
             <texture>piece-out</texture>
-            <type>outlined</type>
+            <type>og+outline</type>
             <offset x="-8" y="-8"/>
             <opacity>0</opacity>
             <dir>0</dir>
         </component>
         <component id="piece-tr-out" body="true">
             <texture>piece-out</texture>
-            <type>outlined</type>
+            <type>og+outline</type>
             <offset x="8" y="-8"/>
             <opacity>0</opacity>
             <dir>90</dir>
         </component>
         <component id="piece-br-out" body="true">
             <texture>piece-out</texture>
-            <type>outlined</type>
+            <type>og+outline</type>
             <offset x="8" y="8"/>
             <opacity>0</opacity>
             <dir>180</dir>
         </component>
         <component id="piece-bl-out" body="true">
             <texture>piece-out</texture>
-            <type>outlined</type>
+            <type>og+outline</type>
             <offset x="-8" y="8"/>
             <opacity>0</opacity>
             <dir>270</dir>
@@ -428,6 +428,103 @@
                         <right><json>270</json></right>
                     </op></value>
                 </set>
+            </commands>
+        </function>
+        <function name="place-lasers">
+            <args>
+                <i>dir</i>
+                <i>radius</i>
+            </args>
+            <commands>
+                <set>
+                    <prop>laserDir</prop>
+                    <value><get>arg:dir</get></value>
+                </set>
+                <set>
+                    <prop>laserRadius</prop>
+                    <value><get>arg:radius</get></value>
+                </set>
+                <for>
+                    <of><get>lasers</get></of>
+                    <body>
+                        <set>
+                            <prop>laser</prop>
+                            <value><get>arg:value</get></value>
+                        </set>
+                        <set>
+                            <prop>laser.zOffsetY</prop>
+                            <value><json>-10000000000</json></value>
+                        </set>
+                        <set>
+                            <prop>laser.dir</prop>
+                            <value><op>
+                                <left><get>laserDir</get></left>
+                                <op>+</op>
+                                <right><op>
+                                    <left><json>90</json></left>
+                                    <op>*</op>
+                                    <right><get>arg:i</get></right>
+                                </op></right>
+                            </op></value>
+                        </set>
+                        <call>
+                            <func>laser.pos.set</func>
+                            <args>
+                                <get>pos</get>
+                            </args>
+                        </call>
+                        <set>
+                            <prop>laser.pos.x</prop>
+                            <value><op>
+                                <left><get>laser.pos.x</get></left>
+                                <op>+</op>
+                                <right><op>
+                                    <left><get>laserRadius</get></left>
+                                    <op>*</op>
+                                    <right><call>
+                                        <func>util.cos</func>
+                                        <args>
+                                            <op>
+                                                <left><get>laserDir</get></left>
+                                                <op>+</op>
+                                                <right><op>
+                                                    <left><json>90</json></left>
+                                                    <op>*</op>
+                                                    <right><get>arg:i</get></right>
+                                                </op></right>
+                                            </op>
+                                        </args>
+                                    </call></right>
+                                </op></right>
+                            </op></value>
+                        </set>
+                        <set>
+                            <prop>laser.pos.y</prop>
+                            <value><op>
+                                <left><get>laser.pos.y</get></left>
+                                <op>+</op>
+                                <right><op>
+                                    <left><get>laserRadius</get></left>
+                                    <op>*</op>
+                                    <right><call>
+                                        <func>util.sin</func>
+                                        <args>
+                                            <op>
+                                                <left><get>laserDir</get></left>
+                                                <op>+</op>
+                                                <right><op>
+                                                    <left><json>90</json></left>
+                                                    <op>*</op>
+                                                    <right><get>arg:i</get></right>
+                                                </op></right>
+                                            </op>
+                                        </args>
+                                    </call></right>
+                                </op></right>
+                            </op></value>
+                        </set>
+                    </body>
+                </for>
             </commands>
         </function>
     </functions>
@@ -799,7 +896,78 @@
                         <json>2.5</json>
                     </args>
                 </call>
+                <set>
+                    <prop>lasers</prop>
+                    <value><call>
+                        <func>copy</func>
+                        <args>
+                            <json>[]</json>
+                        </args>
+                    </call></value>
+                </set>
+                <for>
+                    <start><json>0</json></start>
+                    <stop><json>4</json></stop>
+                    <body>
+                        <call>
+                            <func>push</func>
+                            <args>
+                                <get>lasers</get>
+                                <call>
+                                    <func>createLaser</func>
+                                    <args>
+                                        <json>[16, 17, 18]</json>
+                                        <json>1</json>
+                                        <json>4</json>
+                                        <json>null</json>
+                                        <json>null</json>
+                                    </args>
+                                </call>
+                            </args>
+                        </call>
+                    </body>
+                </for>
+                <for>
+                    <of><get>lasers</get></of>
+                    <body>
+                        <call>
+                            <func>engine.rootEntity.addEntity</func>
+                            <args>
+                                <get>arg:value</get>
+                            </args>
+                        </call>
+                    </body>
+                </for>
+                <call>
+                    <func>func:place-lasers</func>
+                    <args>
+                        <get>dir</get>
+                        <get>radius</get>
+                    </args>
+                </call>
             </start>
+            <stop>
+                <for>
+                    <of><get>lasers</get></of>
+                    <body>
+                        <call>
+                            <func>engine.rootEntity.remEntity</func>
+                            <args>
+                                <get>arg:value</get>
+                            </args>
+                        </call>
+                    </body>
+                </for>
+                <set>
+                    <prop>lasers</prop>
+                    <value><call>
+                        <func>copy</func>
+                        <args>
+                            <json>[]</json>
+                        </args>
+                    </call></value>
+                </set>
+            </stop>
             <continual>
                 <set>
                     <prop>shootingTimer</prop>
@@ -848,7 +1016,35 @@
                         <json>0.15</json>
                     </args>
                 </call>
+                <call>
+                    <func>func:place-lasers</func>
+                    <args>
+                        <get>dir</get>
+                        <get>radius</get>
+                    </args>
+                </call>
             </continual>
         </state>
     </states>
+
+    <events>
+        <event name="death">
+            <if>
+                <cond><get>lasers</get></cond>
+                <true>
+                    <for>
+                        <of><get>lasers</get></of>
+                        <body>
+                            <call>
+                                <func>engine.rootEntity.remEntity</func>
+                                <args>
+                                    <get>arg:value</get>
+                                </args>
+                            </call>
+                        </body>
+                    </for>
+                </true>
+            </if>
+        </event>
+    </events>
 </body>

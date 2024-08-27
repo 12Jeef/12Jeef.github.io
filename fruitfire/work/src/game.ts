@@ -5,6 +5,9 @@ import Engine, { EngineOptions, Entity, EntityOptions, Camera } from "./engine";
 import * as loader from "./loader";
 
 
+import type App from "./app";
+
+
 class ModifiedEntity extends Entity {
     protected zOffsetY;
 
@@ -336,14 +339,15 @@ type ExplosionOptions = {
 
     source: Entity,
 
-    color: util.ColorLike | number,
+    color?: util.ColorLike | number,
+    colors?: (util.ColorLike | number)[]
     damage?: number,
 
     pos?: util.VectorLike,
     radius?: number,
 };
 class Explosion extends ModifiedEntity {
-    public readonly color;
+    public readonly colors;
 
     private time;
 
@@ -365,10 +369,15 @@ class Explosion extends ModifiedEntity {
 
         this.invincible = true;
 
-        this.color = new util.Color();
-        if (typeof(options.color) === "number")
-            this.color.set((this.engine as Game).getThemeColor(options.color) ?? 0);
-        else this.color.set(options.color);
+        let colors = [...(options.colors ?? [])];
+        if (options.color) colors.push(options.color);
+        this.colors = colors.map(color => {
+            const colorObject = new util.Color();
+            if (typeof(color) === "number")
+                colorObject.set((this.engine as Game).getThemeColor(color) ?? 0);
+            else colorObject.set(color);
+            return colorObject;
+        });
 
         this.time = 500;
     }
@@ -384,13 +393,160 @@ class Explosion extends ModifiedEntity {
 
         const ctx = this.engine.ctx;
 
-        ctx.fillStyle = [this.color.toHex(false), this.color.toHex(false), "#fff"][Math.floor(((this.time/100)%1)*3)];
+        const scale = (this.time < 250) ? 1 : util.lerp(0, 1, util.ease.sinO((500 - this.time) / 250));
+
+        const pos = this.engine.worldToCtxPos(this.realPos);
+        const radius = this.engine.worldToCtxLen(this.radius * scale);
+
+        ctx.fillStyle = [...this.colors.map(color => color.toHex(false))][Math.floor(((this.time/100)%1)*this.colors.length)];
         ctx.beginPath();
-        ctx.arc(...this.engine.worldToCtxPos(this.realPos).xy, this.engine.worldToCtxLen(this.radius), 0, 2*Math.PI);
+        ctx.arc(...pos.xy, radius, 0, 2*Math.PI);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = ["#fff", "#fff8"][Math.floor(((this.time/150)%1)*2)];
+        ctx.beginPath();
+        ctx.arc(...pos.xy, radius*0.75, 0, 2*Math.PI);
         ctx.closePath();
         ctx.fill();
     }
+}
+
+
+type LaserOptions = {
+    parent: Entity,
+
+    source: Entity,
+
+    color?: util.ColorLike | number,
+    colors?: (util.ColorLike | number)[]
+    damage?: number,
+
+    pos?: util.VectorLike,
+    dir?: number,
+    radius?: number,
 };
+class Laser extends ModifiedEntity {
+    public readonly colors;
+
+    private time;
+    private len;
+
+    private collideTime;
+
+    constructor(options: LaserOptions) {
+        super({
+            parent: options.parent,
+
+            pos: options.pos ?? options.source.pos,
+            dir: options.dir ?? options.source.dir,
+
+            maxHealth: 1,
+
+            radius: options.radius,
+            group: options.source.group+"-spawn",
+        });
+
+        this.zOffsetY = 1e10;
+
+        this.invincible = true;
+
+        let colors = [...(options.colors ?? [])];
+        if (options.color) colors.push(options.color);
+        this.colors = colors.map(color => {
+            const colorObject = new util.Color();
+            if (typeof(color) === "number")
+                colorObject.set((this.engine as Game).getThemeColor(color) ?? 0);
+            else colorObject.set(color);
+            return colorObject;
+        });
+
+        this.time = 0;
+        this.len = 0;
+
+        this.collideTime = 0;
+
+        this.knockScale = 0.1;
+    }
+
+    protected internalUpdate(delta: number) {
+        super.internalUpdate(delta);
+
+        this.len = 0;
+        let x = this.pos.x;
+        let y = this.pos.y;
+        let entity: Entity | null = null;
+        while (this.len < 1000) {
+            let chunkX = Math.round(x / this.engine.collisionChunkSize);
+            let chunkY = Math.round(y / this.engine.collisionChunkSize);
+            let minDist = this.engine.collisionChunkSize;
+            let minDistEntity: Entity | null = null;
+            for (let sx = -1; sx <= 1; sx++)
+                for (let sy = -1; sy <= 1; sy++)
+                    this.engine.forEachChunk([chunkX+sx, chunkY+sy], entity => {
+                        const rule = this.engine.getCollisionRule(this.group, entity.group);
+                        if (!rule) return;
+                        let dist = entity.pos.dist([x, y]) - entity.radius;
+                        if (dist > minDist) return;
+                        minDist = dist;
+                        minDistEntity = entity;
+                    });
+            this.len += minDist;
+            x += minDist * util.cos(this.dir);
+            y += minDist * util.sin(this.dir);
+            if (minDist < 1) {
+                entity = minDistEntity;
+                break;
+            }
+        }
+        if (entity) {
+            this.collideTime += delta;
+            if (this.collideTime > 100) {
+                this.collideTime -= 100;
+                (entity as Entity).handleCollision(
+                    this, -this.radius,
+                    this.engine.getCollisionRule(this.group, (entity as Entity).group),
+                );
+            }
+        }
+
+        this.time += delta;
+    }
+    protected internalRender() {
+        super.internalRender();
+
+        const ctx = this.engine.ctx;
+
+        const posStart = this.engine.worldToCtxPos(this.realPos);
+        const posStop = this.engine.worldToCtxPos(util.Vec2.dir(this.dir, this.len).add(this.realPos));
+        const radius = this.engine.worldToCtxLen(this.radius);
+
+        ctx.lineCap = ctx.lineJoin = "round";
+        ctx.fillStyle = ctx.strokeStyle = [...this.colors.map(color => color.toHex(false))][Math.floor(((this.time/100)%1)*this.colors.length)];
+        ctx.lineWidth = radius * util.lerp(1.75, 2.25, Math.random());
+        ctx.beginPath();
+        ctx.moveTo(...posStart.xy);
+        ctx.lineTo(...posStop.xy);
+        ctx.stroke();
+        for (const pos of [posStart, posStop]) {
+            ctx.beginPath();
+            ctx.arc(...pos.xy, radius * util.lerp(1.75, 2.25, Math.random()) / 2 * 1.25, 0, 2*Math.PI);
+            ctx.closePath();
+            ctx.fill();
+        }
+        ctx.fillStyle = ctx.strokeStyle = ["#fff", "#fff8"][Math.floor(((this.time/150)%1)*2)];
+        ctx.lineWidth = radius * util.lerp(0.75, 1.25, Math.random());
+        ctx.beginPath();
+        ctx.moveTo(...posStart.xy);
+        ctx.lineTo(...posStop.xy);
+        ctx.stroke();
+        for (const pos of [posStart, posStop]) {
+            ctx.beginPath();
+            ctx.arc(...pos.xy, radius * util.lerp(0.75, 1.25, Math.random()) / 2 * 1.25, 0, 2*Math.PI);
+            ctx.closePath();
+            ctx.fill();
+        }
+    }
+}
 
 
 type PlayerOptions = {
@@ -429,11 +585,11 @@ class Player extends ModifiedEntity {
 
                 source: this,
 
-                type: "power-4",
+                type: "power-6",
                 color: 19,
                 speed: 0.25,
                 time: 5000,
-                damage: 1,
+                damage: 10,
             }));
     }
     protected internalRender() {
@@ -687,7 +843,7 @@ class EnemyComponent extends util.Target {
     public texture;
     public readonly offset;
     public readonly scale;
-    public type: "original" | "outlined" | "white" | "white + outlined";
+    public type;
     private _opacity;
     private _dir;
     public isBody;
@@ -950,7 +1106,7 @@ class Enemy extends ModifiedEntity {
     public get health() { return super.health; }
     public set health(value) {
         if (value < super.health) this.latestDamage = util.getTime();
-        if (value === 0) this.triggerEvent("death", {});
+        if (value <= 0) this.triggerEvent("death", {});
         super.health = value;
     }
 
@@ -1023,12 +1179,21 @@ class Enemy extends ModifiedEntity {
             if (component.opacity <= 0) continue;
             const textureSource = (this.engine as Game).getEnemyTextureSource(this.type, component.texture);
             if (!textureSource) continue;
-            const texture =
-                (component.isBody && this.damageFlash) ? textureSource.whiteAndOutline :
-                (component.type === "original") ? textureSource.original :
-                (component.type === "outlined") ? textureSource.originalAndOutline :
-                (component.type === "white") ? textureSource.white :
-                textureSource.whiteAndOutline;
+            let type = component.type;
+            if (component.isBody && this.damageFlash) {
+                const parts = type.split("+");
+                if (parts.includes("og") || parts.includes("w")) {
+                    parts.splice(parts.indexOf("og"), 1);
+                    parts.push("w");
+                } else if (parts.includes("outline") || parts.includes("outlineb") || parts.includes("outlinew")) {
+                    parts.splice(parts.indexOf("outline"), 1);
+                    parts.splice(parts.indexOf("outlineb"), 1);
+                    parts.splice(parts.indexOf("outlinew"), 1);
+                    parts.push("outlinew");
+                }
+                type = parts.join("+");
+            }
+            const texture = textureSource.get(type);
             
             ctx.save();
 
@@ -1054,19 +1219,23 @@ class Enemy extends ModifiedEntity {
     }
 
     public copy(args: any[]) {
+        if (!args) return [];
         return [...args];
     }
     public concat(...args: any[]) {
+        if (!args) return [];
         return args;
     }
     public push(array: any[], value: any) {
-        array.push(value);
+        if (array) array.push(value);
         return array;
     }
     public pop(array: any[]) {
+        if (!array) return null;
         return array.pop();
     }
     public get(array: any[], i: number) {
+        if (!array) return null;
         return array[i];
     }
 
@@ -1137,57 +1306,116 @@ class Enemy extends ModifiedEntity {
             dir: dir,
         });
     }
-    public createExplosion(color?: number, damage?: number, radius?: number, pos?: util.VectorLike) {
+    public createExplosion(colors?: number[], damage?: number, radius?: number, pos?: util.VectorLike) {
         return new Explosion({
             parent: this.engine.rootEntity,
 
             source: this,
 
-            color: color ?? 0,
+            colors: colors ?? [],
             damage: damage,
 
             pos: pos,
             radius: radius,
         });
     }
+    public createLaser(colors?: number[], damage?: number, radius?: number, pos?: util.VectorLike, dir?: number) {
+        return new Laser({
+            parent: this.engine.rootEntity,
+
+            source: this,
+
+            colors: colors ?? [],
+            damage: damage,
+
+            pos: pos,
+            dir: dir,
+            radius: radius,
+        });
+    }
 }
 
 
+export type GameOptions = {
+    app: App,
+
+    ctx: CanvasRenderingContext2D,
+    bindTarget?: HTMLElement,
+};
 export default class Game extends Engine {
+    public readonly app;
+
     private _themeData: loader.ThemeData | null;
-    private _enemyList: loader.EnemyList | null;
+
+    private _enemiesData: loader.EnemiesData | null;
     private _enemyDatas: util.StringMap<loader.EnemyData> | null;
+
     private _particlesData: loader.ParticlesData | null;
     private _particleDatas: util.StringMap<loader.ParticleData> | null;
+
     private _projectilesData: loader.ProjectilesData | null;
     private _projectileDatas: util.StringMap<loader.ProjectileData> | null;
+
+    private _othersData: loader.OthersData | null;
+    private _otherDatas: util.StringMap<loader.OtherData> | null;
+
     private _textureMap: HTMLImageElement | null;
 
     private readonly themeColors: util.Color[];
     private readonly enemyTextures: util.StringMap<util.StringMap<loader.TextureSource>>;
     private readonly particleTextures: util.StringMap<loader.ColorMappedTextureSource>;
     private readonly projectileTextures: util.StringMap<loader.ColorMappedTextureSource>;
+    private readonly otherTextures: util.StringMap<loader.TextureSource>;
+
+    private scale;
 
     private playerEntity: Player | null;
 
-    constructor(options: EngineOptions) {
-        super(options);
+    constructor(options: GameOptions) {
+        super({
+            ctx: options.ctx,
+            bindTarget: options.bindTarget,
+        });
+
+        this.app = options.app;
 
         this._themeData = null;
-        this._enemyList = null;
+
+        this._enemiesData = null;
         this._enemyDatas = null;
+
         this._particlesData = null;
         this._particleDatas = null;
+
         this._projectilesData = null;
         this._projectileDatas = null;
+
+        this._othersData = null;
+        this._otherDatas = null;
+
         this._textureMap = null;
         
         this.themeColors = [];
         this.enemyTextures = {};
         this.particleTextures = {};
         this.projectileTextures = {};
+        this.otherTextures = {};
+
+        this.scale = 0;
 
         this.playerEntity = null;
+
+        this.addHandler("resize", (scale: number) => {
+            this.scale = 1 / scale;
+            document.documentElement.style.setProperty("--scale", String(this.scale));
+        });
+
+        this.app.eMainMenuPlayBtn.addEventListener("mouseenter", e => {
+            (this.app.eMainMenuPlayBtn.querySelector(":scope > img"))?.setAttribute("tex", "other:ui-play-hover");
+        });
+        this.app.eMainMenuPlayBtn.addEventListener("mouseleave", e => {
+            (this.app.eMainMenuPlayBtn.querySelector(":scope > img"))?.setAttribute("tex", "other:ui-play");
+        });
     }
 
     public init() {
@@ -1218,7 +1446,7 @@ export default class Game extends Engine {
             parent: this.rootEntity,
         }));
 
-        this.enemyList.forEach(type => {
+        this.enemiesData.forEach(type => {
             if (this.enemyDatas[type].part) return;
             const types = this.enemyDatas[type].type;
             let n = 3;
@@ -1236,13 +1464,95 @@ export default class Game extends Engine {
                     type: type,
                 }));
         });
+
+        let ignoreMutations = false;
+        const images = new Map<HTMLImageElement, string | null>();
+        const checkImages = () => {
+            if (ignoreMutations) return;
+            ignoreMutations = true;
+
+            const newImages = new Set<HTMLImageElement>();
+            const dfs = (elem: Element) => {
+                if (elem instanceof HTMLImageElement) newImages.add(elem);
+                for (const child of elem.children) dfs(child);
+            };
+            dfs(document.body);
+
+            const applyToImage = (image: HTMLImageElement, canvas: HTMLCanvasElement | null, doSrc?: boolean) => {
+                doSrc ??= false;
+
+                if (image.style.imageRendering !== "pixelated") image.style.imageRendering = "pixelated";
+
+                const width = ((canvas?.width ?? 0) * this.scale)+"px";
+                const height = ((canvas?.height ?? 0) * this.scale)+"px";
+                if (image.style.width !== width) image.style.width = width;
+                if (image.style.height !== height) image.style.height = height;
+
+                if (doSrc) {
+                    const src = canvas?.toDataURL() ?? "";
+                    if (image.src !== src) image.src = src;
+                }
+            };
+
+            for (const image of newImages) {
+                if (images.has(image)) continue;
+                images.set(image, null);
+            }
+            for (const image of [...images.keys()]) {
+                if (newImages.has(image)) continue;
+                images.delete(image);
+            }
+            for (const [image, oldTex] of [...images.entries()]) {
+                const tex = image.getAttribute("tex");
+                images.set(image, oldTex);
+                if (!tex) {
+                    applyToImage(image, null, true);
+                    continue;
+                }
+                const section = tex.split(":")[0];
+                const args = tex.slice(section.length + 1).split(",");
+                const type = image.getAttribute("type") ?? "og";
+                if (section === "enemy" || section === "other") {
+                    const textureSource =
+                        (section === "enemy") ? this.getEnemyTextureSource(args[0] ?? "", args[1] ?? "") :
+                        (section === "other") ? this.getOtherTextureSource(args[0] ?? "") :
+                        null;
+                    if (!textureSource) {
+                        applyToImage(image, null, true);
+                        continue;
+                    }
+                    const canvas = textureSource.get(type);
+                    applyToImage(image, canvas, tex !== oldTex);
+                    continue;
+                }
+                if (section === "particle" || section === "projectile") {
+                    const color = new util.Color(image.getAttribute("color") ?? "#000");
+                    const outlined = loader.castBoolean(image.getAttribute("outlined"), false);
+                    const textureSource =
+                        (section === "particle") ? this.getParticleTextureSource(args[0] ?? "") :
+                        (section === "projectile") ? this.getProjectileTextureSource(args[0] ?? "") :
+                        null;
+                    if (!textureSource) {
+                        applyToImage(image, null, true);
+                        continue;
+                    }
+                    const canvas = textureSource.generator(color, outlined);
+                    applyToImage(image, canvas, tex !== oldTex);
+                    continue;
+                }
+            }
+
+            ignoreMutations = false;
+        };
+        this.addHandler("mutation", () => checkImages());
+        checkImages();
     }
 
     public async load() {
         this._themeData = await loader.loadThemeData();
-        this._enemyList = await loader.loadEnemyList();
+        this._enemiesData = await loader.loadEnemiesData();
         this._enemyDatas = {};
-        await Promise.all(this.enemyList.map(async type => {
+        await Promise.all(this.enemiesData.map(async type => {
             this.enemyDatas[type] = await loader.loadEnemyData(type);
         }));
         this._particlesData = await loader.loadParticlesData();
@@ -1255,10 +1565,15 @@ export default class Game extends Engine {
         await Promise.all(this.projectilesData.list.map(async type => {
             this.projectileDatas[type] = await loader.loadProjectileData(type, this.projectilesData);
         }));
+        this._othersData = await loader.loadOthersData();
+        this._otherDatas = {};
+        await Promise.all(this.othersData.map(async name => {
+            this.otherDatas[name] = await loader.loadOtherData(name);
+        }));
         this._textureMap = await loader.loadFile();
 
-        const themeSource = loader.createTextureSource(this.textureMap, this.themeData.texture, 0);
-        const themeImageData = (themeSource.original.getContext("2d") as CanvasRenderingContext2D).getImageData(0, 0, this.themeData.texture.location.w, this.themeData.texture.location.h);
+        const themeSource = loader.createTextureSource(this.textureMap, this.themeData.texture);
+        const themeImageData = (themeSource.get("og").getContext("2d") as CanvasRenderingContext2D).getImageData(0, 0, this.themeData.texture.location.w, this.themeData.texture.location.h);
         for (let x = 0; x < this.themeData.texture.location.w; x++) {
             for (let y = 0; y < this.themeData.texture.location.h; y++) {
                 let i = (x + y*this.themeData.texture.location.w)*4;
@@ -1271,7 +1586,7 @@ export default class Game extends Engine {
             }
         }
 
-        this.enemyList.forEach(type => {
+        this.enemiesData.forEach(type => {
             this.enemyTextures[type] = {};
             for (let name in this.enemyDatas[type].textures)
                 this.enemyTextures[type][name] = loader.createTextureSource(this.textureMap, this.enemyDatas[type].textures[name]);
@@ -1285,6 +1600,10 @@ export default class Game extends Engine {
             this.projectileTextures[type] = loader.createColorMappedTextureSource(this.textureMap, this.projectileDatas[type].texture);
         });
 
+        this.othersData.forEach(name => {
+            this.otherTextures[name] = loader.createTextureSource(this.textureMap, this.otherDatas[name].texture);
+        });
+
         this.init();
     }
 
@@ -1292,9 +1611,9 @@ export default class Game extends Engine {
         if (!this._themeData) throw "Theme data not fully loaded yet";
         return this._themeData;
     }
-    public get enemyList() {
-        if (!this._enemyList) throw "Enemy list map not fully loaded yet";
-        return this._enemyList;
+    public get enemiesData() {
+        if (!this._enemiesData) throw "Enemy list map not fully loaded yet";
+        return this._enemiesData;
     }
     public get enemyDatas() {
         if (!this._enemyDatas) throw "Enemy datas not fully loaded yet";
@@ -1308,10 +1627,6 @@ export default class Game extends Engine {
         if (!this._particleDatas) throw "Particle datas not fully loaded yet";
         return this._particleDatas;
     }
-    public get textureMap() {
-        if (!this._textureMap) throw "Texture map not fully loaded yet";
-        return this._textureMap;
-    }
     public get projectilesData() {
         if (!this._projectilesData) throw "Projectiles data not fully loaded yet";
         return this._projectilesData;
@@ -1319,6 +1634,18 @@ export default class Game extends Engine {
     public get projectileDatas() {
         if (!this._projectileDatas) throw "Projectile datas not fully loaded yet";
         return this._projectileDatas;
+    }
+    public get othersData() {
+        if (!this._othersData) throw "Others data not fully loaded yet";
+        return this._othersData;
+    }
+    public get otherDatas() {
+        if (!this._otherDatas) throw "Other datas not fully loaded yet";
+        return this._otherDatas;
+    }
+    public get textureMap() {
+        if (!this._textureMap) throw "Texture map not fully loaded yet";
+        return this._textureMap;
     }
 
     public get nThemeColors() { return this.themeColors.length; }
@@ -1339,6 +1666,10 @@ export default class Game extends Engine {
     public getProjectileTextureSource(type: string): loader.ColorMappedTextureSource | null {
         if (!this.projectileTextures[type]) return null;
         return this.projectileTextures[type];
+    }
+    public getOtherTextureSource(name: string): loader.TextureSource | null {
+        if (!this.otherTextures[name]) return null;
+        return this.otherTextures[name];
     }
 
     protected internalUpdate(delta: number) {
@@ -1368,5 +1699,8 @@ export default class Game extends Engine {
 
         if (this.cameraEntity && this.playerEntity)
             this.cameraEntity.target = this.playerEntity.pos;
+    }
+    protected internalRender() {
+        super.internalRender();
     }
 }

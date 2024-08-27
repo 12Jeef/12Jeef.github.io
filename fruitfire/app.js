@@ -1998,6 +1998,9 @@ class Entity extends Target {
             this.knockDir(other.realPos.towards(this.realPos), Math.min(8, knock * 0.05));
             this.post("damage", other, dist);
         }
+        if (rule & Engine.COLLISIONINTERACT) {
+            this.post("interact", other, dist);
+        }
     }
     preUpdate() {
         if (!this.hasEngineParent) {
@@ -2175,6 +2178,7 @@ class Camera extends Entity {
 class Engine extends Target {
     static COLLISIONPUSH = 1 << 0;
     static COLLISIONDAMAGE = 1 << 1;
+    static COLLISIONINTERACT = 1 << 2;
     _ctx;
     _bindTarget;
     _keysDown;
@@ -2341,6 +2345,14 @@ class Engine extends Target {
             }
         }
     }
+    forEachChunk(pos, callback) {
+        const { x, y } = new Vec2(pos).round();
+        if (!this.collisionChunks.has(x))
+            return;
+        if (!this.collisionChunks.get(x)?.has(y))
+            return;
+        (this.collisionChunks.get(x)?.get(y) ?? []).forEach(callback);
+    }
     get cameraFov() { return this.cameraEntity?.getFov() ?? 1; }
     worldToCtxLen(value) {
         return value / this.cameraFov;
@@ -2421,6 +2433,7 @@ function castTexture(data, defaultFile = DEFAULTFILE) {
     return {
         location: castLocation(data.querySelector(":scope > location") ?? null, defaultFile),
         crop: castBoolean(data.getAttribute("crop")),
+        padding: parseFloat(data.getAttribute("padding") ?? "8"),
     };
 }
 function castTextures(data, defaultFile = DEFAULTFILE) {
@@ -2544,7 +2557,7 @@ function castCommands(data) {
     data = data ?? EMPTYELEMENT;
     return Array.from(data.children).map(child => castCommand(child));
 }
-async function loadEnemyList() {
+async function loadEnemiesData() {
     const resp = await fetch("./assets/enemies/index.xml");
     const text = await resp.text();
     const data = PARSER.parseFromString(text, "text/xml");
@@ -2557,11 +2570,7 @@ function castEnemyComponentData(data) {
     data = data ?? EMPTYELEMENT;
     return {
         texture: data.querySelector(":scope > texture")?.textContent ?? "",
-        type: ((type) => {
-            if (!["original", "outlined", "white", "white + outlined"].includes(type))
-                return "original";
-            return type;
-        })(data.querySelector(":scope > type")?.textContent ?? ""),
+        type: data.querySelector(":scope > type")?.textContent ?? "og",
         offset: castVec2(data.querySelector(":scope > offset")),
         scale: castVec2(data.querySelector(":scope > scale"), [1, 1]),
         opacity: parseFloat(data.querySelector(":scope > opacity")?.textContent ?? "1"),
@@ -2741,6 +2750,26 @@ async function loadProjectileData(type, projectilesData) {
         outline: !!body.querySelector(":scope > outline"),
     };
 }
+async function loadOthersData() {
+    const resp = await fetch("./assets/others/index.xml");
+    const text = await resp.text();
+    const data = PARSER.parseFromString(text, "text/xml");
+    const body = data.querySelector("body");
+    if (!body)
+        throw "Error loading index.xml: No body found";
+    return Array.from(body.children).filter(item => item.tagName === "i").map(item => item.textContent ?? "");
+}
+async function loadOtherData(name) {
+    const resp = await fetch("./assets/others/" + name + ".xml");
+    const text = await resp.text();
+    const data = PARSER.parseFromString(text, "text/xml");
+    const body = data.querySelector("body");
+    if (!body)
+        throw "Error loading " + name + ".xml: No body found";
+    return {
+        texture: castTexture(body.querySelector(":scope > texture")),
+    };
+}
 async function loadFile(file = DEFAULTFILE) {
     return await loadImage("./assets/" + file + ".png");
 }
@@ -2751,7 +2780,7 @@ function createCanvas() {
         throw "Canvas not supported";
     return { canvas, ctx };
 }
-function createOutline(canvas) {
+function createOutline(canvas, outlineColor) {
     const ctx = canvas.getContext("2d");
     if (!ctx)
         throw "How did we get here?";
@@ -2786,20 +2815,20 @@ function createOutline(canvas) {
     for (let x = 0; x < width; x++) {
         for (let y = 0; y < height; y++) {
             let i = (x + y * width) * 4;
-            for (let j = 0; j < 3; j++)
-                outlineImageData.data[i + j] = 0;
+            outlineImageData.data[i + 0] = outlineColor.r;
+            outlineImageData.data[i + 1] = outlineColor.g;
+            outlineImageData.data[i + 2] = outlineColor.b;
             outlineImageData.data[i + 3] = (outline[x][y] == 2) ? 255 : 0;
         }
     }
     outlineCtx.putImageData(outlineImageData, 0, 0);
     return outlineCanvas;
 }
-function createTextureSource(source, texture, padding = 8) {
+function createTextureSource(source, texture) {
+    const padding = texture.padding;
     const { canvas: canvas, ctx: ctx } = createCanvas();
     const { canvas: originalCanvas, ctx: originalCtx } = createCanvas();
     const { canvas: whiteCanvas, ctx: whiteCtx } = createCanvas();
-    const { canvas: originalAndOutlineCanvas, ctx: originalAndOutlineCtx } = createCanvas();
-    const { canvas: whiteAndOutlineCanvas, ctx: whiteAndOutlineCtx } = createCanvas();
     canvas.width = source.width;
     canvas.height = source.height;
     ctx.drawImage(source, 0, 0);
@@ -2856,8 +2885,8 @@ function createTextureSource(source, texture, padding = 8) {
     }
     const width = textureWidth + padding * 2;
     const height = textureHeight + padding * 2;
-    originalCanvas.width = whiteCanvas.width = originalAndOutlineCanvas.width = whiteAndOutlineCanvas.width = width;
-    originalCanvas.height = whiteCanvas.height = originalAndOutlineCanvas.height = whiteAndOutlineCanvas.height = height;
+    originalCanvas.width = whiteCanvas.width = width;
+    originalCanvas.height = whiteCanvas.height = height;
     originalCtx.drawImage(source, textureX, textureY, textureWidth, textureHeight, padding, padding, textureWidth, textureHeight);
     whiteCtx.drawImage(originalCanvas, 0, 0);
     const whiteImageData = whiteCtx.getImageData(0, 0, width, height);
@@ -2866,31 +2895,43 @@ function createTextureSource(source, texture, padding = 8) {
             for (let i = 0; i < 3; i++)
                 whiteImageData.data[(x + y * width) * 4 + i] = 255;
     whiteCtx.putImageData(whiteImageData, 0, 0);
-    const outlineCanvas = createOutline(originalCanvas);
-    originalAndOutlineCtx.drawImage(outlineCanvas, 0, 0);
-    originalAndOutlineCtx.drawImage(originalCanvas, 0, 0);
-    whiteAndOutlineCtx.drawImage(outlineCanvas, 0, 0);
-    whiteAndOutlineCtx.drawImage(whiteCanvas, 0, 0);
+    const blackOutlineCanvas = createOutline(originalCanvas, new Color("#000000"));
+    const whiteOutlineCanvas = createOutline(originalCanvas, new Color("#ffffff"));
+    const cache = {};
     return {
         texture: texture,
-        padding: padding,
-        original: originalCanvas,
-        white: whiteCanvas,
-        outline: outlineCanvas,
-        originalAndOutline: originalAndOutlineCanvas,
-        whiteAndOutline: whiteAndOutlineCanvas,
+        get: type => {
+            if (type in cache)
+                return cache[type];
+            const { canvas, ctx } = createCanvas();
+            canvas.width = originalCanvas.width;
+            canvas.height = originalCanvas.height;
+            const parts = type.split("+");
+            if (parts.includes("og"))
+                ctx.drawImage(originalCanvas, 0, 0);
+            else if (parts.includes("w"))
+                ctx.drawImage(whiteCanvas, 0, 0);
+            if (parts.includes("outline"))
+                ctx.drawImage(blackOutlineCanvas, 0, 0);
+            else if (parts.includes("outlineb"))
+                ctx.drawImage(blackOutlineCanvas, 0, 0);
+            else if (parts.includes("outlinew"))
+                ctx.drawImage(whiteOutlineCanvas, 0, 0);
+            return cache[type] = canvas;
+        },
     };
 }
-function createColorMappedTextureSource(source, texture, padding = 8) {
-    const { original } = createTextureSource(source, texture, padding);
+function createColorMappedTextureSource(source, texture) {
+    const { get } = createTextureSource(source, texture);
+    const original = get("og");
     const originalCtx = original.getContext("2d");
     if (!originalCtx)
         throw "How did this happen?";
     const originalImageData = originalCtx.getImageData(0, 0, original.width, original.height);
     const colors = {};
+    const black = new Color("#000000");
     return {
         texture: texture,
-        padding: padding,
         generator: (color, outline) => {
             outline ??= false;
             if (color.toHex(false) in colors)
@@ -2914,7 +2955,7 @@ function createColorMappedTextureSource(source, texture, padding = 8) {
                 }
             }
             ctx.putImageData(imageData, 0, 0);
-            const outlineCanvas = createOutline(canvas);
+            const outlineCanvas = createOutline(canvas, black);
             const { canvas: canvasOutlined, ctx: ctxOutlined } = createCanvas();
             canvasOutlined.width = canvas.width;
             canvasOutlined.height = canvas.height;
@@ -3134,7 +3175,7 @@ class LaunchedProjectile extends Projectile {
     }
 }
 class Explosion extends ModifiedEntity {
-    color;
+    colors;
     time;
     constructor(options) {
         super({
@@ -3147,11 +3188,17 @@ class Explosion extends ModifiedEntity {
         this.zOffsetY = this.radius;
         this.knockScale = 0.01;
         this.invincible = true;
-        this.color = new Color();
-        if (typeof (options.color) === "number")
-            this.color.set(this.engine.getThemeColor(options.color) ?? 0);
-        else
-            this.color.set(options.color);
+        let colors = [...(options.colors ?? [])];
+        if (options.color)
+            colors.push(options.color);
+        this.colors = colors.map(color => {
+            const colorObject = new Color();
+            if (typeof (color) === "number")
+                colorObject.set(this.engine.getThemeColor(color) ?? 0);
+            else
+                colorObject.set(color);
+            return colorObject;
+        });
         this.time = 500;
     }
     internalUpdate(delta) {
@@ -3163,11 +3210,124 @@ class Explosion extends ModifiedEntity {
     internalRender() {
         super.internalRender();
         const ctx = this.engine.ctx;
-        ctx.fillStyle = [this.color.toHex(false), this.color.toHex(false), "#fff"][Math.floor(((this.time / 100) % 1) * 3)];
+        const scale = (this.time < 250) ? 1 : lerp(0, 1, ease.sinO((500 - this.time) / 250));
+        const pos = this.engine.worldToCtxPos(this.realPos);
+        const radius = this.engine.worldToCtxLen(this.radius * scale);
+        ctx.fillStyle = [...this.colors.map(color => color.toHex(false))][Math.floor(((this.time / 100) % 1) * this.colors.length)];
         ctx.beginPath();
-        ctx.arc(...this.engine.worldToCtxPos(this.realPos).xy, this.engine.worldToCtxLen(this.radius), 0, 2 * Math.PI);
+        ctx.arc(...pos.xy, radius, 0, 2 * Math.PI);
         ctx.closePath();
         ctx.fill();
+        ctx.fillStyle = ["#fff", "#fff8"][Math.floor(((this.time / 150) % 1) * 2)];
+        ctx.beginPath();
+        ctx.arc(...pos.xy, radius * 0.75, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.fill();
+    }
+}
+class Laser extends ModifiedEntity {
+    colors;
+    time;
+    len;
+    collideTime;
+    constructor(options) {
+        super({
+            parent: options.parent,
+            pos: options.pos ?? options.source.pos,
+            dir: options.dir ?? options.source.dir,
+            maxHealth: 1,
+            radius: options.radius,
+            group: options.source.group + "-spawn",
+        });
+        this.zOffsetY = 1e10;
+        this.invincible = true;
+        let colors = [...(options.colors ?? [])];
+        if (options.color)
+            colors.push(options.color);
+        this.colors = colors.map(color => {
+            const colorObject = new Color();
+            if (typeof (color) === "number")
+                colorObject.set(this.engine.getThemeColor(color) ?? 0);
+            else
+                colorObject.set(color);
+            return colorObject;
+        });
+        this.time = 0;
+        this.len = 0;
+        this.collideTime = 0;
+        this.knockScale = 0.1;
+    }
+    internalUpdate(delta) {
+        super.internalUpdate(delta);
+        this.len = 0;
+        let x = this.pos.x;
+        let y = this.pos.y;
+        let entity = null;
+        while (this.len < 1000) {
+            let chunkX = Math.round(x / this.engine.collisionChunkSize);
+            let chunkY = Math.round(y / this.engine.collisionChunkSize);
+            let minDist = this.engine.collisionChunkSize;
+            let minDistEntity = null;
+            for (let sx = -1; sx <= 1; sx++)
+                for (let sy = -1; sy <= 1; sy++)
+                    this.engine.forEachChunk([chunkX + sx, chunkY + sy], entity => {
+                        const rule = this.engine.getCollisionRule(this.group, entity.group);
+                        if (!rule)
+                            return;
+                        let dist = entity.pos.dist([x, y]) - entity.radius;
+                        if (dist > minDist)
+                            return;
+                        minDist = dist;
+                        minDistEntity = entity;
+                    });
+            this.len += minDist;
+            x += minDist * cos(this.dir);
+            y += minDist * sin(this.dir);
+            if (minDist < 1) {
+                entity = minDistEntity;
+                break;
+            }
+        }
+        if (entity) {
+            this.collideTime += delta;
+            if (this.collideTime > 100) {
+                this.collideTime -= 100;
+                entity.handleCollision(this, -this.radius, this.engine.getCollisionRule(this.group, entity.group));
+            }
+        }
+        this.time += delta;
+    }
+    internalRender() {
+        super.internalRender();
+        const ctx = this.engine.ctx;
+        const posStart = this.engine.worldToCtxPos(this.realPos);
+        const posStop = this.engine.worldToCtxPos(Vec2.dir(this.dir, this.len).add(this.realPos));
+        const radius = this.engine.worldToCtxLen(this.radius);
+        ctx.lineCap = ctx.lineJoin = "round";
+        ctx.fillStyle = ctx.strokeStyle = [...this.colors.map(color => color.toHex(false))][Math.floor(((this.time / 100) % 1) * this.colors.length)];
+        ctx.lineWidth = radius * lerp(1.75, 2.25, Math.random());
+        ctx.beginPath();
+        ctx.moveTo(...posStart.xy);
+        ctx.lineTo(...posStop.xy);
+        ctx.stroke();
+        for (const pos of [posStart, posStop]) {
+            ctx.beginPath();
+            ctx.arc(...pos.xy, radius * lerp(1.75, 2.25, Math.random()) / 2 * 1.25, 0, 2 * Math.PI);
+            ctx.closePath();
+            ctx.fill();
+        }
+        ctx.fillStyle = ctx.strokeStyle = ["#fff", "#fff8"][Math.floor(((this.time / 150) % 1) * 2)];
+        ctx.lineWidth = radius * lerp(0.75, 1.25, Math.random());
+        ctx.beginPath();
+        ctx.moveTo(...posStart.xy);
+        ctx.lineTo(...posStop.xy);
+        ctx.stroke();
+        for (const pos of [posStart, posStop]) {
+            ctx.beginPath();
+            ctx.arc(...pos.xy, radius * lerp(0.75, 1.25, Math.random()) / 2 * 1.25, 0, 2 * Math.PI);
+            ctx.closePath();
+            ctx.fill();
+        }
     }
 }
 class Player extends ModifiedEntity {
@@ -3190,11 +3350,11 @@ class Player extends ModifiedEntity {
             this.engine.rootEntity.addEntity(new Projectile({
                 parent: this.engine.rootEntity,
                 source: this,
-                type: "power-4",
+                type: "power-6",
                 color: 19,
                 speed: 0.25,
                 time: 5000,
-                damage: 1,
+                damage: 10,
             }));
     }
     internalRender() {
@@ -3678,7 +3838,7 @@ class Enemy extends ModifiedEntity {
     set health(value) {
         if (value < super.health)
             this.latestDamage = getTime();
-        if (value === 0)
+        if (value <= 0)
             this.triggerEvent("death", {});
         super.health = value;
     }
@@ -3748,11 +3908,22 @@ class Enemy extends ModifiedEntity {
             const textureSource = this.engine.getEnemyTextureSource(this.type, component.texture);
             if (!textureSource)
                 continue;
-            const texture = (component.isBody && this.damageFlash) ? textureSource.whiteAndOutline :
-                (component.type === "original") ? textureSource.original :
-                    (component.type === "outlined") ? textureSource.originalAndOutline :
-                        (component.type === "white") ? textureSource.white :
-                            textureSource.whiteAndOutline;
+            let type = component.type;
+            if (component.isBody && this.damageFlash) {
+                const parts = type.split("+");
+                if (parts.includes("og") || parts.includes("w")) {
+                    parts.splice(parts.indexOf("og"), 1);
+                    parts.push("w");
+                }
+                else if (parts.includes("outline") || parts.includes("outlineb") || parts.includes("outlinew")) {
+                    parts.splice(parts.indexOf("outline"), 1);
+                    parts.splice(parts.indexOf("outlineb"), 1);
+                    parts.splice(parts.indexOf("outlinew"), 1);
+                    parts.push("outlinew");
+                }
+                type = parts.join("+");
+            }
+            const texture = textureSource.get(type);
             ctx.save();
             ctx.translate(Math.round(this.engine.worldToCtxLen(component.offset.x)), Math.round(this.engine.worldToCtxLen(component.offset.y)));
             if (component.dir !== 0)
@@ -3766,19 +3937,28 @@ class Enemy extends ModifiedEntity {
         ctx.restore();
     }
     copy(args) {
+        if (!args)
+            return [];
         return [...args];
     }
     concat(...args) {
+        if (!args)
+            return [];
         return args;
     }
     push(array, value) {
-        array.push(value);
+        if (array)
+            array.push(value);
         return array;
     }
     pop(array) {
+        if (!array)
+            return null;
         return array.pop();
     }
     get(array, i) {
+        if (!array)
+            return null;
         return array[i];
     }
     getLookingOffset() {
@@ -3840,46 +4020,80 @@ class Enemy extends ModifiedEntity {
             dir: dir,
         });
     }
-    createExplosion(color, damage, radius, pos) {
+    createExplosion(colors, damage, radius, pos) {
         return new Explosion({
             parent: this.engine.rootEntity,
             source: this,
-            color: color ?? 0,
+            colors: colors ?? [],
             damage: damage,
             pos: pos,
             radius: radius,
         });
     }
+    createLaser(colors, damage, radius, pos, dir) {
+        return new Laser({
+            parent: this.engine.rootEntity,
+            source: this,
+            colors: colors ?? [],
+            damage: damage,
+            pos: pos,
+            dir: dir,
+            radius: radius,
+        });
+    }
 }
 class Game extends Engine {
+    app;
     _themeData;
-    _enemyList;
+    _enemiesData;
     _enemyDatas;
     _particlesData;
     _particleDatas;
     _projectilesData;
     _projectileDatas;
+    _othersData;
+    _otherDatas;
     _textureMap;
     themeColors;
     enemyTextures;
     particleTextures;
     projectileTextures;
+    otherTextures;
+    scale;
     playerEntity;
     constructor(options) {
-        super(options);
+        super({
+            ctx: options.ctx,
+            bindTarget: options.bindTarget,
+        });
+        this.app = options.app;
         this._themeData = null;
-        this._enemyList = null;
+        this._enemiesData = null;
         this._enemyDatas = null;
         this._particlesData = null;
         this._particleDatas = null;
         this._projectilesData = null;
         this._projectileDatas = null;
+        this._othersData = null;
+        this._otherDatas = null;
         this._textureMap = null;
         this.themeColors = [];
         this.enemyTextures = {};
         this.particleTextures = {};
         this.projectileTextures = {};
+        this.otherTextures = {};
+        this.scale = 0;
         this.playerEntity = null;
+        this.addHandler("resize", (scale) => {
+            this.scale = 1 / scale;
+            document.documentElement.style.setProperty("--scale", String(this.scale));
+        });
+        this.app.eMainMenuPlayBtn.addEventListener("mouseenter", e => {
+            (this.app.eMainMenuPlayBtn.querySelector(":scope > img"))?.setAttribute("tex", "other:ui-play-hover");
+        });
+        this.app.eMainMenuPlayBtn.addEventListener("mouseleave", e => {
+            (this.app.eMainMenuPlayBtn.querySelector(":scope > img"))?.setAttribute("tex", "other:ui-play");
+        });
     }
     init() {
         this.ctx.imageSmoothingEnabled = false;
@@ -3901,7 +4115,7 @@ class Game extends Engine {
         this.playerEntity = this.rootEntity.addEntity(new Player({
             parent: this.rootEntity,
         }));
-        this.enemyList.forEach(type => {
+        this.enemiesData.forEach(type => {
             if (this.enemyDatas[type].part)
                 return;
             const types = this.enemyDatas[type].type;
@@ -3922,12 +4136,93 @@ class Game extends Engine {
                     type: type,
                 }));
         });
+        let ignoreMutations = false;
+        const images = new Map();
+        const checkImages = () => {
+            if (ignoreMutations)
+                return;
+            ignoreMutations = true;
+            const newImages = new Set();
+            const dfs = (elem) => {
+                if (elem instanceof HTMLImageElement)
+                    newImages.add(elem);
+                for (const child of elem.children)
+                    dfs(child);
+            };
+            dfs(document.body);
+            const applyToImage = (image, canvas, doSrc) => {
+                doSrc ??= false;
+                if (image.style.imageRendering !== "pixelated")
+                    image.style.imageRendering = "pixelated";
+                const width = ((canvas?.width ?? 0) * this.scale) + "px";
+                const height = ((canvas?.height ?? 0) * this.scale) + "px";
+                if (image.style.width !== width)
+                    image.style.width = width;
+                if (image.style.height !== height)
+                    image.style.height = height;
+                if (doSrc) {
+                    const src = canvas?.toDataURL() ?? "";
+                    if (image.src !== src)
+                        image.src = src;
+                }
+            };
+            for (const image of newImages) {
+                if (images.has(image))
+                    continue;
+                images.set(image, null);
+            }
+            for (const image of [...images.keys()]) {
+                if (newImages.has(image))
+                    continue;
+                images.delete(image);
+            }
+            for (const [image, oldTex] of [...images.entries()]) {
+                const tex = image.getAttribute("tex");
+                images.set(image, oldTex);
+                if (!tex) {
+                    applyToImage(image, null, true);
+                    continue;
+                }
+                const section = tex.split(":")[0];
+                const args = tex.slice(section.length + 1).split(",");
+                const type = image.getAttribute("type") ?? "og";
+                if (section === "enemy" || section === "other") {
+                    const textureSource = (section === "enemy") ? this.getEnemyTextureSource(args[0] ?? "", args[1] ?? "") :
+                        (section === "other") ? this.getOtherTextureSource(args[0] ?? "") :
+                            null;
+                    if (!textureSource) {
+                        applyToImage(image, null, true);
+                        continue;
+                    }
+                    const canvas = textureSource.get(type);
+                    applyToImage(image, canvas, tex !== oldTex);
+                    continue;
+                }
+                if (section === "particle" || section === "projectile") {
+                    const color = new Color(image.getAttribute("color") ?? "#000");
+                    const outlined = castBoolean(image.getAttribute("outlined"), false);
+                    const textureSource = (section === "particle") ? this.getParticleTextureSource(args[0] ?? "") :
+                        (section === "projectile") ? this.getProjectileTextureSource(args[0] ?? "") :
+                            null;
+                    if (!textureSource) {
+                        applyToImage(image, null, true);
+                        continue;
+                    }
+                    const canvas = textureSource.generator(color, outlined);
+                    applyToImage(image, canvas, tex !== oldTex);
+                    continue;
+                }
+            }
+            ignoreMutations = false;
+        };
+        this.addHandler("mutation", () => checkImages());
+        checkImages();
     }
     async load() {
         this._themeData = await loadThemeData();
-        this._enemyList = await loadEnemyList();
+        this._enemiesData = await loadEnemiesData();
         this._enemyDatas = {};
-        await Promise.all(this.enemyList.map(async (type) => {
+        await Promise.all(this.enemiesData.map(async (type) => {
             this.enemyDatas[type] = await loadEnemyData(type);
         }));
         this._particlesData = await loadParticlesData();
@@ -3940,9 +4235,14 @@ class Game extends Engine {
         await Promise.all(this.projectilesData.list.map(async (type) => {
             this.projectileDatas[type] = await loadProjectileData(type, this.projectilesData);
         }));
+        this._othersData = await loadOthersData();
+        this._otherDatas = {};
+        await Promise.all(this.othersData.map(async (name) => {
+            this.otherDatas[name] = await loadOtherData(name);
+        }));
         this._textureMap = await loadFile();
-        const themeSource = createTextureSource(this.textureMap, this.themeData.texture, 0);
-        const themeImageData = themeSource.original.getContext("2d").getImageData(0, 0, this.themeData.texture.location.w, this.themeData.texture.location.h);
+        const themeSource = createTextureSource(this.textureMap, this.themeData.texture);
+        const themeImageData = themeSource.get("og").getContext("2d").getImageData(0, 0, this.themeData.texture.location.w, this.themeData.texture.location.h);
         for (let x = 0; x < this.themeData.texture.location.w; x++) {
             for (let y = 0; y < this.themeData.texture.location.h; y++) {
                 let i = (x + y * this.themeData.texture.location.w) * 4;
@@ -3954,7 +4254,7 @@ class Game extends Engine {
                 ]));
             }
         }
-        this.enemyList.forEach(type => {
+        this.enemiesData.forEach(type => {
             this.enemyTextures[type] = {};
             for (let name in this.enemyDatas[type].textures)
                 this.enemyTextures[type][name] = createTextureSource(this.textureMap, this.enemyDatas[type].textures[name]);
@@ -3965,6 +4265,9 @@ class Game extends Engine {
         this.projectilesData.list.forEach(type => {
             this.projectileTextures[type] = createColorMappedTextureSource(this.textureMap, this.projectileDatas[type].texture);
         });
+        this.othersData.forEach(name => {
+            this.otherTextures[name] = createTextureSource(this.textureMap, this.otherDatas[name].texture);
+        });
         this.init();
     }
     get themeData() {
@@ -3972,10 +4275,10 @@ class Game extends Engine {
             throw "Theme data not fully loaded yet";
         return this._themeData;
     }
-    get enemyList() {
-        if (!this._enemyList)
+    get enemiesData() {
+        if (!this._enemiesData)
             throw "Enemy list map not fully loaded yet";
-        return this._enemyList;
+        return this._enemiesData;
     }
     get enemyDatas() {
         if (!this._enemyDatas)
@@ -3992,11 +4295,6 @@ class Game extends Engine {
             throw "Particle datas not fully loaded yet";
         return this._particleDatas;
     }
-    get textureMap() {
-        if (!this._textureMap)
-            throw "Texture map not fully loaded yet";
-        return this._textureMap;
-    }
     get projectilesData() {
         if (!this._projectilesData)
             throw "Projectiles data not fully loaded yet";
@@ -4006,6 +4304,21 @@ class Game extends Engine {
         if (!this._projectileDatas)
             throw "Projectile datas not fully loaded yet";
         return this._projectileDatas;
+    }
+    get othersData() {
+        if (!this._othersData)
+            throw "Others data not fully loaded yet";
+        return this._othersData;
+    }
+    get otherDatas() {
+        if (!this._otherDatas)
+            throw "Other datas not fully loaded yet";
+        return this._otherDatas;
+    }
+    get textureMap() {
+        if (!this._textureMap)
+            throw "Texture map not fully loaded yet";
+        return this._textureMap;
     }
     get nThemeColors() { return this.themeColors.length; }
     getThemeColor(i) {
@@ -4032,6 +4345,11 @@ class Game extends Engine {
             return null;
         return this.projectileTextures[type];
     }
+    getOtherTextureSource(name) {
+        if (!this.otherTextures[name])
+            return null;
+        return this.otherTextures[name];
+    }
     internalUpdate(delta) {
         super.internalUpdate(delta);
         if (this.playerEntity && !this.playerEntity.addedToEngine)
@@ -4056,6 +4374,9 @@ class Game extends Engine {
         if (this.cameraEntity && this.playerEntity)
             this.cameraEntity.target = this.playerEntity.pos;
     }
+    internalRender() {
+        super.internalRender();
+    }
 }
 
 function fail(message) {
@@ -4078,24 +4399,51 @@ class App extends Target {
     }
     canvas;
     ctx;
+    canvas2;
+    ctx2;
+    eMainMenu;
+    eMainMenuPlayBtn;
     game;
     constructor() {
         super();
         this.canvas = document.getElementById("game");
+        this.canvas2 = document.getElementById("game2");
         this.ctx = assertInline(this.canvas.getContext("2d"), "Canvas is not supported");
+        this.ctx2 = assertInline(this.canvas2.getContext("2d"), "Canvas is not supported");
+        const eMainMenu = document.getElementById("main-menu");
+        if (!(eMainMenu instanceof HTMLDivElement))
+            throw "Could not find #main-menu div element";
+        this.eMainMenu = eMainMenu;
+        const eMainMenuPlayBtn = document.getElementById("main-menu-play-btn");
+        if (!(eMainMenuPlayBtn instanceof HTMLButtonElement))
+            throw "Could not find #main-menu-play-btn div element";
+        this.eMainMenuPlayBtn = eMainMenuPlayBtn;
         const onResize = () => {
             let scaleX = 300 / window.innerWidth;
             let scaleY = 150 / window.innerHeight;
             let scale = (scaleX + scaleY) / 2;
             this.ctx.canvas.width = Math.ceil(window.innerWidth * scale);
             this.ctx.canvas.height = Math.ceil(window.innerHeight * scale);
+            this.ctx2.canvas.width = this.ctx.canvas.width;
+            this.ctx2.canvas.height = this.ctx.canvas.height;
+            this.game.post("resize", scale);
         };
         window.addEventListener("resize", e => onResize());
-        onResize();
+        const observer = new MutationObserver(() => {
+            this.game.post("mutation");
+        });
+        observer.observe(document.body, {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            characterData: true,
+        });
         this.game = new Game({
+            app: this,
             ctx: this.ctx,
             bindTarget: document.body,
         });
+        onResize();
         let t0 = null;
         const update = () => {
             window.requestAnimationFrame(update);
@@ -4116,6 +4464,10 @@ class App extends Target {
     update(delta) {
         this.game.update(delta);
         this.game.render();
+        this.ctx2.filter = "blur(8px)";
+        this.ctx2.drawImage(this.ctx.canvas, 0, 0);
     }
 }
 App.instance;
+
+export { App as default };

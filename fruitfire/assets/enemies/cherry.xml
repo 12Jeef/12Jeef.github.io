@@ -44,7 +44,7 @@
         </component>
         <component id="body" body="true">
             <texture>walk-1</texture>
-            <type>outlined</type>
+            <type>og+outline</type>
         </component>
         <component id="eyes">
             <texture>eyes</texture>

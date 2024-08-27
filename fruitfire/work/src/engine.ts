@@ -261,7 +261,7 @@ export class Entity extends util.Target {
         return this.gaze(angleRel);
     }
 
-    private handleCollision(other: Entity, dist: number, rule: number) {
+    public handleCollision(other: Entity, dist: number, rule: number) {
         const knock = -dist * this.knockScale * other.knockScale * (this.knockIgnoreMass ? 1 : (other.mass/this.mass));
         if (rule & Engine.COLLISIONPUSH) {
             this.knockDir(other.realPos.towards(this.realPos), Math.min(8, knock*0.01));
@@ -271,6 +271,9 @@ export class Entity extends util.Target {
             if (!this.invincible) this.health -= other.damage;
             this.knockDir(other.realPos.towards(this.realPos), Math.min(8, knock*0.05));
             this.post("damage", other, dist);
+        }
+        if (rule & Engine.COLLISIONINTERACT) {
+            this.post("interact", other, dist);
         }
     }
 
@@ -491,6 +494,7 @@ export type EngineOptions = {
 export default class Engine extends util.Target {
     public static readonly COLLISIONPUSH = 1 << 0;
     public static readonly COLLISIONDAMAGE = 1 << 1;
+    public static readonly COLLISIONINTERACT = 1 << 2;
 
     private _ctx;
     private _bindTarget: HTMLElement | null;
@@ -662,6 +666,12 @@ export default class Engine extends util.Target {
                 (this.collisionChunks.get(x)?.get(y) ?? []).forEach(callback);
             }
         }
+    }
+    public forEachChunk(pos: util.VectorLike, callback: (entity: Entity) => void) {
+        const { x, y } = new util.Vec2(pos).round();
+        if (!this.collisionChunks.has(x)) return;
+        if (!this.collisionChunks.get(x)?.has(y)) return;
+        (this.collisionChunks.get(x)?.get(y) ?? []).forEach(callback);
     }
 
     private get cameraFov() { return this.cameraEntity?.getFov() ?? 1; }

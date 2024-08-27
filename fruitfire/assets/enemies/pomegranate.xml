@@ -38,7 +38,7 @@
         </component>
         <component id="body" body="true">
             <texture>walk</texture>
-            <type>outlined</type>
+            <type>og+outline</type>
         </component>
         <component id="eyes">
             <texture>eyes</texture>
@@ -72,7 +72,7 @@
                     <start>
                         <set>
                             <prop>~body.type</prop>
-                            <value><json>"white + outlined"</json></value>
+                            <value><json>"w+outline"</json></value>
                         </set>
                     </start>
                 </keyframe>
@@ -80,7 +80,7 @@
                     <start>
                         <set>
                             <prop>~body.type</prop>
-                            <value><json>"outlined"</json></value>
+                            <value><json>"og+outline"</json></value>
                         </set>
                     </start>
                 </keyframe>
@@ -225,7 +225,7 @@
                         <call>
                             <func>createExplosion</func>
                             <args>
-                                <json>61</json>
+                                <json>[61, 62, 63]</json>
                                 <json>3</json>
                                 <json>24</json>
                             </args>

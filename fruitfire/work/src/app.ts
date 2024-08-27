@@ -20,8 +20,7 @@ function assertInline<T>(value: T | null, failMessage: string | (() => string)):
     return value;
 }
 
-
-class App extends util.Target {
+export default class App extends util.Target {
     private static _instance: App | null = null;
     public static get instance() {
         if (!this._instance) this._instance = new this();
@@ -43,6 +42,11 @@ class App extends util.Target {
 
     public readonly canvas;
     public readonly ctx;
+    public readonly canvas2;
+    public readonly ctx2;
+
+    public readonly eMainMenu;
+    public readonly eMainMenuPlayBtn;
 
     public readonly game;
 
@@ -55,6 +59,7 @@ class App extends util.Target {
         this.canvas = document.getElementById("game") as HTMLCanvasElement;
         // this.gl = assertInline(this.realCanvas.getContext("webgl"), "WebGL: Is not supported");
         // this.tex = assertInline(this.gl.createTexture(), "WebGL: Could not create texture");
+        this.canvas2 = document.getElementById("game2") as HTMLCanvasElement;
 
         // const createShader = (type: number, src: string) => {
         //     const shader = assertInline(this.gl.createShader(type), "WebGL: Could not create shader");
@@ -247,6 +252,15 @@ class App extends util.Target {
         this.ctx = assertInline(this.canvas.getContext("2d"), "Canvas is not supported");
         // this.ctx.canvas.width = 2000;
         // this.ctx.canvas.height = 1200;
+        this.ctx2 = assertInline(this.canvas2.getContext("2d"), "Canvas is not supported");
+
+        const eMainMenu = document.getElementById("main-menu");
+        if (!(eMainMenu instanceof HTMLDivElement)) throw "Could not find #main-menu div element";
+        this.eMainMenu = eMainMenu;
+
+        const eMainMenuPlayBtn = document.getElementById("main-menu-play-btn");
+        if (!(eMainMenuPlayBtn instanceof HTMLButtonElement)) throw "Could not find #main-menu-play-btn div element";
+        this.eMainMenuPlayBtn = eMainMenuPlayBtn;
 
         const onResize = () => {
             // this.gl.canvas.width = window.innerWidth * devicePixelRatio;
@@ -266,14 +280,29 @@ class App extends util.Target {
             let scale = (scaleX + scaleY) / 2;
             this.ctx.canvas.width = Math.ceil(window.innerWidth * scale);
             this.ctx.canvas.height = Math.ceil(window.innerHeight * scale);
+            this.ctx2.canvas.width = this.ctx.canvas.width;
+            this.ctx2.canvas.height = this.ctx.canvas.height;
+            this.game.post("resize", scale);
         };
         window.addEventListener("resize", e => onResize());
-        onResize();
+
+        const observer = new MutationObserver(() => {
+            this.game.post("mutation");
+        });
+        observer.observe(document.body, {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            characterData: true,
+        });
 
         this.game = new Game({
+            app: this,
             ctx: this.ctx,
             bindTarget: document.body,
         });
+
+        onResize();
 
         let t0: number | null = null;
         const update = () => {
@@ -301,6 +330,9 @@ class App extends util.Target {
     public update(delta: number) {
         this.game.update(delta);
         this.game.render();
+
+        this.ctx2.filter = "blur(8px)";
+        this.ctx2.drawImage(this.ctx.canvas, 0, 0);
 
         // this.game.ctx.fillStyle = "#f001";
         // this.game.ctx.fillRect(10, 10, this.game.ctx.canvas.width-20, this.game.ctx.canvas.height-20);

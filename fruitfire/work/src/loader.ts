@@ -16,7 +16,7 @@ function castVec2(data: Element | null, def: util.vec2 = [0, 0]): util.vec2 {
         parseFloat(data.getAttribute("y") ?? String(def[1])),
     ];
 }
-function castBoolean(data: string | null, def: boolean = false) {
+export function castBoolean(data: string | null, def: boolean = false) {
     if (data === null) return def;
     return !!JSON.parse(data);
 }
@@ -44,6 +44,7 @@ function castLocation(data: Element | null, defaultFile: string = DEFAULTFILE): 
 export type Texture = {
     location: Location,
     crop: boolean,
+    padding: number,
 };
 export type Textures = util.StringMap<Texture>;
 function castTexture(data: Element | null, defaultFile: string = DEFAULTFILE): Texture {
@@ -51,6 +52,7 @@ function castTexture(data: Element | null, defaultFile: string = DEFAULTFILE): T
     return {
         location: castLocation(data.querySelector(":scope > location") ?? null, defaultFile),
         crop: castBoolean(data.getAttribute("crop")),
+        padding: parseFloat(data.getAttribute("padding") ?? "8"),
     };
 }
 function castTextures(data: Element | null, defaultFile: string = DEFAULTFILE): Textures {
@@ -219,8 +221,8 @@ function castCommands(data: Element | null): Commands {
     return Array.from(data.children).map(child => castCommand(child));
 }
 
-export type EnemyList = string[];
-export async function loadEnemyList(): Promise<EnemyList> {
+export type EnemiesData = string[];
+export async function loadEnemiesData(): Promise<EnemiesData> {
     const resp = await fetch("./assets/enemies/index.xml");
     const text = await resp.text();
     const data = PARSER.parseFromString(text, "text/xml") as XMLDocument;
@@ -231,7 +233,7 @@ export async function loadEnemyList(): Promise<EnemyList> {
 
 export type EnemyComponentData = {
     texture: string,
-    type: "original" | "outlined" | "white" | "white + outlined",
+    type: string,
 
     offset: util.vec2,
     scale: util.vec2,
@@ -246,10 +248,7 @@ function castEnemyComponentData(data: Element | null): EnemyComponentData {
     data = data ?? EMPTYELEMENT;
     return {
         texture: data.querySelector(":scope > texture")?.textContent ?? "",
-        type: ((type: string) => {
-            if (!["original", "outlined", "white", "white + outlined"].includes(type)) return "original";
-            return type as ("original" | "outlined" | "white" | "white + outlined");
-        })(data.querySelector(":scope > type")?.textContent ?? ""),
+        type: data.querySelector(":scope > type")?.textContent ?? "og",
 
         offset: castVec2(data.querySelector(":scope > offset")),
         scale: castVec2(data.querySelector(":scope > scale"), [1, 1]),
@@ -507,19 +506,39 @@ export async function loadProjectileData(type: string, projectilesData: Projecti
     };
 }
 
+export type OthersData = string[];
+export async function loadOthersData(): Promise<OthersData> {
+    const resp = await fetch("./assets/others/index.xml");
+    const text = await resp.text();
+    const data = PARSER.parseFromString(text, "text/xml") as XMLDocument;
+    const body = data.querySelector("body");
+    if (!body) throw "Error loading index.xml: No body found";
+    return Array.from(body.children).filter(item => item.tagName === "i").map(item => item.textContent ?? "");
+}
+
+export type OtherData = {
+    texture: Texture,
+};
+export async function loadOtherData(name: string): Promise<OtherData> {
+    const resp = await fetch("./assets/others/"+name+".xml");
+    const text = await resp.text();
+    const data = PARSER.parseFromString(text, "text/xml") as XMLDocument;
+    const body = data.querySelector("body");
+    if (!body) throw "Error loading "+name+".xml: No body found";
+
+    return {
+        texture: castTexture(body.querySelector(":scope > texture")),
+    };
+}
+
 export async function loadFile(file: string = DEFAULTFILE) {
     return await util.loadImage("./assets/"+file+".png");
 }
 
 export type TextureSource = {
     texture: Texture,
-    padding: number,
 
-    original: HTMLCanvasElement,
-    white: HTMLCanvasElement,
-    outline: HTMLCanvasElement,
-    originalAndOutline: HTMLCanvasElement,
-    whiteAndOutline: HTMLCanvasElement,
+    get: (type: string) => HTMLCanvasElement,
 };
 function createCanvas() {
     const canvas = document.createElement("canvas");
@@ -527,7 +546,7 @@ function createCanvas() {
     if (!ctx) throw "Canvas not supported";
     return { canvas, ctx };
 }
-function createOutline(canvas: HTMLCanvasElement) {
+function createOutline(canvas: HTMLCanvasElement, outlineColor: util.Color) {
     const ctx = canvas.getContext("2d");
     if (!ctx) throw "How did we get here?";
 
@@ -559,21 +578,22 @@ function createOutline(canvas: HTMLCanvasElement) {
     for (let x = 0; x < width; x++) {
         for (let y = 0; y < height; y++) {
             let i = (x + y*width)*4;
-            for (let j = 0; j < 3; j++)
-                outlineImageData.data[i + j] = 0;
+            outlineImageData.data[i + 0] = outlineColor.r;
+            outlineImageData.data[i + 1] = outlineColor.g;
+            outlineImageData.data[i + 2] = outlineColor.b;
             outlineImageData.data[i + 3] = (outline[x][y] == 2) ? 255 : 0;
         }
     }
     outlineCtx.putImageData(outlineImageData, 0, 0);
     return outlineCanvas;
 }
-export function createTextureSource(source: HTMLImageElement, texture: Texture, padding: number = 8): TextureSource {
+export function createTextureSource(source: HTMLImageElement, texture: Texture): TextureSource {
+
+    const padding = texture.padding;
 
     const { canvas: canvas, ctx: ctx } = createCanvas();
     const { canvas: originalCanvas, ctx: originalCtx } = createCanvas();
     const { canvas: whiteCanvas, ctx: whiteCtx } = createCanvas();
-    const { canvas: originalAndOutlineCanvas, ctx: originalAndOutlineCtx } = createCanvas();
-    const { canvas: whiteAndOutlineCanvas, ctx: whiteAndOutlineCtx } = createCanvas();
 
     canvas.width = source.width;
     canvas.height = source.height;
@@ -630,8 +650,8 @@ export function createTextureSource(source: HTMLImageElement, texture: Texture, 
     const width = textureWidth + padding * 2;
     const height = textureHeight + padding * 2;
 
-    originalCanvas.width = whiteCanvas.width = originalAndOutlineCanvas.width = whiteAndOutlineCanvas.width = width;
-    originalCanvas.height = whiteCanvas.height = originalAndOutlineCanvas.height = whiteAndOutlineCanvas.height = height;
+    originalCanvas.width = whiteCanvas.width = width;
+    originalCanvas.height = whiteCanvas.height = height;
 
     originalCtx.drawImage(
         source,
@@ -647,34 +667,38 @@ export function createTextureSource(source: HTMLImageElement, texture: Texture, 
                 whiteImageData.data[(x + y*width)*4 + i] = 255;
     whiteCtx.putImageData(whiteImageData, 0, 0);
 
-    const outlineCanvas = createOutline(originalCanvas);
+    const blackOutlineCanvas = createOutline(originalCanvas, new util.Color("#000000"));
+    const whiteOutlineCanvas = createOutline(originalCanvas, new util.Color("#ffffff"));
 
-    originalAndOutlineCtx.drawImage(outlineCanvas, 0, 0);
-    originalAndOutlineCtx.drawImage(originalCanvas, 0, 0);
-
-    whiteAndOutlineCtx.drawImage(outlineCanvas, 0, 0);
-    whiteAndOutlineCtx.drawImage(whiteCanvas, 0, 0);
+    const cache: util.StringMap<HTMLCanvasElement> = {};
 
     return {
         texture: texture,
-        padding: padding,
 
-        original: originalCanvas,
-        white: whiteCanvas,
-        outline: outlineCanvas,
-        originalAndOutline: originalAndOutlineCanvas,
-        whiteAndOutline: whiteAndOutlineCanvas,
+        get: type => {
+            if (type in cache) return cache[type];
+            const { canvas, ctx } = createCanvas();
+            canvas.width = originalCanvas.width;
+            canvas.height = originalCanvas.height;
+            const parts = type.split("+");
+            if (parts.includes("og")) ctx.drawImage(originalCanvas, 0, 0);
+            else if (parts.includes("w")) ctx.drawImage(whiteCanvas, 0, 0);
+            if (parts.includes("outline")) ctx.drawImage(blackOutlineCanvas, 0, 0);
+            else if (parts.includes("outlineb")) ctx.drawImage(blackOutlineCanvas, 0, 0);
+            else if (parts.includes("outlinew")) ctx.drawImage(whiteOutlineCanvas, 0, 0);
+            return cache[type] = canvas;
+        },
     };
 
 }
 export type ColorMappedTextureSource = {
     texture: Texture,
-    padding: number,
 
     generator: (color: util.Color, outline?: boolean) => HTMLCanvasElement,
 };
-export function createColorMappedTextureSource(source: HTMLImageElement, texture: Texture, padding: number = 8): ColorMappedTextureSource {
-    const { original } = createTextureSource(source, texture, padding);
+export function createColorMappedTextureSource(source: HTMLImageElement, texture: Texture): ColorMappedTextureSource {
+    const { get } = createTextureSource(source, texture);
+    const original = get("og");
     const originalCtx = original.getContext("2d");
     if (!originalCtx) throw "How did this happen?";
 
@@ -682,9 +706,10 @@ export function createColorMappedTextureSource(source: HTMLImageElement, texture
 
     const colors: util.StringMap<[HTMLCanvasElement, HTMLCanvasElement]> = {};
 
+    const black = new util.Color("#000000");
+
     return {
         texture: texture,
-        padding: padding,
 
         generator: (color: util.Color, outline?: boolean) => {
             outline ??= false;
@@ -706,7 +731,7 @@ export function createColorMappedTextureSource(source: HTMLImageElement, texture
                 }
             }
             ctx.putImageData(imageData, 0, 0);
-            const outlineCanvas = createOutline(canvas);
+            const outlineCanvas = createOutline(canvas, black);
             const { canvas: canvasOutlined, ctx: ctxOutlined } = createCanvas();
             canvasOutlined.width = canvas.width;
             canvasOutlined.height = canvas.height;

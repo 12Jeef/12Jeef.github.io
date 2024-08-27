@@ -1,0 +1,5 @@
+<body>
+    <texture crop="true" padding="1">
+        <location x="160" y="40" w="40" h="16"/>
+    </texture>
+</body>

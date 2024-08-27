@@ -30,7 +30,7 @@
         </component>
         <component id="body">
             <texture>middle</texture>
-            <type>outlined</type>
+            <type>og+outline</type>
         </component>
     </components>
 

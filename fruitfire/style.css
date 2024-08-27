@@ -6,8 +6,8 @@ body {
     max-height: 100%;
     overscroll-behavior: none;
 
-    background-color: #fff;
-    color: #000;
+    background-color: #000;
+    color: #fff;
 }
 
 * {
@@ -18,15 +18,63 @@ body {
 }
 
 body {
+    --drop-shadow: drop-shadow(calc(-1px * var(--scale)) calc(2px * var(--scale)) 0px #0008);
+
     margin: 0;
     padding: 0;
+
+    /* filter: contrast(1.25); */
 }
 
-body > canvas#game {
-    width: 100vw;
-    height: 100vh;
+button {
+    padding: 0;
+
+    border: none;
+    outline: none;
+
+    cursor: pointer;
+}
+
+body > canvas {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
 
     display: block;
 
     image-rendering: pixelated;
+}
+body > canvas#game2 {
+    filter: contrast(3);
+    mix-blend-mode: lighten;
+    /* opacity: 0.75; */
+    opacity: 0;
+}
+
+body > div#main-menu {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+
+    display: none;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    gap: calc(8px * var(--scale));
+}
+body > div#main-menu > img {
+    filter: var(--drop-shadow);
+}
+body > div#main-menu > button {
+    background-color: transparent;
+
+    filter: var(--drop-shadow);
 }
