@@ -23,7 +23,7 @@ body {
     margin: 0;
     padding: 0;
 
-    /* filter: contrast(1.25); */
+    filter: contrast(1.1);
 }
 
 button {
@@ -33,6 +33,10 @@ button {
     outline: none;
 
     cursor: pointer;
+}
+
+img {
+    user-select: none;
 }
 
 body > canvas {
@@ -48,11 +52,11 @@ body > canvas {
 
     image-rendering: pixelated;
 }
-body > canvas#game2 {
+body > canvas#game-overlay1 {
     filter: contrast(3);
     mix-blend-mode: lighten;
-    /* opacity: 0.75; */
-    opacity: 0;
+    opacity: 0.75;
+    /* opacity: 0; */
 }
 
 body > div#main-menu {
@@ -62,7 +66,7 @@ body > div#main-menu {
     top: 0;
     bottom: 0;
 
-    display: none;
+    display: flex;
     flex-direction: column;
     flex-wrap: nowrap;
     justify-content: center;
@@ -70,11 +74,52 @@ body > div#main-menu {
     align-content: center;
     gap: calc(8px * var(--scale));
 }
-body > div#main-menu > img {
+body > div#main-menu > div {
+    position: relative;
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+}
+body > div#main-menu > div > img:first-child {
     filter: var(--drop-shadow);
+}
+body > div#main-menu > div > img:last-child {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+
+    filter: blur(calc(2px * var(--scale))) contrast(3);
+    mix-blend-mode: lighten;
+    opacity: 0.75;
 }
 body > div#main-menu > button {
     background-color: transparent;
 
     filter: var(--drop-shadow);
+}
+
+body::after {
+    content: "";
+
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+
+    background:
+        radial-gradient(#0000 50%, #000f 100%),
+        linear-gradient(0deg, #0004 -50px, #0000 100px),
+        linear-gradient(90deg, #0004 -50px, #0000 100px),
+        linear-gradient(180deg, #0004 -50px, #0000 100px),
+        linear-gradient(270deg, #0004 -50px, #0000 100px);
+    opacity: 0.5;
+
+    pointer-events: none;
 }

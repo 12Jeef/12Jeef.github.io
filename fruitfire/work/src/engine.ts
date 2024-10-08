@@ -489,7 +489,10 @@ export class Camera extends Entity {
 
 export type EngineOptions = {
     ctx: CanvasRenderingContext2D,
-    bindTarget?: HTMLElement,
+    bindTarget?: HTMLElement | {
+        keys?: HTMLElement,
+        mouse?: HTMLElement,
+    },
 };
 export default class Engine extends util.Target {
     public static readonly COLLISIONPUSH = 1 << 0;
@@ -497,7 +500,8 @@ export default class Engine extends util.Target {
     public static readonly COLLISIONINTERACT = 1 << 2;
 
     private _ctx;
-    private _bindTarget: HTMLElement | null;
+    private _keysBindTarget: HTMLElement | null;
+    private _mouseBindTarget: HTMLElement | null;
     private readonly _keysDown;
     private readonly _keysDownNow;
     private readonly _keysUpNow;
@@ -560,8 +564,15 @@ export default class Engine extends util.Target {
         this.collisionChunkSize = 25;
 
         this._ctx = options.ctx;
-        this._bindTarget = null;
-        if (options.bindTarget) this.bindTarget = options.bindTarget;
+        this._keysBindTarget = null;
+        this._mouseBindTarget = null;
+        if (options.bindTarget) {
+            if (options.bindTarget instanceof HTMLElement) this.bindTarget = options.bindTarget ?? this.ctx.canvas;
+            else {
+                this.keysBindTarget = options.bindTarget.keys ?? this.ctx.canvas;
+                this.mouseBindTarget = options.bindTarget.mouse ?? this.ctx.canvas;
+            }
+        }
 
         this.rootEntity = new Entity({ parent: this, group: ".ROOT" });
         this.cameraEntity = null;
@@ -573,31 +584,51 @@ export default class Engine extends util.Target {
     public set ctx(value) {
         if (this.ctx === value) return;
         this._ctx = value;
-        this.bindTarget = this.ctx.canvas;
     }
 
-    public get bindTarget() { return this._bindTarget; }
+    public get bindTarget() {
+        if (this.keysBindTarget === this.mouseBindTarget) return this.keysBindTarget;
+        return null;
+    }
     public set bindTarget(value) {
-        if (this.bindTarget === value) return;
+        this.keysBindTarget = value;
+        this.mouseBindTarget = value;
+    }
+    public get keysBindTarget() { return this._keysBindTarget; }
+    public set keysBindTarget(value) {
+        if (this.keysBindTarget === value) return;
         this.unbind();
-        this._bindTarget = value;
+        this._keysBindTarget = value;
+        this.bind();
+    }
+    public get mouseBindTarget() { return this._mouseBindTarget; }
+    public set mouseBindTarget(value) {
+        if (this.mouseBindTarget === value) return;
+        this.unbind();
+        this._mouseBindTarget = value;
         this.bind();
     }
     private bind() {
-        if (!this.bindTarget) return;
-        this.bindTarget.addEventListener("keydown", this.onKeyDown);
-        this.bindTarget.addEventListener("keyup", this.onKeyUp);
-        this.bindTarget.addEventListener("mousedown", this.onMouseDown);
-        this.bindTarget.addEventListener("mouseup", this.onMouseUp);
-        this.bindTarget.addEventListener("mousemove", this.onMouseMove);
+        if (this.keysBindTarget) {
+            this.keysBindTarget.addEventListener("keydown", this.onKeyDown);
+            this.keysBindTarget.addEventListener("keyup", this.onKeyUp);
+        }
+        if (this.mouseBindTarget) {
+            this.mouseBindTarget.addEventListener("mousedown", this.onMouseDown);
+            this.mouseBindTarget.addEventListener("mouseup", this.onMouseUp);
+            this.mouseBindTarget.addEventListener("mousemove", this.onMouseMove);
+        }
     }
     private unbind() {
-        if (!this.bindTarget) return;
-        this.bindTarget.removeEventListener("keydown", this.onKeyDown);
-        this.bindTarget.removeEventListener("keyup", this.onKeyUp);
-        this.bindTarget.removeEventListener("mousedown", this.onMouseDown);
-        this.bindTarget.removeEventListener("mouseup", this.onMouseUp);
-        this.bindTarget.removeEventListener("mousemove", this.onMouseMove);
+        if (this.keysBindTarget) {
+            this.keysBindTarget.removeEventListener("keydown", this.onKeyDown);
+            this.keysBindTarget.removeEventListener("keyup", this.onKeyUp);
+        }
+        if (this.mouseBindTarget) {
+            this.mouseBindTarget.removeEventListener("mousedown", this.onMouseDown);
+            this.mouseBindTarget.removeEventListener("mouseup", this.onMouseUp);
+            this.mouseBindTarget.removeEventListener("mousemove", this.onMouseMove);
+        }
     }
     public get keysDown() { return [...this._keysDown]; }
     public get keysDownNow() { return [...this._keysDownNow]; }

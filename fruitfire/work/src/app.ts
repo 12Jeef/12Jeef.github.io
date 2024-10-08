@@ -42,8 +42,8 @@ export default class App extends util.Target {
 
     public readonly canvas;
     public readonly ctx;
-    public readonly canvas2;
-    public readonly ctx2;
+    public readonly canvasOverlay1;
+    public readonly ctxOverlay1;
 
     public readonly eMainMenu;
     public readonly eMainMenuPlayBtn;
@@ -59,7 +59,7 @@ export default class App extends util.Target {
         this.canvas = document.getElementById("game") as HTMLCanvasElement;
         // this.gl = assertInline(this.realCanvas.getContext("webgl"), "WebGL: Is not supported");
         // this.tex = assertInline(this.gl.createTexture(), "WebGL: Could not create texture");
-        this.canvas2 = document.getElementById("game2") as HTMLCanvasElement;
+        this.canvasOverlay1 = document.getElementById("game-overlay1") as HTMLCanvasElement;
 
         // const createShader = (type: number, src: string) => {
         //     const shader = assertInline(this.gl.createShader(type), "WebGL: Could not create shader");
@@ -252,7 +252,7 @@ export default class App extends util.Target {
         this.ctx = assertInline(this.canvas.getContext("2d"), "Canvas is not supported");
         // this.ctx.canvas.width = 2000;
         // this.ctx.canvas.height = 1200;
-        this.ctx2 = assertInline(this.canvas2.getContext("2d"), "Canvas is not supported");
+        this.ctxOverlay1 = assertInline(this.canvasOverlay1.getContext("2d"), "Canvas is not supported");
 
         const eMainMenu = document.getElementById("main-menu");
         if (!(eMainMenu instanceof HTMLDivElement)) throw "Could not find #main-menu div element";
@@ -280,8 +280,8 @@ export default class App extends util.Target {
             let scale = (scaleX + scaleY) / 2;
             this.ctx.canvas.width = Math.ceil(window.innerWidth * scale);
             this.ctx.canvas.height = Math.ceil(window.innerHeight * scale);
-            this.ctx2.canvas.width = this.ctx.canvas.width;
-            this.ctx2.canvas.height = this.ctx.canvas.height;
+            this.ctxOverlay1.canvas.width = this.ctx.canvas.width;
+            this.ctxOverlay1.canvas.height = this.ctx.canvas.height;
             this.game.post("resize", scale);
         };
         window.addEventListener("resize", e => onResize());
@@ -299,7 +299,6 @@ export default class App extends util.Target {
         this.game = new Game({
             app: this,
             ctx: this.ctx,
-            bindTarget: document.body,
         });
 
         onResize();
@@ -331,8 +330,8 @@ export default class App extends util.Target {
         this.game.update(delta);
         this.game.render();
 
-        this.ctx2.filter = "blur(8px)";
-        this.ctx2.drawImage(this.ctx.canvas, 0, 0);
+        this.ctxOverlay1.filter = "blur(8px)";
+        this.ctxOverlay1.drawImage(this.ctx.canvas, 0, 0);
 
         // this.game.ctx.fillStyle = "#f001";
         // this.game.ctx.fillRect(10, 10, this.game.ctx.canvas.width-20, this.game.ctx.canvas.height-20);

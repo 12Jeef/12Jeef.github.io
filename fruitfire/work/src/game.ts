@@ -1340,7 +1340,6 @@ export type GameOptions = {
     app: App,
 
     ctx: CanvasRenderingContext2D,
-    bindTarget?: HTMLElement,
 };
 export default class Game extends Engine {
     public readonly app;
@@ -1374,7 +1373,9 @@ export default class Game extends Engine {
     constructor(options: GameOptions) {
         super({
             ctx: options.ctx,
-            bindTarget: options.bindTarget,
+            bindTarget: {
+                keys: document.body,
+            },
         });
 
         this.app = options.app;

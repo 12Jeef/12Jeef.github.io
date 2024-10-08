@@ -2180,7 +2180,8 @@ class Engine extends Target {
     static COLLISIONDAMAGE = 1 << 1;
     static COLLISIONINTERACT = 1 << 2;
     _ctx;
-    _bindTarget;
+    _keysBindTarget;
+    _mouseBindTarget;
     _keysDown;
     _keysDownNow;
     _keysUpNow;
@@ -2236,9 +2237,16 @@ class Engine extends Target {
         this.collisionChunks = new Map();
         this.collisionChunkSize = 25;
         this._ctx = options.ctx;
-        this._bindTarget = null;
-        if (options.bindTarget)
-            this.bindTarget = options.bindTarget;
+        this._keysBindTarget = null;
+        this._mouseBindTarget = null;
+        if (options.bindTarget) {
+            if (options.bindTarget instanceof HTMLElement)
+                this.bindTarget = options.bindTarget ?? this.ctx.canvas;
+            else {
+                this.keysBindTarget = options.bindTarget.keys ?? this.ctx.canvas;
+                this.mouseBindTarget = options.bindTarget.mouse ?? this.ctx.canvas;
+            }
+        }
         this.rootEntity = new Entity({ parent: this, group: ".ROOT" });
         this.cameraEntity = null;
         this.backgroundColor = new Color([0, 0, 0, 0]);
@@ -2248,33 +2256,53 @@ class Engine extends Target {
         if (this.ctx === value)
             return;
         this._ctx = value;
-        this.bindTarget = this.ctx.canvas;
     }
-    get bindTarget() { return this._bindTarget; }
+    get bindTarget() {
+        if (this.keysBindTarget === this.mouseBindTarget)
+            return this.keysBindTarget;
+        return null;
+    }
     set bindTarget(value) {
-        if (this.bindTarget === value)
+        this.keysBindTarget = value;
+        this.mouseBindTarget = value;
+    }
+    get keysBindTarget() { return this._keysBindTarget; }
+    set keysBindTarget(value) {
+        if (this.keysBindTarget === value)
             return;
         this.unbind();
-        this._bindTarget = value;
+        this._keysBindTarget = value;
+        this.bind();
+    }
+    get mouseBindTarget() { return this._mouseBindTarget; }
+    set mouseBindTarget(value) {
+        if (this.mouseBindTarget === value)
+            return;
+        this.unbind();
+        this._mouseBindTarget = value;
         this.bind();
     }
     bind() {
-        if (!this.bindTarget)
-            return;
-        this.bindTarget.addEventListener("keydown", this.onKeyDown);
-        this.bindTarget.addEventListener("keyup", this.onKeyUp);
-        this.bindTarget.addEventListener("mousedown", this.onMouseDown);
-        this.bindTarget.addEventListener("mouseup", this.onMouseUp);
-        this.bindTarget.addEventListener("mousemove", this.onMouseMove);
+        if (this.keysBindTarget) {
+            this.keysBindTarget.addEventListener("keydown", this.onKeyDown);
+            this.keysBindTarget.addEventListener("keyup", this.onKeyUp);
+        }
+        if (this.mouseBindTarget) {
+            this.mouseBindTarget.addEventListener("mousedown", this.onMouseDown);
+            this.mouseBindTarget.addEventListener("mouseup", this.onMouseUp);
+            this.mouseBindTarget.addEventListener("mousemove", this.onMouseMove);
+        }
     }
     unbind() {
-        if (!this.bindTarget)
-            return;
-        this.bindTarget.removeEventListener("keydown", this.onKeyDown);
-        this.bindTarget.removeEventListener("keyup", this.onKeyUp);
-        this.bindTarget.removeEventListener("mousedown", this.onMouseDown);
-        this.bindTarget.removeEventListener("mouseup", this.onMouseUp);
-        this.bindTarget.removeEventListener("mousemove", this.onMouseMove);
+        if (this.keysBindTarget) {
+            this.keysBindTarget.removeEventListener("keydown", this.onKeyDown);
+            this.keysBindTarget.removeEventListener("keyup", this.onKeyUp);
+        }
+        if (this.mouseBindTarget) {
+            this.mouseBindTarget.removeEventListener("mousedown", this.onMouseDown);
+            this.mouseBindTarget.removeEventListener("mouseup", this.onMouseUp);
+            this.mouseBindTarget.removeEventListener("mousemove", this.onMouseMove);
+        }
     }
     get keysDown() { return [...this._keysDown]; }
     get keysDownNow() { return [...this._keysDownNow]; }
@@ -4064,7 +4092,9 @@ class Game extends Engine {
     constructor(options) {
         super({
             ctx: options.ctx,
-            bindTarget: options.bindTarget,
+            bindTarget: {
+                keys: document.body,
+            },
         });
         this.app = options.app;
         this._themeData = null;
@@ -4399,17 +4429,17 @@ class App extends Target {
     }
     canvas;
     ctx;
-    canvas2;
-    ctx2;
+    canvasOverlay1;
+    ctxOverlay1;
     eMainMenu;
     eMainMenuPlayBtn;
     game;
     constructor() {
         super();
         this.canvas = document.getElementById("game");
-        this.canvas2 = document.getElementById("game2");
+        this.canvasOverlay1 = document.getElementById("game-overlay1");
         this.ctx = assertInline(this.canvas.getContext("2d"), "Canvas is not supported");
-        this.ctx2 = assertInline(this.canvas2.getContext("2d"), "Canvas is not supported");
+        this.ctxOverlay1 = assertInline(this.canvasOverlay1.getContext("2d"), "Canvas is not supported");
         const eMainMenu = document.getElementById("main-menu");
         if (!(eMainMenu instanceof HTMLDivElement))
             throw "Could not find #main-menu div element";
@@ -4424,8 +4454,8 @@ class App extends Target {
             let scale = (scaleX + scaleY) / 2;
             this.ctx.canvas.width = Math.ceil(window.innerWidth * scale);
             this.ctx.canvas.height = Math.ceil(window.innerHeight * scale);
-            this.ctx2.canvas.width = this.ctx.canvas.width;
-            this.ctx2.canvas.height = this.ctx.canvas.height;
+            this.ctxOverlay1.canvas.width = this.ctx.canvas.width;
+            this.ctxOverlay1.canvas.height = this.ctx.canvas.height;
             this.game.post("resize", scale);
         };
         window.addEventListener("resize", e => onResize());
@@ -4441,7 +4471,6 @@ class App extends Target {
         this.game = new Game({
             app: this,
             ctx: this.ctx,
-            bindTarget: document.body,
         });
         onResize();
         let t0 = null;
@@ -4464,8 +4493,8 @@ class App extends Target {
     update(delta) {
         this.game.update(delta);
         this.game.render();
-        this.ctx2.filter = "blur(8px)";
-        this.ctx2.drawImage(this.ctx.canvas, 0, 0);
+        this.ctxOverlay1.filter = "blur(8px)";
+        this.ctxOverlay1.drawImage(this.ctx.canvas, 0, 0);
     }
 }
 App.instance;
