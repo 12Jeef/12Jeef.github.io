@@ -1,0 +1,21 @@
+{
+  "name": "jeef-website-v3",
+  "version": "1.0.0",
+  "description": "Jeef's website V3",
+  "main": "build/app.js",
+  "scripts": {
+    "start": "npx serve ..",
+    "build": "rollup -c",
+    "run": "npm run build && npm start"
+  },
+  "author": "Jeef",
+  "license": "MIT",
+  "dependencies": {
+    "@rollup/plugin-node-resolve": "^15.3.0",
+    "@rollup/plugin-typescript": "^12.1.0",
+    "rollup": "^4.24.0",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "tslib": "^2.7.0",
+    "typescript": "^5.6.2"
+  }
+}
