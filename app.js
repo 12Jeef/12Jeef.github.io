@@ -427,9 +427,10 @@ class AboutMePage extends Page {
             this.headerSpanElems.push(elem);
             this.jiggleControllers.push(new JiggleController({}));
         });
-        this.elem
-            .querySelectorAll(":scope > section.programming > section button")
-            .forEach((elem) => {
+        [
+            ...this.elem.querySelectorAll(":scope > section.programming > section button"),
+            ...this.elem.querySelectorAll(":scope > section.awards > section button"),
+        ].forEach((elem) => {
             if (!(elem instanceof HTMLElement))
                 return;
             bindClickHoverJiggle(elem, {

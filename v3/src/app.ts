@@ -519,17 +519,20 @@ class AboutMePage extends Page {
       this.jiggleControllers.push(new JiggleController({}));
     });
 
-    this.elem
-      .querySelectorAll(":scope > section.programming > section button")
-      .forEach((elem) => {
-        if (!(elem instanceof HTMLElement)) return;
-        bindClickHoverJiggle(elem, {
-          periodic: (clickController, hoverController) => {
-            let [x, y] = getXYScale(clickController, hoverController);
-            elem.style.transform = `scale(${x}, ${y})`;
-          },
-        });
+    [
+      ...this.elem.querySelectorAll(
+        ":scope > section.programming > section button",
+      ),
+      ...this.elem.querySelectorAll(":scope > section.awards > section button"),
+    ].forEach((elem) => {
+      if (!(elem instanceof HTMLElement)) return;
+      bindClickHoverJiggle(elem, {
+        periodic: (clickController, hoverController) => {
+          let [x, y] = getXYScale(clickController, hoverController);
+          elem.style.transform = `scale(${x}, ${y})`;
+        },
       });
+    });
 
     const profileElem = this.elem.querySelector(
       ":scope > section.art > p > span > span:has(> img)",
