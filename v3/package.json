@@ -2,7 +2,7 @@
   "name": "jeef-website-v3",
   "version": "1.0.0",
   "description": "Jeef's website V3",
-  "main": "build/app.js",
+  "main": "../app.js",
   "scripts": {
     "start": "npx serve ..",
     "build": "rollup -c",

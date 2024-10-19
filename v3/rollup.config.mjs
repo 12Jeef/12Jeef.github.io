@@ -4,25 +4,24 @@ import rollupPluginCommonJS from "rollup-plugin-commonjs";
 
 import path from "path";
 
-
-function build(input, output, externals=[]) {
-    let plugins = [
-        rollupPluginTypescript(),
-        rollupPluginNodeResolve(),
-        rollupPluginCommonJS(),
-    ];
-    return {
-        input: path.join("src", input),
-        output: {
-            file: path.join("..", output),
-            format: "es",
-        },
-        context: "this",
-        external: externals,
-        plugins: plugins,
-    };
+function build(input, output, externals = []) {
+  let plugins = [
+    rollupPluginTypescript(),
+    rollupPluginNodeResolve(),
+    rollupPluginCommonJS(),
+  ];
+  return {
+    input: path.join("src", input),
+    output: {
+      file: path.join("..", output),
+      format: "es",
+    },
+    context: "this",
+    external: externals,
+    plugins: plugins,
+  };
 }
 
-export default args => {
-    return [build(path.join("app.ts"), path.join("app.js"))];
+export default (args) => {
+  return [build(path.join("app.ts"), path.join("app.js"))];
 };

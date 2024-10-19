@@ -1,0 +1,48 @@
+{
+  "cameraFov": 75,
+  "cameraNear": 0.1,
+  "cameraFar": 100,
+
+  "hemLightIntensity": 2,
+
+  "fogExp": 0.1,
+
+  "saoEnabled": false,
+  "saoBias": 0.5,
+  "saoIntensity": 0.005,
+
+  "playerSize": 0.5,
+  "playerAccelUPS": 0.25,
+  "playerVelHalfLifeS": 0.1,
+  "topSpeed": 0.1,
+  "topRSpeed": 0.1,
+
+  "isNight": true,
+
+  "skyDayColor": "#ffdd00",
+  "skyNightColor": "#88aaff",
+  "hemLightDayColor": "#ffdd00",
+  "hemLightNightColor": "#88aaff",
+  "wallDayColor": "#eeaa00",
+  "wallNightColor": "#414c75",
+  "frameDayColor": "#331c13",
+  "frameNightColor": "#1d1e2e",
+  "textDayColor": "#000000",
+  "textNightColor": "#ffffff",
+  "plantDayColor": "#ee9900",
+  "plantNightColor": "#515c85",
+
+  "hShift": 0.025,
+
+  "chunkSize": 3,
+  "renderDist": 7,
+  "wallHeight": 2,
+  "wallThickness": 0.1,
+  "railingHeight": 0.5,
+  "railingThickness": 0.1,
+  "lightSphereSize": 0.1,
+  "infoBoxShowRadius": 3,
+  "artworkFrameThickness": 0.075,
+
+  "uiArtworkZoom": 3
+}
