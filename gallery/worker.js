@@ -21,5 +21,6 @@ self.addEventListener("message", async (e) => {
     canvas.width = Math.round(width * scale * 500);
     canvas.height = Math.round(height * scale * 500);
     ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    ctx.getImageData(0, 0, canvas.width, canvas.height);
     self.postMessage({ width, height, scale });
 });

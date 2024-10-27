@@ -19,20 +19,51 @@
 
   "isNight": true,
 
-  "skyDayColor": "#ffdd00",
+  // "skyDayColor": "#ffdd00",
+  // "skyNightColor": "#88aaff",
+
+  // "hemLightDayColor": "#ffdd00",
+  // "hemLightNightColor": "#88aaff",
+
+  // "wallDayColor": "#eeaa00",
+  // "wallNightColor": "#414c75",
+
+  // "groundDayColor": "#eeaa00",
+  // "groundNightColor": "#414c75",
+
+  // "frameDayColor": "#331c13",
+  // "frameNightColor": "#1d1e2e",
+
+  // "textDayColor": "#ffffff",
+  // "textNightColor": "#ffffff",
+
+  // "plantDayColor": "#ee9900",
+  // "plantNightColor": "#515c85",
+
+  "skyDayColor": "#fff8de",
   "skyNightColor": "#88aaff",
-  "hemLightDayColor": "#ffdd00",
+
+  "hemLightDayColor": "#fff8de",
   "hemLightNightColor": "#88aaff",
-  "wallDayColor": "#eeaa00",
+
+  "wallDayColor": "#ffffff",
   "wallNightColor": "#414c75",
-  "frameDayColor": "#331c13",
+
+  "groundDayColor": "#ddd4cc",
+  "groundNightColor": "#2e385c",
+
+  "frameDayColor": "#ffffff",
   "frameNightColor": "#1d1e2e",
+
   "textDayColor": "#000000",
   "textNightColor": "#ffffff",
-  "plantDayColor": "#ee9900",
-  "plantNightColor": "#515c85",
+
+  "plantDayColor": "#e1f0e9",
+  "plantNightColor": "#33758a",
 
   "hShift": 0.025,
+  "sShift": 0,
+  "vShift": 0.25,
 
   "chunkSize": 3,
   "renderDist": 7,
@@ -40,6 +71,14 @@
   "wallThickness": 0.1,
   "railingHeight": 0.5,
   "railingThickness": 0.1,
+  "carpetPatternColor1": 0,
+  "carpetPatternColor2": 0.75,
+  "carpetPatternSize": 150,
+  "carpetPatternSizeBig": 30,
+  "carpetPatternSizeSmall": 10,
+  "carpetPatternLine": 2,
+  "carpetPatternPadding": 15,
+  "carpetPatterCenterSize": 100,
   "lightSphereSize": 0.1,
   "infoBoxShowRadius": 3,
   "artworkFrameThickness": 0.075,

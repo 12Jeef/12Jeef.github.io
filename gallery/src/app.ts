@@ -13,6 +13,22 @@ import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { SAOPass } from "three/examples/jsm/postprocessing/SAOPass";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass";
 
+type vec2 = [number, number];
+type vec3 = [number, number, number];
+
+function castOptionalFloat(value: string | undefined): number | undefined {
+  if (typeof value !== "string") return undefined;
+  return parseFloat(value);
+}
+function castOptionalInt(value: string | undefined): number | undefined {
+  if (typeof value !== "string") return undefined;
+  return parseInt(value);
+}
+function castOptionalBool(value: string | undefined): boolean | undefined {
+  if (typeof value !== "string") return undefined;
+  return value === "true";
+}
+
 // @ts-ignore
 const ARTWORKS: string[] = __artworks__;
 
@@ -42,18 +58,28 @@ type Settings = {
 
   skyDayColor: string;
   skyNightColor: string;
+
   hemLightDayColor: string;
   hemLightNightColor: string;
+
   wallDayColor: string;
   wallNightColor: string;
+
+  groundDayColor: string;
+  groundNightColor: string;
+
   frameDayColor: string;
   frameNightColor: string;
+
   textDayColor: string;
   textNightColor: string;
+
   plantDayColor: string;
   plantNightColor: string;
 
   hShift: number;
+  sShift: number;
+  vShift: number;
 
   chunkSize: number;
   renderDist: number;
@@ -61,6 +87,14 @@ type Settings = {
   wallThickness: number;
   railingHeight: number;
   railingThickness: number;
+  carpetPatternColor1: number;
+  carpetPatternColor2: number;
+  carpetPatternSize: number;
+  carpetPatternSizeBig: number;
+  carpetPatternSizeSmall: number;
+  carpetPatternLine: number;
+  carpetPatternPadding: number;
+  carpetPatterCenterSize: number;
   lightSphereSize: number;
   infoBoxShowRadius: number;
   artworkFrameThickness: number;
@@ -92,18 +126,28 @@ function castSettings(data: any): Settings {
 
     skyDayColor: "",
     skyNightColor: "",
+
     hemLightDayColor: "",
     hemLightNightColor: "",
+
     wallDayColor: "",
     wallNightColor: "",
+
+    groundDayColor: "",
+    groundNightColor: "",
+
     frameDayColor: "",
     frameNightColor: "",
+
     textDayColor: "",
     textNightColor: "",
+
     plantDayColor: "",
     plantNightColor: "",
 
     hShift: 0,
+    sShift: 0,
+    vShift: 0,
 
     chunkSize: 0,
     renderDist: 0,
@@ -111,6 +155,14 @@ function castSettings(data: any): Settings {
     wallThickness: 0,
     railingHeight: 0,
     railingThickness: 0,
+    carpetPatternColor1: 0,
+    carpetPatternColor2: 0,
+    carpetPatternSize: 0,
+    carpetPatternSizeBig: 0,
+    carpetPatternSizeSmall: 0,
+    carpetPatternLine: 0,
+    carpetPatternPadding: 0,
+    carpetPatterCenterSize: 0,
     lightSphereSize: 0,
     infoBoxShowRadius: 0,
     artworkFrameThickness: 0,
@@ -147,22 +199,25 @@ function castSettings(data: any): Settings {
   return settings;
 }
 
-type StructureData = {
-  x: number;
-  y: number;
-  z: number;
+type OffsetData = vec3;
+type LoopData = {
+  x?: number;
+  y?: number;
+};
+type StructureDataData = {
+  offset: OffsetData;
+  loop: LoopData;
   other: { [key: string]: string };
 };
-type Structure = {
+type StructureData = {
   type: string;
-  chunkX: number;
-  chunkY: number;
-  data: StructureData;
+  chunk: vec2;
+  data: StructureDataData;
 };
-type Structures = Structure[];
+type StructureDatas = StructureData[];
 
 function castStructures(data: string) {
-  const structures: Structures = [];
+  const structures: StructureDatas = [];
   for (const line of data.split("\n")) {
     const lineParts = line
       .trim()
@@ -174,26 +229,34 @@ function castStructures(data: string) {
     const type = lineParts[0];
     const chunkX = parseFloat(lineParts[1]);
     const chunkY = parseFloat(lineParts[2]);
-    const data: StructureData = { x: 0, y: 0, z: 0, other: {} };
+    const data: StructureDataData = { offset: [0, 0, 0], loop: {}, other: {} };
     for (const kv of lineParts.slice(3)) {
       const kvPair = kv.split("=");
       if (kvPair.length !== 2) continue;
       const [k, v] = kvPair;
       if (k === "x") {
-        data.x = parseFloat(v);
+        data.offset[0] = parseFloat(v);
         continue;
       }
       if (k === "y") {
-        data.y = parseFloat(v);
+        data.offset[1] = parseFloat(v);
         continue;
       }
       if (k === "z") {
-        data.z = parseFloat(v);
+        data.offset[2] = parseFloat(v);
+        continue;
+      }
+      if (k === "loopX") {
+        data.loop.x = parseFloat(v);
+        continue;
+      }
+      if (k === "loopY") {
+        data.loop.y = parseFloat(v);
         continue;
       }
       data.other[k] = v;
     }
-    structures.push({ type, chunkX, chunkY, data });
+    structures.push({ type, chunk: [chunkX, chunkY], data });
   }
   return structures;
 }
@@ -254,15 +317,42 @@ function getArtworkDate(date: [number, number, number]) {
   return (MONTHS[date[1]] ?? String(date[1])) + " " + date[2] + " " + date[0];
 }
 
+function cleanJSON(text: string) {
+  return JSON.parse(
+    text
+      .split("\n")
+      .map((line) => line.split("//")[0])
+      .join("\n"),
+  );
+}
+
+function hsvShiftColor(
+  color: THREE.Color,
+  hShift: number,
+  sShift: number,
+  vShift: number,
+) {
+  const hsl = { h: 0, s: 0, l: 0 };
+  color.getHSL(hsl);
+  hsl.h += hShift;
+  hsl.s += sShift;
+  hsl.l -= vShift;
+  const fullTurn = 2 * Math.PI;
+  hsl.h = ((hsl.h % fullTurn) + fullTurn) % fullTurn;
+  hsl.s = Math.min(1, Math.max(0, hsl.s));
+  hsl.l = Math.min(1, Math.max(0, hsl.l));
+  color.setHSL(hsl.h, hsl.s, hsl.l);
+}
+
 const main = async () => {
   const settingsResp = await fetch("./settings.json");
-  const settings = castSettings(await settingsResp.json());
+  const settings = castSettings(cleanJSON(await settingsResp.text()));
 
   const structuresResp = await fetch("./structures.txt");
   const structures = castStructures(await structuresResp.text());
 
   const artworksResp = await fetch("./assets/art/info.json");
-  const artworks = castArtworks(await artworksResp.json());
+  const artworks = castArtworks(cleanJSON(await artworksResp.text()));
 
   const ARCHGEOMETRY = await stlLoader.loadAsync("./assets/arch.stl");
   const BAMBOOGEOMETRY = await stlLoader.loadAsync("./assets/bamboo.stl");
@@ -330,6 +420,9 @@ const main = async () => {
   const wallColor = new THREE.Color(
     settings.isNight ? settings.wallNightColor : settings.wallDayColor,
   );
+  const groundColor = new THREE.Color(
+    settings.isNight ? settings.groundNightColor : settings.groundDayColor,
+  );
   const frameColor = new THREE.Color(
     settings.isNight ? settings.frameNightColor : settings.frameDayColor,
   );
@@ -350,6 +443,10 @@ const main = async () => {
     "#" + wallColor.getHexString(),
   );
   document.body.style.setProperty(
+    "--ground-color",
+    "#" + groundColor.getHexString(),
+  );
+  document.body.style.setProperty(
     "--frame-color",
     "#" + frameColor.getHexString(),
   );
@@ -363,47 +460,55 @@ const main = async () => {
   );
 
   const wallColorShifted = new THREE.Color(wallColor);
-  const hsl = { h: 0, s: 0, l: 0 };
-  wallColorShifted.getHSL(hsl);
-  hsl.h += settings.hShift;
-  const fullTurn = 2 * Math.PI;
-  hsl.h = ((hsl.h % fullTurn) + fullTurn) % fullTurn;
-  wallColorShifted.setHSL(hsl.h, hsl.s, hsl.l);
+  hsvShiftColor(
+    wallColorShifted,
+    settings.hShift,
+    settings.sShift,
+    settings.vShift,
+  );
+
+  const groundColorShifted = new THREE.Color(wallColor);
+  hsvShiftColor(
+    groundColorShifted,
+    settings.hShift,
+    settings.sShift,
+    settings.vShift,
+  );
 
   const color = new THREE.Color();
 
-  const wallTextureCanvas1 = document.createElement("canvas");
-  const ctx1 = wallTextureCanvas1.getContext("2d");
-  if (!ctx1) throw new Error("Could not get context 2d");
-  ctx1.canvas.width = ctx1.canvas.height = 100;
+  const wallTextureCanvas = document.createElement("canvas");
+  const wallCtx = wallTextureCanvas.getContext("2d");
+  if (!wallCtx) throw new Error("Could not get context 2d");
+  wallCtx.canvas.width = wallCtx.canvas.height = 100;
   for (let x = 0; x < 100; x++) {
     for (let y = 0; y < 100; y++) {
       color.set(0xffffff);
       color.lerp(wallColorShifted, Math.random() ** 5);
-      ctx1.fillStyle = "#" + color.getHexString();
-      ctx1.fillRect(x * 1, y * 1, 1, 1);
+      wallCtx.fillStyle = "#" + color.getHexString();
+      wallCtx.fillRect(x * 1, y * 1, 1, 1);
     }
   }
 
-  const wallTextureCanvas2 = document.createElement("canvas");
-  const ctx2 = wallTextureCanvas2.getContext("2d");
-  if (!ctx2) throw new Error("Could not get context 2d");
-  ctx2.canvas.width = ctx2.canvas.height = 100;
+  const groundTextureCanvas = document.createElement("canvas");
+  const groundCtx = groundTextureCanvas.getContext("2d");
+  if (!groundCtx) throw new Error("Could not get context 2d");
+  groundCtx.canvas.width = groundCtx.canvas.height = 100;
   for (let x = 0; x < 100; x++) {
     for (let y = 0; y < 100; y++) {
       color.set(0xffffff);
       color.lerp(wallColorShifted, Math.random() * 0.75);
-      ctx2.fillStyle = "#" + color.getHexString();
-      ctx2.fillRect(x * 1, y * 1, 1, 1);
+      groundCtx.fillStyle = "#" + color.getHexString();
+      groundCtx.fillRect(x * 1, y * 1, 1, 1);
     }
   }
 
-  const WALLTEXTURE = new THREE.CanvasTexture(wallTextureCanvas1);
+  const WALLTEXTURE = new THREE.CanvasTexture(wallTextureCanvas);
   WALLTEXTURE.repeat.set(2, 2);
   WALLTEXTURE.wrapS = THREE.RepeatWrapping;
   WALLTEXTURE.wrapT = THREE.RepeatWrapping;
 
-  const GROUNDTEXTURE = new THREE.CanvasTexture(wallTextureCanvas2);
+  const GROUNDTEXTURE = new THREE.CanvasTexture(groundTextureCanvas);
   GROUNDTEXTURE.repeat.set(20, 20);
   GROUNDTEXTURE.wrapS = THREE.RepeatWrapping;
   GROUNDTEXTURE.wrapT = THREE.RepeatWrapping;
@@ -416,7 +521,7 @@ const main = async () => {
     map: WALLTEXTURE,
   });
   const GROUNDMATERIAL = new THREE.MeshLambertMaterial({
-    color: wallColor,
+    color: groundColor,
     map: GROUNDTEXTURE,
   });
   const FRAMEMATERIAL = new THREE.MeshLambertMaterial({
@@ -426,416 +531,965 @@ const main = async () => {
     color: plantColor,
   });
 
-  const wallPlaneGeometryCache: {
-    [key: number]: { [key: number]: THREE.BoxGeometry };
-  } = {};
-  const getWallPlaneSize = (sizeScale: number) =>
-    settings.wallThickness * (1 + sizeScale);
-  const getWallPlaneHeight = (heightScale: number) =>
-    settings.wallHeight * (1 + heightScale);
-  const getWallPlaneGeometry = (size: number, height: number) => {
-    if (size in wallPlaneGeometryCache)
-      if (height in wallPlaneGeometryCache[size])
-        return wallPlaneGeometryCache[size][height];
-    if (!(size in wallPlaneGeometryCache)) wallPlaneGeometryCache[size] = {};
-    return (wallPlaneGeometryCache[size][height] = new THREE.BoxGeometry(
-      settings.chunkSize,
-      height,
-      size,
-    ));
-  };
-
-  const wallPillarGeometryCache: {
-    [key: number]: { [key: number]: THREE.BoxGeometry };
-  } = {};
-  const getWallPillarSize = (sizeScale: number) =>
-    settings.wallThickness * (2 + sizeScale);
-  const getWallPillarHeight = (heightScale: number) =>
-    settings.wallThickness + settings.wallHeight * (1 + heightScale);
-  const getWallPillarGeometry = (size: number, height: number) => {
-    if (size in wallPillarGeometryCache)
-      if (height in wallPillarGeometryCache[size])
-        return wallPillarGeometryCache[size][height];
-    if (!(size in wallPillarGeometryCache)) wallPillarGeometryCache[size] = {};
-    return (wallPillarGeometryCache[size][height] = new THREE.BoxGeometry(
-      size,
-      height,
-      size,
-    ));
-  };
-
-  const railingGeometryCache: {
-    beam: { [key: number]: THREE.BoxGeometry };
-    pillar: { [key: number]: { [key: number]: THREE.BoxGeometry } };
-  } = { beam: {}, pillar: {} };
-  const getRailingBeamTopSize = (sizeScale: number) =>
-    settings.railingThickness * (1.5 + sizeScale);
-  const getRailingBeamBottomSize = (sizeScale: number) =>
-    settings.railingThickness * (1 + sizeScale);
-  const getRailingPillarSize = (sizeScale: number) =>
-    settings.railingThickness * (0.75 + sizeScale);
-  const getRailingPillarHeight = (heightScale: number) =>
-    settings.railingHeight * (1 + heightScale);
-  const getRailingBeamGeometry = (size: number) => {
-    if (size in railingGeometryCache.beam)
-      return railingGeometryCache.beam[size];
-    return (railingGeometryCache.beam[size] = new THREE.BoxGeometry(
-      settings.chunkSize,
-      size,
-      size,
-    ));
-  };
-  const getRailingPillarGeometry = (size: number, height: number) => {
-    if (size in railingGeometryCache.pillar)
-      if (height in railingGeometryCache.pillar[size])
-        return railingGeometryCache.pillar[size][height];
-    if (!(size in railingGeometryCache.pillar))
-      railingGeometryCache.pillar[size] = {};
-    return (railingGeometryCache.pillar[size][height] = new THREE.BoxGeometry(
-      size,
-      height,
-      size,
-    ));
-  };
-
-  const artworkGeometryCache: {
-    horizontal: { [key: number]: THREE.BoxGeometry };
-    vertical: { [key: number]: THREE.BoxGeometry };
-  } = { horizontal: {}, vertical: {} };
-  const getArtworkFrameHGeometry = (size: number) => {
-    if (size in artworkGeometryCache.horizontal)
-      return artworkGeometryCache.horizontal[size];
-    return (artworkGeometryCache.horizontal[size] = new THREE.BoxGeometry(
-      size + settings.artworkFrameThickness * 2,
-      settings.artworkFrameThickness,
-      settings.artworkFrameThickness,
-    ));
-  };
-  const getArtworkFrameVGeometry = (size: number) => {
-    if (size in artworkGeometryCache.vertical)
-      return artworkGeometryCache.vertical[size];
-    return (artworkGeometryCache.vertical[size] = new THREE.BoxGeometry(
-      settings.artworkFrameThickness,
-      size + settings.artworkFrameThickness * 2,
-      settings.artworkFrameThickness,
-    ));
-  };
-
-  const lightSphereGeometryCache: {
-    [key: number]: THREE.SphereGeometry;
-  } = {};
-  const getLightSphereGeometry = (radius: number) => {
-    if (radius in lightSphereGeometryCache)
-      return lightSphereGeometryCache[radius];
-    return (lightSphereGeometryCache[radius] = new THREE.SphereGeometry(
-      radius * settings.lightSphereSize,
-      24,
-      24,
-    ));
-  };
-
-  const playerCollider = [settings.playerSize, settings.playerSize];
-  const colliders: [number, number, number, number, string][] = [];
-  const infoBoxes: [THREE.Object3D, HTMLElement, number][] = [];
-
-  const addWallX = (chunkX: number, chunkY: number, data: StructureData) => {
-    let x = data.x + chunkX * settings.chunkSize;
-    let y = data.y + chunkY * settings.chunkSize;
-    let z = data.z;
-
-    const sizeScale = parseFloat(data.other["size"] ?? "0");
-    const heightScale = parseFloat(data.other["height"] ?? "0");
-
-    const size = getWallPlaneSize(sizeScale);
-    const height = getWallPlaneHeight(heightScale);
-
-    const wall = new THREE.Object3D();
-
-    const plane = new THREE.Mesh(
-      getWallPlaneGeometry(size, height),
-      new Array(6).fill(WALLMATERIALTEXTURED),
-    );
-    plane.position.set(0, height / 2, 0);
-    plane.receiveShadow = true;
-    plane.castShadow = true;
-    wall.add(plane);
-
-    if ((data.other["p1"] ?? "true") === "true") {
-      const pillar1 = new THREE.Mesh(
-        getWallPillarGeometry(
-          getWallPillarSize(sizeScale),
-          getWallPillarHeight(heightScale),
-        ),
-        WALLMATERIAL,
-      );
-      pillar1.position.set(
-        settings.chunkSize / 2,
-        getWallPillarHeight(heightScale) / 2,
-        0,
-      );
-      pillar1.receiveShadow = true;
-      pillar1.castShadow = true;
-      wall.add(pillar1);
+  type StructureConstructorData = { offset?: OffsetData; loop?: LoopData };
+  class Structure {
+    private static readonly _structures: Structure[] = [];
+    public static get structures() {
+      return [...this._structures];
+    }
+    public static update(delta: number) {
+      this._structures.forEach((structure) => structure.update(delta));
     }
 
-    if ((data.other["p2"] ?? "true") === "true") {
-      const pillar2 = new THREE.Mesh(
-        getWallPillarGeometry(
-          getWallPillarSize(sizeScale),
-          getWallPillarHeight(heightScale),
-        ),
-        WALLMATERIAL,
-      );
-      pillar2.position.set(
-        -settings.chunkSize / 2,
-        getWallPillarHeight(heightScale) / 2,
-        0,
-      );
-      pillar2.receiveShadow = true;
-      pillar2.castShadow = true;
-      wall.add(pillar2);
+    public readonly chunkX;
+    public readonly chunkY;
+
+    public readonly offsetX;
+    public readonly offsetY;
+    public readonly offsetZ;
+
+    public readonly loopX;
+    public readonly loopY;
+
+    protected readonly object;
+
+    constructor(chunk: vec2, data?: StructureConstructorData) {
+      Structure._structures.push(this);
+
+      [this.chunkX, this.chunkY] = chunk;
+
+      this.offsetX = data?.offset ? data?.offset[0] : 0;
+      this.offsetY = data?.offset ? data?.offset[1] : 0;
+      this.offsetZ = data?.offset ? data?.offset[2] : 0;
+
+      this.loopX = data?.loop?.x;
+      this.loopY = data?.loop?.y;
+
+      this.object = new THREE.Object3D();
+      scene.add(this.object);
     }
 
-    wall.position.set(x, z, y);
-    scene.add(wall);
+    public get x() {
+      return this.getRealChunk()[0] * settings.chunkSize + this.offsetX;
+    }
+    public get y() {
+      return this.getRealChunk()[1] * settings.chunkSize + this.offsetY;
+    }
+    public get z() {
+      return this.offsetZ;
+    }
 
-    colliders.push([
-      wall.position.x,
-      wall.position.z,
-      settings.chunkSize,
-      size,
-      "wall",
-    ]);
+    public get collider(): {
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+      type: string;
+    } | null {
+      return null;
+    }
 
-    return wall;
-  };
+    public getRealChunk(): vec2 {
+      const chunkX = Math.round(camera.position.x / settings.chunkSize);
+      const chunkY = Math.round(camera.position.z / settings.chunkSize);
+      let realChunkX = this.chunkX,
+        realChunkY = this.chunkY;
+      if (this.loopX) {
+        const x = Math.round(chunkX / this.loopX);
+        let dist = Infinity;
+        for (let i = -1; i <= 1; i++) {
+          let realChunkXI = this.chunkX + (x + i) * this.loopX;
+          if (Math.abs(realChunkXI - chunkX) < dist) {
+            dist = Math.abs(realChunkXI - chunkX);
+            realChunkX = realChunkXI;
+          }
+        }
+      }
+      if (this.loopY) {
+        const y = Math.round(chunkY / this.loopY);
+        let dist = Infinity;
+        for (let i = -1; i <= 1; i++) {
+          let realChunkYI = this.chunkY + (y + i) * this.loopY;
+          if (Math.abs(realChunkYI - chunkY) < dist) {
+            dist = Math.abs(realChunkYI - chunkY);
+            realChunkY = realChunkYI;
+          }
+        }
+      }
+      return [realChunkX, realChunkY];
+    }
 
-  const addWallY = (chunkX: number, chunkY: number, data: StructureData) => {
-    const wall = addWallX(chunkX, chunkY, data);
+    public update(delta: number) {
+      const [chunkX, chunkY] = this.getRealChunk();
+      const camChunkX = Math.round(camera.position.x / settings.chunkSize);
+      const camChunkY = Math.round(camera.position.z / settings.chunkSize);
+      this.object.visible =
+        Math.abs(chunkX - camChunkX) <= settings.renderDist &&
+        Math.abs(chunkY - camChunkY) <= settings.renderDist;
+      this.object.position.set(this.x, this.z, this.y);
+    }
+  }
 
-    wall.rotateY(Math.PI / 2);
+  class SolidStructure extends Structure {
+    protected colliderWidth;
+    protected colliderHeight;
 
-    const last = colliders.pop();
-    if (!last) return wall;
-    const [x, y, w, h, type] = last;
-    colliders.push([x, y, h, w, type]);
+    constructor(chunk: vec2, size: vec2, data?: StructureConstructorData) {
+      super(chunk, data);
 
-    return wall;
-  };
+      [this.colliderWidth, this.colliderHeight] = size;
+    }
 
-  const addRailingX = (chunkX: number, chunkY: number, data: StructureData) => {
-    let x = data.x + chunkX * settings.chunkSize;
-    let y = data.y + chunkY * settings.chunkSize;
-    let z = data.z;
+    public get collider() {
+      return {
+        x: this.x,
+        y: this.y,
+        w: this.colliderWidth,
+        h: this.colliderHeight,
+        type: "solid",
+      };
+    }
+  }
 
-    const sizeScale = parseFloat(data.other["size"] ?? "0");
-    const heightScale = parseFloat(data.other["height"] ?? "0");
+  class Wall extends SolidStructure {
+    private static readonly geometryCache: {
+      [key: number]: { [key: number]: THREE.BoxGeometry };
+    } = {};
+    private static getSize(scale: number) {
+      return settings.wallThickness * (1 + scale);
+    }
+    private static getHeight(scale: number) {
+      return settings.wallHeight * (1 + scale);
+    }
+    private static getGeometry(size: number, height: number) {
+      if (!(size in this.geometryCache)) this.geometryCache[size] = {};
+      if (!(height in this.geometryCache[size]))
+        this.geometryCache[size][height] = new THREE.BoxGeometry(
+          settings.chunkSize,
+          height,
+          size,
+        );
+      return this.geometryCache[size][height];
+    }
 
-    const topSize = getRailingBeamTopSize(sizeScale);
-    const bottomSize = getRailingBeamBottomSize(sizeScale);
-    const size = getRailingPillarSize(sizeScale);
-    const height = getRailingPillarHeight(heightScale);
+    public readonly facing;
+    public readonly size;
+    public readonly height;
 
-    const nBars = parseInt(data.other["n"] ?? "12");
+    public readonly pillar1: Pillar | null;
+    public readonly pillar2: Pillar | null;
 
-    const railing = new THREE.Object3D();
+    constructor(
+      chunk: vec2,
+      options: {
+        facing?: "x" | "y";
+        sizeScale?: number;
+        heightScale?: number;
+        pillar1?: boolean;
+        pillar2?: boolean;
+      },
+      data?: StructureConstructorData,
+    ) {
+      const facing = options.facing ?? "x";
+      const size = Wall.getSize(options.sizeScale ?? 0);
+      const height = Wall.getHeight(options.heightScale ?? 0);
 
-    const beamTop = new THREE.Mesh(
-      getRailingBeamGeometry(topSize),
-      WALLMATERIAL,
-    );
-    beamTop.position.set(0, height, 0);
-    beamTop.receiveShadow = true;
-    beamTop.castShadow = true;
-    railing.add(beamTop);
+      let colliderSize: vec2 = [settings.chunkSize, size];
+      let pillarOffset = [settings.chunkSize / 2, 0];
+      if (facing === "y") {
+        colliderSize.reverse();
+        pillarOffset.reverse();
+      }
 
-    const beamBottom = new THREE.Mesh(
-      getRailingBeamGeometry(bottomSize),
-      WALLMATERIAL,
-    );
-    beamBottom.position.set(0, bottomSize / 2, 0);
-    beamBottom.receiveShadow = true;
-    beamBottom.castShadow = true;
-    railing.add(beamBottom);
+      super(chunk, colliderSize, data);
 
-    for (let i = 0; i < nBars; i++) {
-      let rx =
-        (settings.chunkSize / nBars) * (i + 0.5) - settings.chunkSize / 2;
-      const pillar = new THREE.Mesh(
-        getRailingPillarGeometry(size, height),
+      this.facing = facing;
+      this.size = size;
+      this.height = height;
+
+      if (facing === "y") this.object.rotateY(Math.PI / 2);
+
+      const plane = new THREE.Mesh(
+        Wall.getGeometry(size, height),
         new Array(6).fill(WALLMATERIALTEXTURED),
       );
-      pillar.position.set(rx, height / 2, 0);
-      pillar.receiveShadow = true;
-      pillar.castShadow = true;
-      railing.add(pillar);
+      plane.position.set(0, height / 2, 0);
+      plane.receiveShadow = true;
+      plane.castShadow = true;
+      this.object.add(plane);
+
+      if (options.pillar1 ?? true) {
+        this.pillar1 = new Pillar(chunk, options, {
+          offset: [
+            this.offsetX + pillarOffset[0],
+            this.offsetY + pillarOffset[1],
+            this.offsetZ,
+          ],
+          loop: data?.loop,
+        });
+      } else this.pillar1 = null;
+
+      if (options.pillar2 ?? true) {
+        this.pillar2 = new Pillar(chunk, options, {
+          offset: [
+            this.offsetX + pillarOffset[0],
+            this.offsetY + pillarOffset[1],
+            this.offsetZ,
+          ],
+          loop: data?.loop,
+        });
+      } else this.pillar2 = null;
+    }
+  }
+
+  class Pillar extends SolidStructure {
+    private static readonly geometryCache: {
+      [key: number]: { [key: number]: THREE.BoxGeometry };
+    } = {};
+    private static getSize(scale: number) {
+      return settings.wallThickness * (2 + scale);
+    }
+    private static getHeight(scale: number) {
+      return settings.wallThickness + settings.wallHeight * (1 + scale);
+    }
+    private static getGeometry(size: number, height: number) {
+      if (!(size in this.geometryCache)) this.geometryCache[size] = {};
+      if (!(height in this.geometryCache[size]))
+        this.geometryCache[size][height] = new THREE.BoxGeometry(
+          size,
+          height,
+          size,
+        );
+      return this.geometryCache[size][height];
     }
 
-    railing.position.set(x, z, y);
-    scene.add(railing);
+    public readonly size;
+    public readonly height;
 
-    colliders.push([
-      railing.position.x,
-      railing.position.z,
-      settings.chunkSize,
-      Math.max(topSize, bottomSize, size),
-      "wall",
-    ]);
+    constructor(
+      chunk: vec2,
+      options: {
+        sizeScale?: number;
+        heightScale?: number;
+      },
+      data?: StructureConstructorData,
+    ) {
+      const size = Pillar.getSize(options.sizeScale ?? 0);
+      const height = Pillar.getHeight(options.heightScale ?? 0);
 
-    return railing;
-  };
+      super(chunk, [size, size], data);
 
-  const addRailingY = (chunkX: number, chunkY: number, data: StructureData) => {
-    const railing = addRailingX(chunkX, chunkY, data);
+      this.size = size;
+      this.height = height;
 
-    railing.rotateY(Math.PI / 2);
+      const pillar = new THREE.Mesh(
+        Pillar.getGeometry(size, height),
+        WALLMATERIAL,
+      );
+      pillar.position.set(0, height / 2, 0);
+      pillar.receiveShadow = true;
+      pillar.castShadow = true;
+      this.object.add(pillar);
+    }
+  }
 
-    const last = colliders.pop();
-    if (!last) return railing;
-    const [x, y, w, h, type] = last;
-    colliders.push([x, y, h, w, type]);
+  class Railing extends SolidStructure {
+    private static readonly geometryCache: {
+      beam: { [key: number]: THREE.BoxGeometry };
+      pillar: { [key: number]: { [key: number]: THREE.BoxGeometry } };
+    } = { beam: {}, pillar: {} };
+    private static getBeamTopSize(scale: number) {
+      return settings.railingThickness * (1.5 + scale);
+    }
+    private static getBeamBottomSize(scale: number) {
+      return settings.railingThickness * (1 + scale);
+    }
+    private static getPillarSize(scale: number) {
+      return settings.railingThickness * (0.75 + scale);
+    }
+    private static getPillarHeight(scale: number) {
+      return settings.railingHeight * (1 + scale);
+    }
+    private static getBeamGeometry(size: number) {
+      if (!(size in this.geometryCache.beam))
+        this.geometryCache.beam[size] = new THREE.BoxGeometry(
+          settings.chunkSize,
+          size,
+          size,
+        );
+      return this.geometryCache.beam[size];
+    }
+    private static getPillarGeometry(size: number, height: number) {
+      if (!(size in this.geometryCache.pillar))
+        this.geometryCache.pillar[size] = {};
+      if (!(height in this.geometryCache.pillar[size]))
+        this.geometryCache.pillar[size][height] = new THREE.BoxGeometry(
+          size,
+          height,
+          size,
+        );
+      return this.geometryCache.pillar[size][height];
+    }
 
-    return railing;
-  };
+    public readonly facing;
+    public readonly beamTopSize;
+    public readonly beamBottomSize;
+    public readonly pillarSize;
+    public readonly pillarHeight;
+    public readonly n;
 
-  const addPillar = (chunkX: number, chunkY: number, data: StructureData) => {
-    let x = data.x + chunkX * settings.chunkSize;
-    let y = data.y + chunkY * settings.chunkSize;
-    let z = data.z;
+    constructor(
+      chunk: vec2,
+      options: {
+        facing?: "x" | "y";
+        sizeScale?: number;
+        heightScale?: number;
+        n?: number;
+      },
+      data?: StructureConstructorData,
+    ) {
+      const facing = options.facing ?? "x";
+      const beamTopSize = Railing.getBeamTopSize(options.sizeScale ?? 0);
+      const beamBottomSize = Railing.getBeamBottomSize(options.sizeScale ?? 0);
+      const pillarSize = Railing.getPillarSize(options.sizeScale ?? 0);
+      const pillarHeight = Railing.getPillarHeight(options.heightScale ?? 0);
+      const n = options.n ?? 12;
 
-    const sizeScale = parseFloat(data.other["size"] ?? "0");
-    const heightScale = parseFloat(data.other["height"] ?? "0");
+      let colliderSize: vec2 = [
+        settings.chunkSize,
+        Math.max(beamTopSize, beamBottomSize, pillarSize),
+      ];
+      if (facing === "y") {
+        colliderSize.reverse();
+      }
 
-    const size = getWallPillarSize(sizeScale);
-    const height = getWallPillarHeight(heightScale);
+      super(chunk, colliderSize, data);
 
-    const pillar = new THREE.Mesh(
-      getWallPillarGeometry(size, height),
-      WALLMATERIAL,
-    );
-    pillar.position.set(x, z + height / 2, y);
-    pillar.receiveShadow = true;
-    pillar.castShadow = true;
-    scene.add(pillar);
+      this.facing = facing;
+      this.beamTopSize = beamTopSize;
+      this.beamBottomSize = beamBottomSize;
+      this.pillarSize = pillarSize;
+      this.pillarHeight = pillarHeight;
+      this.n = n;
 
-    colliders.push([x, y, size, size, "wall"]);
+      if (facing === "y") this.object.rotateY(Math.PI / 2);
 
-    return pillar;
-  };
+      const beamTop = new THREE.Mesh(
+        Railing.getBeamGeometry(beamTopSize),
+        WALLMATERIAL,
+      );
+      beamTop.position.set(0, pillarHeight, 0);
+      beamTop.receiveShadow = true;
+      beamTop.castShadow = true;
+      this.object.add(beamTop);
 
-  const addArch = (chunkX: number, chunkY: number, data: StructureData) => {
-    let x = data.x + chunkX * settings.chunkSize;
-    let y = data.y + chunkY * settings.chunkSize;
-    let z = data.z;
+      const beamBottom = new THREE.Mesh(
+        Railing.getBeamGeometry(beamBottomSize),
+        WALLMATERIAL,
+      );
+      beamBottom.position.set(0, beamBottomSize / 2, 0);
+      beamBottom.receiveShadow = true;
+      beamBottom.castShadow = true;
+      this.object.add(beamBottom);
 
-    const arch = new THREE.Mesh(ARCHGEOMETRY, WALLMATERIAL);
-    const archBBox = new THREE.Box3().setFromObject(arch);
-    const axisSizes = [
-      archBBox.max.x - archBBox.min.x,
-      archBBox.max.y - archBBox.min.y,
-      archBBox.max.z - archBBox.min.z,
-    ];
-    axisSizes.sort((a, b) => a - b);
-    const scale = (settings.chunkSize / axisSizes[1]) * 1.1;
-    arch.scale.set(scale, scale, scale);
-    if ((data.other["type"] ?? "x") === "y") arch.rotateY(Math.PI / 2);
-    arch.position.set(x, z, y);
-    arch.receiveShadow = true;
-    arch.castShadow = true;
-    scene.add(arch);
+      for (let i = 0; i < n; i++) {
+        let rx = (settings.chunkSize / n) * (i + 0.5) - settings.chunkSize / 2;
+        const pillar = new THREE.Mesh(
+          Railing.getPillarGeometry(pillarSize, pillarHeight),
+          new Array(6).fill(WALLMATERIALTEXTURED),
+        );
+        pillar.position.set(rx, pillarHeight / 2, 0);
+        pillar.receiveShadow = true;
+        pillar.castShadow = true;
+        this.object.add(pillar);
+      }
+    }
+  }
 
-    return arch;
-  };
+  class Arch extends Structure {
+    public readonly facing;
 
-  const addBamboo = (chunkX: number, chunkY: number, data: StructureData) => {
-    let x = data.x + chunkX * settings.chunkSize;
-    let y = data.y + chunkY * settings.chunkSize;
-    let z = data.z;
-    let scale = parseFloat(data.other["scale"] ?? "1");
+    constructor(
+      chunk: vec2,
+      options: {
+        facing?: "x" | "y";
+      },
+      data?: StructureConstructorData,
+    ) {
+      const facing = options.facing ?? "x";
 
-    const bamboo = new THREE.Mesh(BAMBOOGEOMETRY, PLANTMATERIAL);
-    const bambooBBox = new THREE.Box3().setFromObject(bamboo);
-    const bambooSizes = [
-      bambooBBox.max.x - bambooBBox.min.x,
-      bambooBBox.max.y - bambooBBox.min.y,
-      bambooBBox.max.z - bambooBBox.min.z,
-    ];
-    bambooSizes.sort((a, b) => a - b);
-    scale *=
-      (settings.wallThickness * 8) / ((bambooSizes[0] + bambooSizes[1]) / 2);
-    bamboo.scale.set(scale, scale, scale);
-    if ((data.other["type"] ?? "x") === "y") bamboo.rotateY(Math.PI / 2);
-    bamboo.position.set(x, z, y);
-    bamboo.receiveShadow = true;
-    bamboo.castShadow = true;
-    scene.add(bamboo);
+      super(chunk, data);
 
-    return bamboo;
-  };
+      this.facing = facing;
 
-  const addPLight = (chunkX: number, chunkY: number, data: StructureData) => {
-    let x = data.x + chunkX * settings.chunkSize;
-    let y = data.y + chunkY * settings.chunkSize;
-    let z = data.z;
+      if (facing === "y") this.object.rotateY(Math.PI / 2);
 
-    const color = data.other["color"] ?? "#ffffff";
-    const invColor = new THREE.Color(color);
+      const arch = new THREE.Mesh(ARCHGEOMETRY, WALLMATERIAL);
+      const archBBox = new THREE.Box3().setFromObject(arch);
+      const axisSizes = [
+        archBBox.max.x - archBBox.min.x,
+        archBBox.max.y - archBBox.min.y,
+        archBBox.max.z - archBBox.min.z,
+      ];
+      axisSizes.sort((a, b) => a - b);
+      const scale = (settings.chunkSize / axisSizes[1]) * 1.1;
+      arch.scale.set(scale, scale, scale);
+      arch.receiveShadow = true;
+      arch.castShadow = true;
+      this.object.add(arch);
+    }
+  }
 
-    // invColor.r = 1 - invColor.r;
-    // invColor.g = 1 - invColor.g;
-    // invColor.b = 1 - invColor.b;
+  class Bamboo extends Structure {
+    public readonly facing;
+    public readonly scale;
 
-    // const hsl = { h: 0, s: 0, l: 0 };
-    // invColor.getHSL(hsl);
-    // if (!settings.isNight) hsl.l = 1 - hsl.l;
-    // invColor.setHSL(hsl.h, hsl.s, hsl.l);
+    constructor(
+      chunk: vec2,
+      options: {
+        facing?: "x" | "y";
+        scale?: number;
+      },
+      data?: StructureConstructorData,
+    ) {
+      const facing = options.facing ?? "x";
+      let scale = options.scale ?? 1;
 
-    const light = new THREE.Object3D();
+      super(chunk, data);
 
-    const pLight = new THREE.PointLight(
-      color,
-      parseFloat(data.other["intensity"] ?? "1"),
-      parseFloat(data.other["distance"] ?? "3"),
-      parseFloat(data.other["decay"] ?? "0.75"),
-    );
-    pLight.castShadow = true;
-    pLight.shadow.mapSize.width = 1024;
-    pLight.shadow.mapSize.height = 1024;
-    pLight.shadow.camera.near = 0.1;
-    pLight.shadow.camera.far = 10;
-    light.add(pLight);
+      this.facing = facing;
+      this.scale = scale;
 
-    const sphere = new THREE.Mesh(
-      getLightSphereGeometry(parseFloat(data.other["radius"] ?? "1")),
-      new THREE.MeshBasicMaterial({ color: invColor }),
-    );
-    light.add(sphere);
+      if (facing === "y") this.object.rotateY(Math.PI / 2);
 
-    light.position.set(x, z, y);
-    scene.add(light);
+      const bamboo = new THREE.Mesh(BAMBOOGEOMETRY, PLANTMATERIAL);
+      const bambooBBox = new THREE.Box3().setFromObject(bamboo);
+      const bambooSizes = [
+        bambooBBox.max.x - bambooBBox.min.x,
+        bambooBBox.max.y - bambooBBox.min.y,
+        bambooBBox.max.z - bambooBBox.min.z,
+      ];
+      bambooSizes.sort((a, b) => a - b);
+      scale *=
+        (settings.wallThickness * 8) / ((bambooSizes[0] + bambooSizes[1]) / 2);
+      bamboo.scale.set(scale, scale, scale);
+      bamboo.receiveShadow = true;
+      bamboo.castShadow = true;
+      this.object.add(bamboo);
+    }
+  }
 
-    return light;
-  };
+  class Carpet extends Structure {
+    private static readonly geometryCache: {
+      [key: number]: { [key: number]: THREE.PlaneGeometry };
+    } = {};
+    private static getSize(scale: number) {
+      return settings.chunkSize * (0.65 + scale);
+    }
+    private static getGeometry(width: number, height: number) {
+      if (!(width in this.geometryCache)) this.geometryCache[width] = {};
+      if (!(height in this.geometryCache[width]))
+        this.geometryCache[width][height] = new THREE.PlaneGeometry(
+          width,
+          height,
+        );
+      return this.geometryCache[width][height];
+    }
 
-  const addInfoBox = (chunkX: number, chunkY: number, data: StructureData) => {
-    let x = data.x + chunkX * settings.chunkSize;
-    let y = data.y + chunkY * settings.chunkSize;
-    let z = data.z;
+    private static readonly textureCache: {
+      centerless: { [key: number]: { [key: number]: THREE.CanvasTexture } };
+      center: { [key: number]: { [key: number]: THREE.CanvasTexture } };
+    } = { center: {}, centerless: {} };
+    private static getTexture(width: number, height: number, center = false) {
+      const cache = center
+        ? this.textureCache.center
+        : this.textureCache.centerless;
+      if (!(width in cache)) cache[width] = {};
+      if (!(height in cache[width])) {
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.ceil(width * settings.carpetPatternSize);
+        canvas.height = Math.ceil(height * settings.carpetPatternSize);
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          color.set(0xffffff);
+          color.lerp(wallColor, settings.carpetPatternColor2);
+          ctx.fillStyle = "#" + color.getHexString();
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          const sizeBig = settings.carpetPatternSizeBig;
+          const sizeSmall = settings.carpetPatternSizeSmall;
+          color.set(0xffffff);
+          color.lerp(wallColor, settings.carpetPatternColor1);
+          ctx.strokeStyle = "#" + color.getHexString();
+          ctx.lineWidth = settings.carpetPatternLine;
+          ctx.beginPath();
+          const nX = Math.ceil(canvas.width / (sizeBig + sizeSmall)) + 2;
+          const nY = Math.ceil(canvas.height / (sizeBig + sizeSmall)) + 2;
+          for (let iX = 0; iX < nX; iX++) {
+            for (let iY = 0; iY < nY; iY++) {
+              const x =
+                (iX - (nX - 1) / 2) * (sizeBig + sizeSmall) + canvas.width / 2;
+              const y =
+                (iY - (nY - 1) / 2) * (sizeBig + sizeSmall) + canvas.height / 2;
+              const points = [];
+              for (let i = 0; i < 4; i++) {
+                const forwardX = [1, 0, -1, 0][i];
+                const forwardY = [0, 1, 0, -1][i];
+                const rightX = [0, -1, 0, 1][i];
+                const rightY = [1, 0, -1, 0][i];
+                for (const side of [-1, 1])
+                  points.push([
+                    forwardX * (sizeBig / 2 + sizeSmall) +
+                      rightX * (sizeBig / 2 - sizeSmall) * side,
+                    forwardY * (sizeBig / 2 + sizeSmall) +
+                      rightY * (sizeBig / 2 - sizeSmall) * side,
+                  ]);
+              }
+              for (let i = 0; i <= points.length; i++) {
+                let [px, py] = points[i % points.length];
+                px += x;
+                py += y;
+                if (i > 0) ctx.lineTo(px, py);
+                else ctx.moveTo(px, py);
+              }
+            }
+          }
+          ctx.stroke();
+          const padding = settings.carpetPatternPadding;
+          ctx.fillRect(0, 0, padding, canvas.height);
+          ctx.fillRect(0, 0, canvas.width, padding);
+          ctx.fillRect(canvas.width - padding, 0, padding, canvas.height);
+          ctx.fillRect(0, canvas.height - padding, canvas.width, padding);
+          for (const factor of [1, settings.carpetPatternLine / 2 / padding]) {
+            ctx.beginPath();
+            ctx.moveTo(padding * factor, padding * factor);
+            ctx.lineTo(canvas.width - padding * factor, padding * factor);
+            ctx.lineTo(
+              canvas.width - padding * factor,
+              canvas.height - padding * factor,
+            );
+            ctx.lineTo(padding * factor, canvas.height - padding * factor);
+            ctx.closePath();
+            ctx.stroke();
+          }
+          if (center) {
+            const centerSize = settings.carpetPatterCenterSize;
+            ctx.beginPath();
+            ctx.arc(
+              canvas.width / 2,
+              canvas.height / 2,
+              centerSize / 2,
+              0,
+              2 * Math.PI,
+            );
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(
+              canvas.width / 2,
+              canvas.height / 2,
+              (centerSize / 2) * 0.9,
+              0,
+              2 * Math.PI,
+            );
+            ctx.closePath();
+            ctx.stroke();
+          }
+        }
+        cache[width][height] = new THREE.CanvasTexture(canvas);
+      }
+      return cache[width][height];
+    }
 
-    const elem = document.createElement("div");
-    const ielem = document.createElement(data.other["type"] ?? "span");
-    ielem.classList.add("infobox");
-    ielem.textContent = (data.other["text"] ?? "").replaceAll("\\s", " ");
-    elem.appendChild(ielem);
+    private static readonly materialCache: {
+      [key: number]: { [key: number]: THREE.MeshLambertMaterial };
+    } = {};
+    private static getMaterial(width: number, height: number, center = false) {
+      if (!(width in this.materialCache)) this.materialCache[width] = {};
+      if (!(height in this.materialCache[width]))
+        this.materialCache[width][height] = new THREE.MeshLambertMaterial({
+          color: wallColor,
+          map: this.getTexture(width, height, center),
+        });
+      return this.materialCache[width][height];
+    }
 
-    const obj = new CSS2DObject(elem);
-    obj.position.set(x, z, y);
-    scene.add(obj);
+    public readonly width;
+    public readonly height;
 
-    infoBoxes.push([obj, ielem, 0]);
+    constructor(
+      chunk: vec2,
+      options: { widthScale?: number; heightScale?: number; center?: boolean },
+      data?: StructureConstructorData,
+    ) {
+      const width = Carpet.getSize(options.widthScale ?? 0);
+      const height = Carpet.getSize(options.heightScale ?? 0);
+      const center = options.center ?? false;
 
-    return obj;
-  };
+      super(chunk, data);
+
+      this.width = width;
+      this.height = height;
+
+      const carpet = new THREE.Mesh(
+        Carpet.getGeometry(width, height),
+        Carpet.getMaterial(width, height, center),
+      );
+      carpet.rotateX(-Math.PI / 2);
+      carpet.position.set(0, 0.05, 0);
+      carpet.receiveShadow = true;
+      this.object.add(carpet);
+    }
+  }
+
+  class PLight extends Structure {
+    private static readonly geometryCache: {
+      [key: number]: THREE.SphereGeometry;
+    } = {};
+    private static getRadius(scale: number) {
+      return settings.lightSphereSize * scale;
+    }
+    private static getGeometry(radius: number) {
+      if (!(radius in this.geometryCache))
+        this.geometryCache[radius] = new THREE.SphereGeometry(radius, 24, 24);
+      return this.geometryCache[radius];
+    }
+
+    public readonly color;
+    public readonly intensity;
+    public readonly distance;
+    public readonly decay;
+    public readonly radius;
+
+    constructor(
+      chunk: vec2,
+      options: {
+        color?: string;
+        intensity?: number;
+        distance?: number;
+        decay?: number;
+        radius?: number;
+      },
+      data?: StructureConstructorData,
+    ) {
+      const color = new THREE.Color(options.color ?? "#ffffff");
+      const invColor = new THREE.Color(color);
+      const intensity = options.intensity ?? 1;
+      const distance = options.distance ?? 3;
+      const decay = options.decay ?? 0.75;
+      const radius = PLight.getRadius(options.radius ?? 1);
+
+      super(chunk, data);
+
+      this.color = color;
+      this.intensity = intensity;
+      this.distance = distance;
+      this.decay = decay;
+      this.radius = radius;
+
+      const light = new THREE.PointLight(color, intensity, distance, decay);
+      light.castShadow = true;
+      light.shadow.mapSize.width = 1024;
+      light.shadow.mapSize.height = 1024;
+      light.shadow.camera.near = 0.1;
+      light.shadow.camera.far = 10;
+      this.object.add(light);
+
+      const sphere = new THREE.Mesh(
+        PLight.getGeometry(radius),
+        new THREE.MeshBasicMaterial({ color: invColor }),
+      );
+      this.object.add(sphere);
+    }
+  }
+
+  class InfoBox extends Structure {
+    public readonly elem;
+    private scale;
+
+    constructor(
+      chunk: vec2,
+      options: {
+        text?: string;
+        type?: string;
+      },
+      data?: StructureConstructorData,
+    ) {
+      const text = (options.text ?? "").replaceAll("\\s", " ");
+      const type = options.type ?? "span";
+
+      super(chunk, data);
+
+      const elem = document.createElement("div");
+      const ielem = (this.elem = document.createElement(type));
+      ielem.classList.add("infobox");
+      ielem.textContent = text;
+      elem.appendChild(ielem);
+
+      const obj = new CSS2DObject(elem);
+      this.object.add(obj);
+
+      this.scale = 0;
+    }
+
+    public update(delta: number): void {
+      super.update(delta);
+
+      this.elem.style.transform = "scale(" + this.scale + ")";
+      const dist = this.object.position.distanceTo(camera.position);
+      this.scale += (+(dist < settings.infoBoxShowRadius) - this.scale) * 0.1;
+    }
+  }
+
+  class Artwork extends Structure {
+    private static readonly geometryCache: {
+      horizontal: { [key: number]: THREE.BoxGeometry };
+      vertical: { [key: number]: THREE.BoxGeometry };
+    } = { horizontal: {}, vertical: {} };
+    private static getFrameHGeo(size: number) {
+      if (!(size in this.geometryCache.horizontal))
+        this.geometryCache.horizontal[size] = new THREE.BoxGeometry(
+          size + settings.artworkFrameThickness * 2,
+          settings.artworkFrameThickness,
+          settings.artworkFrameThickness,
+        );
+      return this.geometryCache.horizontal[size];
+    }
+    private static getFrameVGeo(size: number) {
+      if (!(size in this.geometryCache.vertical))
+        this.geometryCache.vertical[size] = new THREE.BoxGeometry(
+          settings.artworkFrameThickness,
+          size + settings.artworkFrameThickness * 2,
+          settings.artworkFrameThickness,
+        );
+      return this.geometryCache.vertical[size];
+    }
+
+    public readonly facing;
+    public readonly name;
+    public readonly maxWidth;
+    public readonly maxHeight;
+
+    private width;
+    private height;
+
+    constructor(
+      chunk: vec2,
+      options: {
+        facing?: "x+" | "x-" | "y+" | "y-";
+        name?: string;
+        maxWidth?: number;
+        maxHeight?: number;
+      },
+      data?: StructureConstructorData,
+    ) {
+      const facing = options.facing ?? "x+";
+      const name = options.name ?? "";
+      const maxWidth = options.maxWidth ?? settings.chunkSize * 0.65;
+      const maxHeight = options.maxHeight ?? settings.wallHeight * 0.65;
+
+      super(chunk, data);
+
+      this.facing = facing;
+      this.name = name;
+      this.maxWidth = maxWidth;
+      this.maxHeight = maxHeight;
+
+      const angle =
+        facing === "x+"
+          ? -Math.PI / 2
+          : facing === "x-"
+          ? (-3 * Math.PI) / 2
+          : facing === "y+"
+          ? 0
+          : Math.PI;
+
+      this.object.rotateY(angle);
+
+      this.width = this.height = 0;
+
+      (async () => {
+        const { width, height, scale, canvas } = await (async () => {
+          if (name in artworkCache) return artworkCache[name];
+          const canvas = document.createElement("canvas");
+          const { width, height, scale } = (await new Promise((res, rej) => {
+            const offCanvas = canvas.transferControlToOffscreen();
+            const worker = new Worker("./worker.js");
+            worker.addEventListener("message", (e) => res(e.data));
+            worker.addEventListener("error", (e) => rej(e));
+            worker.postMessage(
+              { name, maxWidth, maxHeight, canvas: offCanvas },
+              [offCanvas],
+            );
+          })) as { width: number; height: number; scale: number };
+          return (artworkCache[name] = { width, height, scale, canvas });
+        })();
+
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.colorSpace = THREE.SRGBColorSpace;
+
+        const plane = new THREE.Mesh(
+          new THREE.PlaneGeometry(width * scale, height * scale),
+          new THREE.MeshBasicMaterial({ map: tex, color: 0xffffff }),
+        );
+        this.object.add(plane);
+
+        const hGeo = Artwork.getFrameHGeo(width * scale);
+        const vGeo = Artwork.getFrameVGeo(height * scale);
+
+        const frameH1 = new THREE.Mesh(hGeo, FRAMEMATERIAL);
+        frameH1.position.set(
+          0,
+          (height * scale + settings.artworkFrameThickness) / 2,
+          0,
+        );
+        frameH1.receiveShadow = true;
+        frameH1.castShadow = true;
+        this.object.add(frameH1);
+
+        const frameH2 = new THREE.Mesh(hGeo, FRAMEMATERIAL);
+        frameH2.position.set(
+          0,
+          -(height * scale + settings.artworkFrameThickness) / 2,
+          0,
+        );
+        frameH2.receiveShadow = true;
+        frameH2.castShadow = true;
+        this.object.add(frameH2);
+
+        const frameV1 = new THREE.Mesh(vGeo, FRAMEMATERIAL);
+        frameV1.position.set(
+          (width * scale + settings.artworkFrameThickness) / 2,
+          0,
+          0,
+        );
+        frameV1.receiveShadow = true;
+        frameV1.castShadow = true;
+        this.object.add(frameV1);
+
+        const frameV2 = new THREE.Mesh(vGeo, FRAMEMATERIAL);
+        frameV2.position.set(
+          -(width * scale + settings.artworkFrameThickness) / 2,
+          0,
+          0,
+        );
+        frameV2.receiveShadow = true;
+        frameV2.castShadow = true;
+        this.object.add(frameV2);
+
+        if (name in artworks) {
+          const artwork = artworks[name];
+
+          new InfoBox(
+            chunk,
+            {
+              text: artwork.name,
+              type: "h2",
+            },
+            {
+              offset: [
+                this.offsetX,
+                this.offsetY,
+                this.offsetZ - (height * scale) / 2 - 0.2,
+              ],
+              loop: data?.loop,
+            },
+          );
+          new InfoBox(
+            chunk,
+            {
+              text: getArtworkDate(artwork.date),
+              type: "h6",
+            },
+            {
+              offset: [
+                this.offsetX,
+                this.offsetY,
+                this.offsetZ - (height * scale) / 2 - 0.3,
+              ],
+              loop: data?.loop,
+            },
+          );
+
+          this.width = width * scale;
+          this.height = height * scale;
+        }
+      })();
+    }
+
+    public get collider() {
+      return {
+        x: this.x,
+        y: this.y,
+        w:
+          this.facing[0] === "x"
+            ? settings.artworkFrameThickness * 6
+            : this.width * 1.5,
+        h:
+          this.facing[0] === "x"
+            ? this.width * 1.5
+            : settings.artworkFrameThickness * 6,
+        type: "artwork:" + this.name,
+      };
+    }
+  }
+
+  class Portal extends Structure {
+    private static readonly portals: { [key: string]: Portal } = {};
+    public static getPortal(id: string) {
+      return id in this.portals ? this.portals[id] : null;
+    }
+
+    public readonly id;
+    public readonly linkId;
+    public readonly facing;
+    public readonly normal;
+
+    public colliding;
+
+    constructor(
+      chunk: vec2,
+      options: {
+        id?: string;
+        linkId?: string;
+        facing?: "x+" | "x-" | "y+" | "y-";
+      },
+      data?: StructureConstructorData,
+    ) {
+      const id = options.id ?? "";
+      const linkId = options.linkId ?? "";
+      const facing = options.facing ?? "x+";
+
+      super(chunk, data);
+
+      this.id = id;
+      this.linkId = linkId;
+      this.facing = facing;
+      this.normal = new THREE.Vector2();
+      if (this.facing[0] === "x") this.normal.x = 1;
+      else this.normal.y = 1;
+      if (this.facing[1] === "-") this.normal.multiplyScalar(-1);
+
+      Portal.portals[this.id] = this;
+
+      this.colliding = false;
+    }
+
+    public get collider() {
+      return {
+        x: this.x,
+        y: this.y,
+        w:
+          this.facing[0] === "x"
+            ? settings.chunkSize
+            : settings.wallThickness * 0.25,
+        h:
+          this.facing[0] === "x"
+            ? settings.wallThickness * 0.25
+            : settings.chunkSize,
+        type: "portal:" + this.id + ">" + this.linkId,
+      };
+    }
+  }
 
   const artworkCache: {
     [key: string]: {
@@ -845,135 +1499,6 @@ const main = async () => {
       canvas: HTMLCanvasElement;
     };
   } = {};
-
-  const addArtwork = (chunkX: number, chunkY: number, data: StructureData) => {
-    let x = data.x + chunkX * settings.chunkSize;
-    let y = data.y + chunkY * settings.chunkSize;
-    let z = data.z;
-
-    const facing = data.other["facing"] ?? "x+";
-    const angle =
-      facing === "x+"
-        ? -Math.PI / 2
-        : facing === "x-"
-        ? (-3 * Math.PI) / 2
-        : facing === "y+"
-        ? 0
-        : Math.PI;
-    const xWise = facing === "x+" || facing === "x-";
-
-    const name = data.other["name"] ?? "";
-
-    const maxWidth = parseFloat(
-      data.other["width"] ?? String(settings.chunkSize * 0.65),
-    );
-    const maxHeight = parseFloat(
-      data.other["height"] ?? String(settings.wallHeight * 0.65),
-    );
-
-    const obj = new THREE.Object3D();
-
-    (async () => {
-      const { width, height, scale, canvas } = await (async () => {
-        if (name in artworkCache) return artworkCache[name];
-        const canvas = document.createElement("canvas");
-        const { width, height, scale } = (await new Promise((res, rej) => {
-          const offCanvas = canvas.transferControlToOffscreen();
-          const worker = new Worker("./worker.js");
-          worker.addEventListener("message", (e) => res(e.data));
-          worker.addEventListener("error", (e) => rej(e));
-          worker.postMessage({ name, maxWidth, maxHeight, canvas: offCanvas }, [
-            offCanvas,
-          ]);
-        })) as { width: number; height: number; scale: number };
-        return (artworkCache[name] = { width, height, scale, canvas });
-      })();
-
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.colorSpace = THREE.SRGBColorSpace;
-
-      const plane = new THREE.Mesh(
-        new THREE.PlaneGeometry(width * scale, height * scale),
-        new THREE.MeshBasicMaterial({ map: tex, color: 0xffffff }),
-      );
-      obj.add(plane);
-
-      const hGeo = getArtworkFrameHGeometry(width * scale);
-      const vGeo = getArtworkFrameVGeometry(height * scale);
-
-      const frameH1 = new THREE.Mesh(hGeo, FRAMEMATERIAL);
-      frameH1.position.set(
-        0,
-        (height * scale + settings.artworkFrameThickness) / 2,
-        0,
-      );
-      frameH1.receiveShadow = true;
-      frameH1.castShadow = true;
-      obj.add(frameH1);
-
-      const frameH2 = new THREE.Mesh(hGeo, FRAMEMATERIAL);
-      frameH2.position.set(
-        0,
-        -(height * scale + settings.artworkFrameThickness) / 2,
-        0,
-      );
-      frameH2.receiveShadow = true;
-      frameH2.castShadow = true;
-      obj.add(frameH2);
-
-      const frameV1 = new THREE.Mesh(vGeo, FRAMEMATERIAL);
-      frameV1.position.set(
-        (width * scale + settings.artworkFrameThickness) / 2,
-        0,
-        0,
-      );
-      frameV1.receiveShadow = true;
-      frameV1.castShadow = true;
-      obj.add(frameV1);
-
-      const frameV2 = new THREE.Mesh(vGeo, FRAMEMATERIAL);
-      frameV2.position.set(
-        -(width * scale + settings.artworkFrameThickness) / 2,
-        0,
-        0,
-      );
-      frameV2.receiveShadow = true;
-      frameV2.castShadow = true;
-      obj.add(frameV2);
-
-      if (name in artworks) {
-        const artwork = artworks[name];
-        addInfoBox(chunkX, chunkY, {
-          x: data.x,
-          y: data.y,
-          z: data.z - 0.2 - (height * scale) / 2,
-          other: {
-            text: artwork.name,
-            type: "h2",
-          },
-        });
-        addInfoBox(chunkX, chunkY, {
-          x: data.x,
-          y: data.y,
-          z: data.z - 0.3 - (height * scale) / 2,
-          other: {
-            text: getArtworkDate(artwork.date),
-            type: "h6",
-          },
-        });
-
-        let [w, h] = [width * scale * 1.5, settings.artworkFrameThickness * 6];
-        if (xWise) [w, h] = [h, w];
-        colliders.push([x, y, w, h, "artwork:" + name]);
-      }
-    })();
-
-    obj.position.set(x, z, y);
-    obj.rotateY(angle);
-    scene.add(obj);
-
-    return obj;
-  };
 
   const renderer = new THREE.WebGLRenderer({
     canvas: canvas,
@@ -1048,6 +1573,7 @@ const main = async () => {
 
   const origin2 = new THREE.Vector2(0, 0);
 
+  const playerCollider = [settings.playerSize, settings.playerSize];
   const camCentricAccel = new THREE.Vector2();
   const worldAccel = new THREE.Vector2();
   const worldVel = new THREE.Vector2();
@@ -1057,33 +1583,144 @@ const main = async () => {
 
   let activeArtwork: string | null = null;
 
-  const chunkedObjects: {
-    [key: number]: {
-      [key: number]: { visible: boolean; list: THREE.Object3D[] };
-    };
-  } = {};
-  structures
-    .map(({ type, chunkX, chunkY, data }) => {
-      if (type === "wallX") return addWallX(chunkX, chunkY, data);
-      if (type === "wallY") return addWallY(chunkX, chunkY, data);
-      if (type === "railX") return addRailingX(chunkX, chunkY, data);
-      if (type === "railY") return addRailingY(chunkX, chunkY, data);
-      if (type === "pillar") return addPillar(chunkX, chunkY, data);
-      if (type === "arch") return addArch(chunkX, chunkY, data);
-      if (type === "bamboo") return addBamboo(chunkX, chunkY, data);
-      if (type === "plight") return addPLight(chunkX, chunkY, data);
-      if (type === "infobox") return addInfoBox(chunkX, chunkY, data);
-      if (type === "art") return addArtwork(chunkX, chunkY, data);
-    })
-    .forEach((obj, i) => {
-      if (!obj) return;
-      const chunkX = Math.round(structures[i].chunkX);
-      const chunkY = Math.round(structures[i].chunkY);
-      if (!chunkedObjects[chunkX]) chunkedObjects[chunkX] = {};
-      if (!chunkedObjects[chunkX][chunkY])
-        chunkedObjects[chunkX][chunkY] = { visible: true, list: [] };
-      chunkedObjects[chunkX][chunkY].list.push(obj);
-    });
+  structures.forEach(({ type, chunk, data }) => {
+    if (type === "wall") {
+      const facing = data.other.facing;
+      return new Wall(
+        chunk,
+        {
+          facing: facing === "x" ? "x" : facing === "y" ? "y" : undefined,
+          sizeScale: castOptionalFloat(data.other.size),
+          heightScale: castOptionalFloat(data.other.height),
+          pillar1: castOptionalBool(data.other.p1),
+          pillar2: castOptionalBool(data.other.p2),
+        },
+        data,
+      );
+    }
+    if (type === "pillar") {
+      return new Pillar(
+        chunk,
+        {
+          sizeScale: castOptionalFloat(data.other.size),
+          heightScale: castOptionalFloat(data.other.height),
+        },
+        data,
+      );
+    }
+    if (type === "rail") {
+      const facing = data.other.facing;
+      return new Railing(
+        chunk,
+        {
+          facing: facing === "x" ? "x" : facing === "y" ? "y" : undefined,
+          sizeScale: castOptionalFloat(data.other.size),
+          heightScale: castOptionalFloat(data.other.height),
+          n: castOptionalInt(data.other.n),
+        },
+        data,
+      );
+    }
+    if (type === "arch") {
+      const facing = data.other.facing;
+      return new Arch(
+        chunk,
+        {
+          facing: facing === "x" ? "x" : facing === "y" ? "y" : undefined,
+        },
+        data,
+      );
+    }
+    if (type === "bamboo") {
+      const facing = data.other.facing;
+      return new Bamboo(
+        chunk,
+        {
+          facing: facing === "x" ? "x" : facing === "y" ? "y" : undefined,
+          scale: castOptionalFloat(data.other.scale),
+        },
+        data,
+      );
+    }
+    if (type === "carpet") {
+      return new Carpet(
+        chunk,
+        {
+          widthScale: castOptionalFloat(data.other.width),
+          heightScale: castOptionalFloat(data.other.height),
+          center: castOptionalBool(data.other.center),
+        },
+        data,
+      );
+    }
+    if (type === "plight") {
+      return new PLight(
+        chunk,
+        {
+          color: data.other.color,
+          intensity: castOptionalFloat(data.other.intensity),
+          distance: castOptionalFloat(data.other.distance),
+          decay: castOptionalFloat(data.other.decay),
+          radius: castOptionalFloat(data.other.radius),
+        },
+        data,
+      );
+    }
+    if (type === "infobox") {
+      return new InfoBox(
+        chunk,
+        {
+          text: data.other.text,
+          type: data.other.type,
+        },
+        data,
+      );
+    }
+    if (type === "art") {
+      const facing = data.other.facing;
+      return new Artwork(
+        chunk,
+        {
+          facing:
+            facing === "x+"
+              ? "x+"
+              : facing === "x-"
+              ? "x-"
+              : facing === "y+"
+              ? "y+"
+              : facing === "y-"
+              ? "y-"
+              : undefined,
+          name: data.other.name,
+          maxWidth: castOptionalFloat(data.other.width),
+          maxHeight: castOptionalFloat(data.other.height),
+        },
+        data,
+      );
+    }
+    if (type === "portal") {
+      return;
+      const facing = data.other.facing;
+      return new Portal(
+        chunk,
+        {
+          id: data.other.id,
+          linkId: data.other.linkId,
+          facing:
+            facing === "x+"
+              ? "x+"
+              : facing === "x-"
+              ? "x-"
+              : facing === "y+"
+              ? "y+"
+              : facing === "y-"
+              ? "y-"
+              : undefined,
+        },
+        data,
+      );
+    }
+  });
 
   const removeAllCanvases = () => {
     for (const name in artworkCache) artworkCache[name].canvas.remove();
@@ -1199,8 +1836,11 @@ const main = async () => {
 
     let [playerX, playerY] = [camera.position.x, camera.position.z];
     const [playerW, playerH] = playerCollider;
-    for (const [x, y, w, h, type] of colliders) {
-      if (type === "wall") {
+    for (const structure of Structure.structures) {
+      const collider = structure.collider;
+      if (!collider) continue;
+      const { x, y, w, h, type } = collider;
+      if (type === "solid") {
         let shiftX = (playerW + w) / 2 - Math.abs(playerX - x);
         let shiftY = (playerH + h) / 2 - Math.abs(playerY - y);
         if (shiftX <= 0) continue;
@@ -1217,10 +1857,47 @@ const main = async () => {
         continue;
       }
       if (type.startsWith("artwork:")) {
-        const name = type.slice("artwork:".length);
         if (Math.abs(playerX - x) >= (playerW + w) / 2) continue;
         if (Math.abs(playerY - y) >= (playerH + h) / 2) continue;
-        activeArtwork = name;
+        activeArtwork = type.slice("artwork:".length);
+        continue;
+      }
+      if (type.startsWith("portal:")) {
+        if (Math.abs(playerX - x) >= (playerW + w) / 2) {
+          if (structure instanceof Portal) structure.colliding = false;
+          continue;
+        }
+        if (Math.abs(playerY - y) >= (playerH + h) / 2) {
+          if (structure instanceof Portal) structure.colliding = false;
+          continue;
+        }
+        if (structure instanceof Portal) if (structure.colliding) continue;
+        const ids = type.slice("portal:".length).split(">");
+        if (ids.length !== 2) {
+          if (structure instanceof Portal) structure.colliding = false;
+          continue;
+        }
+        const [fromId, toId] = ids;
+        const fromPortal = Portal.getPortal(fromId);
+        if (!fromPortal) continue;
+        const toPortal = Portal.getPortal(toId);
+        if (!toPortal) continue;
+
+        const fromPortalNormal = fromPortal.normal;
+        const toPortalNormal = toPortal.normal;
+        const angleShift = toPortalNormal.angle() - fromPortalNormal.angle();
+
+        const portalOffset = new THREE.Vector2(
+          playerX - fromPortal.x,
+          playerY - fromPortal.y,
+        );
+        portalOffset.rotateAround({ x: 0, y: 0 }, angleShift);
+        playerX = portalOffset.x + toPortal.x;
+        playerY = portalOffset.y + toPortal.y;
+
+        fromPortal.colliding = toPortal.colliding = true;
+
+        worldVel.rotateAround({ x: 0, y: 0 }, angleShift);
         continue;
       }
     }
@@ -1233,12 +1910,7 @@ const main = async () => {
     camElevation += (camWantedElevation - camElevation) * 0.1;
     camera.position.y = camElevation;
 
-    for (let i = 0; i < infoBoxes.length; i++) {
-      const [obj, elem, scale] = infoBoxes[i];
-      elem.style.transform = "scale(" + scale + ")";
-      const dist = obj.position.distanceTo(camera.position);
-      infoBoxes[i][2] += (+(dist < settings.infoBoxShowRadius) - scale) * 0.1;
-    }
+    Structure.update(delta);
 
     let xyz1 = [camera.position.x, camera.position.y, camera.position.z];
     let rxyz1 = [camera.rotation.x, camera.rotation.y, camera.rotation.z];
@@ -1283,25 +1955,6 @@ const main = async () => {
     } else {
       hud.classList.add("inspecting");
       if (keysJustDown.has("KeyE")) hudInspectBtn.click();
-    }
-
-    const chunkX = Math.round(camera.position.x / settings.chunkSize);
-    const chunkY = Math.round(camera.position.z / settings.chunkSize);
-
-    for (const xS in chunkedObjects) {
-      const x = parseInt(xS);
-      const xValid = Math.abs(x - chunkX) <= settings.renderDist;
-      for (const yS in chunkedObjects[x]) {
-        const y = parseInt(yS);
-        const valid = xValid && Math.abs(y - chunkY) <= settings.renderDist;
-        if (chunkedObjects[x][y].visible === valid) continue;
-        chunkedObjects[x][y].visible = valid;
-        for (const obj of chunkedObjects[x][y].list) {
-          obj.visible = valid;
-          obj.receiveShadow = valid;
-          obj.castShadow = valid;
-        }
-      }
     }
 
     controller.update(delta);

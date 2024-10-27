@@ -14,11 +14,13 @@ body {
     transform: scale(1.5);
 
     filter: blur(60px);
+    opacity: 0;
   }
   100% {
     transform: scale(var(--scale));
 
     filter: blur(0);
+    opacity: 1;
   }
 }
 
@@ -27,6 +29,7 @@ body {
   /* --scale: 1.25; */
   --scale: 1;
 
+  background-color: #000;
   color: var(--text-color);
 
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
@@ -136,6 +139,7 @@ body > div.hud > div.inspect {
   gap: 20px;
 
   background-color: #fff4;
+  color: #fff;
   border-radius: 20px;
 
   transition: transform 0.25s;

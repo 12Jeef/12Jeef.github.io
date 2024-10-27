@@ -34593,6 +34593,21 @@ class OutputPass extends Pass {
 
 }
 
+function castOptionalFloat(value) {
+    if (typeof value !== "string")
+        return undefined;
+    return parseFloat(value);
+}
+function castOptionalInt(value) {
+    if (typeof value !== "string")
+        return undefined;
+    return parseInt(value);
+}
+function castOptionalBool(value) {
+    if (typeof value !== "string")
+        return undefined;
+    return value === "true";
+}
 const stlLoader = new STLLoader();
 new TextureLoader();
 function castSettings(data) {
@@ -34617,6 +34632,8 @@ function castSettings(data) {
         hemLightNightColor: "",
         wallDayColor: "",
         wallNightColor: "",
+        groundDayColor: "",
+        groundNightColor: "",
         frameDayColor: "",
         frameNightColor: "",
         textDayColor: "",
@@ -34624,12 +34641,22 @@ function castSettings(data) {
         plantDayColor: "",
         plantNightColor: "",
         hShift: 0,
+        sShift: 0,
+        vShift: 0,
         chunkSize: 0,
         renderDist: 0,
         wallHeight: 0,
         wallThickness: 0,
         railingHeight: 0,
         railingThickness: 0,
+        carpetPatternColor1: 0,
+        carpetPatternColor2: 0,
+        carpetPatternSize: 0,
+        carpetPatternSizeBig: 0,
+        carpetPatternSizeSmall: 0,
+        carpetPatternLine: 0,
+        carpetPatternPadding: 0,
+        carpetPatterCenterSize: 0,
         lightSphereSize: 0,
         infoBoxShowRadius: 0,
         artworkFrameThickness: 0,
@@ -34678,27 +34705,35 @@ function castStructures(data) {
         const type = lineParts[0];
         const chunkX = parseFloat(lineParts[1]);
         const chunkY = parseFloat(lineParts[2]);
-        const data = { x: 0, y: 0, z: 0, other: {} };
+        const data = { offset: [0, 0, 0], loop: {}, other: {} };
         for (const kv of lineParts.slice(3)) {
             const kvPair = kv.split("=");
             if (kvPair.length !== 2)
                 continue;
             const [k, v] = kvPair;
             if (k === "x") {
-                data.x = parseFloat(v);
+                data.offset[0] = parseFloat(v);
                 continue;
             }
             if (k === "y") {
-                data.y = parseFloat(v);
+                data.offset[1] = parseFloat(v);
                 continue;
             }
             if (k === "z") {
-                data.z = parseFloat(v);
+                data.offset[2] = parseFloat(v);
+                continue;
+            }
+            if (k === "loopX") {
+                data.loop.x = parseFloat(v);
+                continue;
+            }
+            if (k === "loopY") {
+                data.loop.y = parseFloat(v);
                 continue;
             }
             data.other[k] = v;
         }
-        structures.push({ type, chunkX, chunkY, data });
+        structures.push({ type, chunk: [chunkX, chunkY], data });
     }
     return structures;
 }
@@ -34749,13 +34784,31 @@ const MONTHS = [
 function getArtworkDate(date) {
     return (MONTHS[date[1]] ?? String(date[1])) + " " + date[2] + " " + date[0];
 }
+function cleanJSON(text) {
+    return JSON.parse(text
+        .split("\n")
+        .map((line) => line.split("//")[0])
+        .join("\n"));
+}
+function hsvShiftColor(color, hShift, sShift, vShift) {
+    const hsl = { h: 0, s: 0, l: 0 };
+    color.getHSL(hsl);
+    hsl.h += hShift;
+    hsl.s += sShift;
+    hsl.l -= vShift;
+    const fullTurn = 2 * Math.PI;
+    hsl.h = ((hsl.h % fullTurn) + fullTurn) % fullTurn;
+    hsl.s = Math.min(1, Math.max(0, hsl.s));
+    hsl.l = Math.min(1, Math.max(0, hsl.l));
+    color.setHSL(hsl.h, hsl.s, hsl.l);
+}
 const main = async () => {
     const settingsResp = await fetch("./settings.json");
-    const settings = castSettings(await settingsResp.json());
+    const settings = castSettings(cleanJSON(await settingsResp.text()));
     const structuresResp = await fetch("./structures.txt");
     const structures = castStructures(await structuresResp.text());
     const artworksResp = await fetch("./assets/art/info.json");
-    const artworks = castArtworks(await artworksResp.json());
+    const artworks = castArtworks(cleanJSON(await artworksResp.text()));
     const ARCHGEOMETRY = await stlLoader.loadAsync("./assets/arch.stl");
     const BAMBOOGEOMETRY = await stlLoader.loadAsync("./assets/bamboo.stl");
     const canvas = document.querySelector("body > canvas");
@@ -34805,54 +34858,53 @@ const main = async () => {
     const skyColor = new Color(settings.isNight ? settings.skyNightColor : settings.skyDayColor);
     const hemLightColor = new Color(settings.isNight ? settings.hemLightNightColor : settings.hemLightDayColor);
     const wallColor = new Color(settings.isNight ? settings.wallNightColor : settings.wallDayColor);
+    const groundColor = new Color(settings.isNight ? settings.groundNightColor : settings.groundDayColor);
     const frameColor = new Color(settings.isNight ? settings.frameNightColor : settings.frameDayColor);
     const textColor = new Color(settings.isNight ? settings.textNightColor : settings.textDayColor);
     const plantColor = new Color(settings.isNight ? settings.plantNightColor : settings.plantDayColor);
     document.body.style.setProperty("--sky-color", "#" + skyColor.getHexString());
     document.body.style.setProperty("--hem-light-color", "#" + hemLightColor.getHexString());
     document.body.style.setProperty("--wall-color", "#" + wallColor.getHexString());
+    document.body.style.setProperty("--ground-color", "#" + groundColor.getHexString());
     document.body.style.setProperty("--frame-color", "#" + frameColor.getHexString());
     document.body.style.setProperty("--text-color", "#" + textColor.getHexString());
     document.body.style.setProperty("--plant-color", "#" + plantColor.getHexString());
     const wallColorShifted = new Color(wallColor);
-    const hsl = { h: 0, s: 0, l: 0 };
-    wallColorShifted.getHSL(hsl);
-    hsl.h += settings.hShift;
-    const fullTurn = 2 * Math.PI;
-    hsl.h = ((hsl.h % fullTurn) + fullTurn) % fullTurn;
-    wallColorShifted.setHSL(hsl.h, hsl.s, hsl.l);
+    hsvShiftColor(wallColorShifted, settings.hShift, settings.sShift, settings.vShift);
+    const groundColorShifted = new Color(wallColor);
+    hsvShiftColor(groundColorShifted, settings.hShift, settings.sShift, settings.vShift);
     const color = new Color();
-    const wallTextureCanvas1 = document.createElement("canvas");
-    const ctx1 = wallTextureCanvas1.getContext("2d");
-    if (!ctx1)
+    const wallTextureCanvas = document.createElement("canvas");
+    const wallCtx = wallTextureCanvas.getContext("2d");
+    if (!wallCtx)
         throw new Error("Could not get context 2d");
-    ctx1.canvas.width = ctx1.canvas.height = 100;
+    wallCtx.canvas.width = wallCtx.canvas.height = 100;
     for (let x = 0; x < 100; x++) {
         for (let y = 0; y < 100; y++) {
             color.set(0xffffff);
             color.lerp(wallColorShifted, Math.random() ** 5);
-            ctx1.fillStyle = "#" + color.getHexString();
-            ctx1.fillRect(x * 1, y * 1, 1, 1);
+            wallCtx.fillStyle = "#" + color.getHexString();
+            wallCtx.fillRect(x * 1, y * 1, 1, 1);
         }
     }
-    const wallTextureCanvas2 = document.createElement("canvas");
-    const ctx2 = wallTextureCanvas2.getContext("2d");
-    if (!ctx2)
+    const groundTextureCanvas = document.createElement("canvas");
+    const groundCtx = groundTextureCanvas.getContext("2d");
+    if (!groundCtx)
         throw new Error("Could not get context 2d");
-    ctx2.canvas.width = ctx2.canvas.height = 100;
+    groundCtx.canvas.width = groundCtx.canvas.height = 100;
     for (let x = 0; x < 100; x++) {
         for (let y = 0; y < 100; y++) {
             color.set(0xffffff);
             color.lerp(wallColorShifted, Math.random() * 0.75);
-            ctx2.fillStyle = "#" + color.getHexString();
-            ctx2.fillRect(x * 1, y * 1, 1, 1);
+            groundCtx.fillStyle = "#" + color.getHexString();
+            groundCtx.fillRect(x * 1, y * 1, 1, 1);
         }
     }
-    const WALLTEXTURE = new CanvasTexture(wallTextureCanvas1);
+    const WALLTEXTURE = new CanvasTexture(wallTextureCanvas);
     WALLTEXTURE.repeat.set(2, 2);
     WALLTEXTURE.wrapS = RepeatWrapping;
     WALLTEXTURE.wrapT = RepeatWrapping;
-    const GROUNDTEXTURE = new CanvasTexture(wallTextureCanvas2);
+    const GROUNDTEXTURE = new CanvasTexture(groundTextureCanvas);
     GROUNDTEXTURE.repeat.set(20, 20);
     GROUNDTEXTURE.wrapS = RepeatWrapping;
     GROUNDTEXTURE.wrapT = RepeatWrapping;
@@ -34864,7 +34916,7 @@ const main = async () => {
         map: WALLTEXTURE,
     });
     const GROUNDMATERIAL = new MeshLambertMaterial({
-        color: wallColor,
+        color: groundColor,
         map: GROUNDTEXTURE,
     });
     const FRAMEMATERIAL = new MeshLambertMaterial({
@@ -34873,354 +34925,672 @@ const main = async () => {
     const PLANTMATERIAL = new MeshLambertMaterial({
         color: plantColor,
     });
-    const wallPlaneGeometryCache = {};
-    const getWallPlaneSize = (sizeScale) => settings.wallThickness * (1 + sizeScale);
-    const getWallPlaneHeight = (heightScale) => settings.wallHeight * (1 + heightScale);
-    const getWallPlaneGeometry = (size, height) => {
-        if (size in wallPlaneGeometryCache)
-            if (height in wallPlaneGeometryCache[size])
-                return wallPlaneGeometryCache[size][height];
-        if (!(size in wallPlaneGeometryCache))
-            wallPlaneGeometryCache[size] = {};
-        return (wallPlaneGeometryCache[size][height] = new BoxGeometry(settings.chunkSize, height, size));
-    };
-    const wallPillarGeometryCache = {};
-    const getWallPillarSize = (sizeScale) => settings.wallThickness * (2 + sizeScale);
-    const getWallPillarHeight = (heightScale) => settings.wallThickness + settings.wallHeight * (1 + heightScale);
-    const getWallPillarGeometry = (size, height) => {
-        if (size in wallPillarGeometryCache)
-            if (height in wallPillarGeometryCache[size])
-                return wallPillarGeometryCache[size][height];
-        if (!(size in wallPillarGeometryCache))
-            wallPillarGeometryCache[size] = {};
-        return (wallPillarGeometryCache[size][height] = new BoxGeometry(size, height, size));
-    };
-    const railingGeometryCache = { beam: {}, pillar: {} };
-    const getRailingBeamTopSize = (sizeScale) => settings.railingThickness * (1.5 + sizeScale);
-    const getRailingBeamBottomSize = (sizeScale) => settings.railingThickness * (1 + sizeScale);
-    const getRailingPillarSize = (sizeScale) => settings.railingThickness * (0.75 + sizeScale);
-    const getRailingPillarHeight = (heightScale) => settings.railingHeight * (1 + heightScale);
-    const getRailingBeamGeometry = (size) => {
-        if (size in railingGeometryCache.beam)
-            return railingGeometryCache.beam[size];
-        return (railingGeometryCache.beam[size] = new BoxGeometry(settings.chunkSize, size, size));
-    };
-    const getRailingPillarGeometry = (size, height) => {
-        if (size in railingGeometryCache.pillar)
-            if (height in railingGeometryCache.pillar[size])
-                return railingGeometryCache.pillar[size][height];
-        if (!(size in railingGeometryCache.pillar))
-            railingGeometryCache.pillar[size] = {};
-        return (railingGeometryCache.pillar[size][height] = new BoxGeometry(size, height, size));
-    };
-    const artworkGeometryCache = { horizontal: {}, vertical: {} };
-    const getArtworkFrameHGeometry = (size) => {
-        if (size in artworkGeometryCache.horizontal)
-            return artworkGeometryCache.horizontal[size];
-        return (artworkGeometryCache.horizontal[size] = new BoxGeometry(size + settings.artworkFrameThickness * 2, settings.artworkFrameThickness, settings.artworkFrameThickness));
-    };
-    const getArtworkFrameVGeometry = (size) => {
-        if (size in artworkGeometryCache.vertical)
-            return artworkGeometryCache.vertical[size];
-        return (artworkGeometryCache.vertical[size] = new BoxGeometry(settings.artworkFrameThickness, size + settings.artworkFrameThickness * 2, settings.artworkFrameThickness));
-    };
-    const lightSphereGeometryCache = {};
-    const getLightSphereGeometry = (radius) => {
-        if (radius in lightSphereGeometryCache)
-            return lightSphereGeometryCache[radius];
-        return (lightSphereGeometryCache[radius] = new SphereGeometry(radius * settings.lightSphereSize, 24, 24));
-    };
-    const playerCollider = [settings.playerSize, settings.playerSize];
-    const colliders = [];
-    const infoBoxes = [];
-    const addWallX = (chunkX, chunkY, data) => {
-        let x = data.x + chunkX * settings.chunkSize;
-        let y = data.y + chunkY * settings.chunkSize;
-        let z = data.z;
-        const sizeScale = parseFloat(data.other["size"] ?? "0");
-        const heightScale = parseFloat(data.other["height"] ?? "0");
-        const size = getWallPlaneSize(sizeScale);
-        const height = getWallPlaneHeight(heightScale);
-        const wall = new Object3D();
-        const plane = new Mesh(getWallPlaneGeometry(size, height), new Array(6).fill(WALLMATERIALTEXTURED));
-        plane.position.set(0, height / 2, 0);
-        plane.receiveShadow = true;
-        plane.castShadow = true;
-        wall.add(plane);
-        if ((data.other["p1"] ?? "true") === "true") {
-            const pillar1 = new Mesh(getWallPillarGeometry(getWallPillarSize(sizeScale), getWallPillarHeight(heightScale)), WALLMATERIAL);
-            pillar1.position.set(settings.chunkSize / 2, getWallPillarHeight(heightScale) / 2, 0);
-            pillar1.receiveShadow = true;
-            pillar1.castShadow = true;
-            wall.add(pillar1);
+    class Structure {
+        static _structures = [];
+        static get structures() {
+            return [...this._structures];
         }
-        if ((data.other["p2"] ?? "true") === "true") {
-            const pillar2 = new Mesh(getWallPillarGeometry(getWallPillarSize(sizeScale), getWallPillarHeight(heightScale)), WALLMATERIAL);
-            pillar2.position.set(-settings.chunkSize / 2, getWallPillarHeight(heightScale) / 2, 0);
-            pillar2.receiveShadow = true;
-            pillar2.castShadow = true;
-            wall.add(pillar2);
+        static update(delta) {
+            this._structures.forEach((structure) => structure.update(delta));
         }
-        wall.position.set(x, z, y);
-        scene.add(wall);
-        colliders.push([
-            wall.position.x,
-            wall.position.z,
-            settings.chunkSize,
-            size,
-            "wall",
-        ]);
-        return wall;
-    };
-    const addWallY = (chunkX, chunkY, data) => {
-        const wall = addWallX(chunkX, chunkY, data);
-        wall.rotateY(Math.PI / 2);
-        const last = colliders.pop();
-        if (!last)
-            return wall;
-        const [x, y, w, h, type] = last;
-        colliders.push([x, y, h, w, type]);
-        return wall;
-    };
-    const addRailingX = (chunkX, chunkY, data) => {
-        let x = data.x + chunkX * settings.chunkSize;
-        let y = data.y + chunkY * settings.chunkSize;
-        let z = data.z;
-        const sizeScale = parseFloat(data.other["size"] ?? "0");
-        const heightScale = parseFloat(data.other["height"] ?? "0");
-        const topSize = getRailingBeamTopSize(sizeScale);
-        const bottomSize = getRailingBeamBottomSize(sizeScale);
-        const size = getRailingPillarSize(sizeScale);
-        const height = getRailingPillarHeight(heightScale);
-        const nBars = parseInt(data.other["n"] ?? "12");
-        const railing = new Object3D();
-        const beamTop = new Mesh(getRailingBeamGeometry(topSize), WALLMATERIAL);
-        beamTop.position.set(0, height, 0);
-        beamTop.receiveShadow = true;
-        beamTop.castShadow = true;
-        railing.add(beamTop);
-        const beamBottom = new Mesh(getRailingBeamGeometry(bottomSize), WALLMATERIAL);
-        beamBottom.position.set(0, bottomSize / 2, 0);
-        beamBottom.receiveShadow = true;
-        beamBottom.castShadow = true;
-        railing.add(beamBottom);
-        for (let i = 0; i < nBars; i++) {
-            let rx = (settings.chunkSize / nBars) * (i + 0.5) - settings.chunkSize / 2;
-            const pillar = new Mesh(getRailingPillarGeometry(size, height), new Array(6).fill(WALLMATERIALTEXTURED));
-            pillar.position.set(rx, height / 2, 0);
+        chunkX;
+        chunkY;
+        offsetX;
+        offsetY;
+        offsetZ;
+        loopX;
+        loopY;
+        object;
+        constructor(chunk, data) {
+            Structure._structures.push(this);
+            [this.chunkX, this.chunkY] = chunk;
+            this.offsetX = data?.offset ? data?.offset[0] : 0;
+            this.offsetY = data?.offset ? data?.offset[1] : 0;
+            this.offsetZ = data?.offset ? data?.offset[2] : 0;
+            this.loopX = data?.loop?.x;
+            this.loopY = data?.loop?.y;
+            this.object = new Object3D();
+            scene.add(this.object);
+        }
+        get x() {
+            return this.getRealChunk()[0] * settings.chunkSize + this.offsetX;
+        }
+        get y() {
+            return this.getRealChunk()[1] * settings.chunkSize + this.offsetY;
+        }
+        get z() {
+            return this.offsetZ;
+        }
+        get collider() {
+            return null;
+        }
+        getRealChunk() {
+            const chunkX = Math.round(camera.position.x / settings.chunkSize);
+            const chunkY = Math.round(camera.position.z / settings.chunkSize);
+            let realChunkX = this.chunkX, realChunkY = this.chunkY;
+            if (this.loopX) {
+                const x = Math.round(chunkX / this.loopX);
+                let dist = Infinity;
+                for (let i = -1; i <= 1; i++) {
+                    let realChunkXI = this.chunkX + (x + i) * this.loopX;
+                    if (Math.abs(realChunkXI - chunkX) < dist) {
+                        dist = Math.abs(realChunkXI - chunkX);
+                        realChunkX = realChunkXI;
+                    }
+                }
+            }
+            if (this.loopY) {
+                const y = Math.round(chunkY / this.loopY);
+                let dist = Infinity;
+                for (let i = -1; i <= 1; i++) {
+                    let realChunkYI = this.chunkY + (y + i) * this.loopY;
+                    if (Math.abs(realChunkYI - chunkY) < dist) {
+                        dist = Math.abs(realChunkYI - chunkY);
+                        realChunkY = realChunkYI;
+                    }
+                }
+            }
+            return [realChunkX, realChunkY];
+        }
+        update(delta) {
+            const [chunkX, chunkY] = this.getRealChunk();
+            const camChunkX = Math.round(camera.position.x / settings.chunkSize);
+            const camChunkY = Math.round(camera.position.z / settings.chunkSize);
+            this.object.visible =
+                Math.abs(chunkX - camChunkX) <= settings.renderDist &&
+                    Math.abs(chunkY - camChunkY) <= settings.renderDist;
+            this.object.position.set(this.x, this.z, this.y);
+        }
+    }
+    class SolidStructure extends Structure {
+        colliderWidth;
+        colliderHeight;
+        constructor(chunk, size, data) {
+            super(chunk, data);
+            [this.colliderWidth, this.colliderHeight] = size;
+        }
+        get collider() {
+            return {
+                x: this.x,
+                y: this.y,
+                w: this.colliderWidth,
+                h: this.colliderHeight,
+                type: "solid",
+            };
+        }
+    }
+    class Wall extends SolidStructure {
+        static geometryCache = {};
+        static getSize(scale) {
+            return settings.wallThickness * (1 + scale);
+        }
+        static getHeight(scale) {
+            return settings.wallHeight * (1 + scale);
+        }
+        static getGeometry(size, height) {
+            if (!(size in this.geometryCache))
+                this.geometryCache[size] = {};
+            if (!(height in this.geometryCache[size]))
+                this.geometryCache[size][height] = new BoxGeometry(settings.chunkSize, height, size);
+            return this.geometryCache[size][height];
+        }
+        facing;
+        size;
+        height;
+        pillar1;
+        pillar2;
+        constructor(chunk, options, data) {
+            const facing = options.facing ?? "x";
+            const size = Wall.getSize(options.sizeScale ?? 0);
+            const height = Wall.getHeight(options.heightScale ?? 0);
+            let colliderSize = [settings.chunkSize, size];
+            let pillarOffset = [settings.chunkSize / 2, 0];
+            if (facing === "y") {
+                colliderSize.reverse();
+                pillarOffset.reverse();
+            }
+            super(chunk, colliderSize, data);
+            this.facing = facing;
+            this.size = size;
+            this.height = height;
+            if (facing === "y")
+                this.object.rotateY(Math.PI / 2);
+            const plane = new Mesh(Wall.getGeometry(size, height), new Array(6).fill(WALLMATERIALTEXTURED));
+            plane.position.set(0, height / 2, 0);
+            plane.receiveShadow = true;
+            plane.castShadow = true;
+            this.object.add(plane);
+            if (options.pillar1 ?? true) {
+                this.pillar1 = new Pillar(chunk, options, {
+                    offset: [
+                        this.offsetX + pillarOffset[0],
+                        this.offsetY + pillarOffset[1],
+                        this.offsetZ,
+                    ],
+                    loop: data?.loop,
+                });
+            }
+            else
+                this.pillar1 = null;
+            if (options.pillar2 ?? true) {
+                this.pillar2 = new Pillar(chunk, options, {
+                    offset: [
+                        this.offsetX + pillarOffset[0],
+                        this.offsetY + pillarOffset[1],
+                        this.offsetZ,
+                    ],
+                    loop: data?.loop,
+                });
+            }
+            else
+                this.pillar2 = null;
+        }
+    }
+    class Pillar extends SolidStructure {
+        static geometryCache = {};
+        static getSize(scale) {
+            return settings.wallThickness * (2 + scale);
+        }
+        static getHeight(scale) {
+            return settings.wallThickness + settings.wallHeight * (1 + scale);
+        }
+        static getGeometry(size, height) {
+            if (!(size in this.geometryCache))
+                this.geometryCache[size] = {};
+            if (!(height in this.geometryCache[size]))
+                this.geometryCache[size][height] = new BoxGeometry(size, height, size);
+            return this.geometryCache[size][height];
+        }
+        size;
+        height;
+        constructor(chunk, options, data) {
+            const size = Pillar.getSize(options.sizeScale ?? 0);
+            const height = Pillar.getHeight(options.heightScale ?? 0);
+            super(chunk, [size, size], data);
+            this.size = size;
+            this.height = height;
+            const pillar = new Mesh(Pillar.getGeometry(size, height), WALLMATERIAL);
+            pillar.position.set(0, height / 2, 0);
             pillar.receiveShadow = true;
             pillar.castShadow = true;
-            railing.add(pillar);
+            this.object.add(pillar);
         }
-        railing.position.set(x, z, y);
-        scene.add(railing);
-        colliders.push([
-            railing.position.x,
-            railing.position.z,
-            settings.chunkSize,
-            Math.max(topSize, bottomSize, size),
-            "wall",
-        ]);
-        return railing;
-    };
-    const addRailingY = (chunkX, chunkY, data) => {
-        const railing = addRailingX(chunkX, chunkY, data);
-        railing.rotateY(Math.PI / 2);
-        const last = colliders.pop();
-        if (!last)
-            return railing;
-        const [x, y, w, h, type] = last;
-        colliders.push([x, y, h, w, type]);
-        return railing;
-    };
-    const addPillar = (chunkX, chunkY, data) => {
-        let x = data.x + chunkX * settings.chunkSize;
-        let y = data.y + chunkY * settings.chunkSize;
-        let z = data.z;
-        const sizeScale = parseFloat(data.other["size"] ?? "0");
-        const heightScale = parseFloat(data.other["height"] ?? "0");
-        const size = getWallPillarSize(sizeScale);
-        const height = getWallPillarHeight(heightScale);
-        const pillar = new Mesh(getWallPillarGeometry(size, height), WALLMATERIAL);
-        pillar.position.set(x, z + height / 2, y);
-        pillar.receiveShadow = true;
-        pillar.castShadow = true;
-        scene.add(pillar);
-        colliders.push([x, y, size, size, "wall"]);
-        return pillar;
-    };
-    const addArch = (chunkX, chunkY, data) => {
-        let x = data.x + chunkX * settings.chunkSize;
-        let y = data.y + chunkY * settings.chunkSize;
-        let z = data.z;
-        const arch = new Mesh(ARCHGEOMETRY, WALLMATERIAL);
-        const archBBox = new Box3().setFromObject(arch);
-        const axisSizes = [
-            archBBox.max.x - archBBox.min.x,
-            archBBox.max.y - archBBox.min.y,
-            archBBox.max.z - archBBox.min.z,
-        ];
-        axisSizes.sort((a, b) => a - b);
-        const scale = (settings.chunkSize / axisSizes[1]) * 1.1;
-        arch.scale.set(scale, scale, scale);
-        if ((data.other["type"] ?? "x") === "y")
-            arch.rotateY(Math.PI / 2);
-        arch.position.set(x, z, y);
-        arch.receiveShadow = true;
-        arch.castShadow = true;
-        scene.add(arch);
-        return arch;
-    };
-    const addBamboo = (chunkX, chunkY, data) => {
-        let x = data.x + chunkX * settings.chunkSize;
-        let y = data.y + chunkY * settings.chunkSize;
-        let z = data.z;
-        let scale = parseFloat(data.other["scale"] ?? "1");
-        const bamboo = new Mesh(BAMBOOGEOMETRY, PLANTMATERIAL);
-        const bambooBBox = new Box3().setFromObject(bamboo);
-        const bambooSizes = [
-            bambooBBox.max.x - bambooBBox.min.x,
-            bambooBBox.max.y - bambooBBox.min.y,
-            bambooBBox.max.z - bambooBBox.min.z,
-        ];
-        bambooSizes.sort((a, b) => a - b);
-        scale *=
-            (settings.wallThickness * 8) / ((bambooSizes[0] + bambooSizes[1]) / 2);
-        bamboo.scale.set(scale, scale, scale);
-        if ((data.other["type"] ?? "x") === "y")
-            bamboo.rotateY(Math.PI / 2);
-        bamboo.position.set(x, z, y);
-        bamboo.receiveShadow = true;
-        bamboo.castShadow = true;
-        scene.add(bamboo);
-        return bamboo;
-    };
-    const addPLight = (chunkX, chunkY, data) => {
-        let x = data.x + chunkX * settings.chunkSize;
-        let y = data.y + chunkY * settings.chunkSize;
-        let z = data.z;
-        const color = data.other["color"] ?? "#ffffff";
-        const invColor = new Color(color);
-        const light = new Object3D();
-        const pLight = new PointLight(color, parseFloat(data.other["intensity"] ?? "1"), parseFloat(data.other["distance"] ?? "3"), parseFloat(data.other["decay"] ?? "0.75"));
-        pLight.castShadow = true;
-        pLight.shadow.mapSize.width = 1024;
-        pLight.shadow.mapSize.height = 1024;
-        pLight.shadow.camera.near = 0.1;
-        pLight.shadow.camera.far = 10;
-        light.add(pLight);
-        const sphere = new Mesh(getLightSphereGeometry(parseFloat(data.other["radius"] ?? "1")), new MeshBasicMaterial({ color: invColor }));
-        light.add(sphere);
-        light.position.set(x, z, y);
-        scene.add(light);
-        return light;
-    };
-    const addInfoBox = (chunkX, chunkY, data) => {
-        let x = data.x + chunkX * settings.chunkSize;
-        let y = data.y + chunkY * settings.chunkSize;
-        let z = data.z;
-        const elem = document.createElement("div");
-        const ielem = document.createElement(data.other["type"] ?? "span");
-        ielem.classList.add("infobox");
-        ielem.textContent = (data.other["text"] ?? "").replaceAll("\\s", " ");
-        elem.appendChild(ielem);
-        const obj = new CSS2DObject(elem);
-        obj.position.set(x, z, y);
-        scene.add(obj);
-        infoBoxes.push([obj, ielem, 0]);
-        return obj;
-    };
-    const artworkCache = {};
-    const addArtwork = (chunkX, chunkY, data) => {
-        let x = data.x + chunkX * settings.chunkSize;
-        let y = data.y + chunkY * settings.chunkSize;
-        let z = data.z;
-        const facing = data.other["facing"] ?? "x+";
-        const angle = facing === "x+"
-            ? -Math.PI / 2
-            : facing === "x-"
-                ? (-3 * Math.PI) / 2
-                : facing === "y+"
-                    ? 0
-                    : Math.PI;
-        const xWise = facing === "x+" || facing === "x-";
-        const name = data.other["name"] ?? "";
-        const maxWidth = parseFloat(data.other["width"] ?? String(settings.chunkSize * 0.65));
-        const maxHeight = parseFloat(data.other["height"] ?? String(settings.wallHeight * 0.65));
-        const obj = new Object3D();
-        (async () => {
-            const { width, height, scale, canvas } = await (async () => {
-                if (name in artworkCache)
-                    return artworkCache[name];
+    }
+    class Railing extends SolidStructure {
+        static geometryCache = { beam: {}, pillar: {} };
+        static getBeamTopSize(scale) {
+            return settings.railingThickness * (1.5 + scale);
+        }
+        static getBeamBottomSize(scale) {
+            return settings.railingThickness * (1 + scale);
+        }
+        static getPillarSize(scale) {
+            return settings.railingThickness * (0.75 + scale);
+        }
+        static getPillarHeight(scale) {
+            return settings.railingHeight * (1 + scale);
+        }
+        static getBeamGeometry(size) {
+            if (!(size in this.geometryCache.beam))
+                this.geometryCache.beam[size] = new BoxGeometry(settings.chunkSize, size, size);
+            return this.geometryCache.beam[size];
+        }
+        static getPillarGeometry(size, height) {
+            if (!(size in this.geometryCache.pillar))
+                this.geometryCache.pillar[size] = {};
+            if (!(height in this.geometryCache.pillar[size]))
+                this.geometryCache.pillar[size][height] = new BoxGeometry(size, height, size);
+            return this.geometryCache.pillar[size][height];
+        }
+        facing;
+        beamTopSize;
+        beamBottomSize;
+        pillarSize;
+        pillarHeight;
+        n;
+        constructor(chunk, options, data) {
+            const facing = options.facing ?? "x";
+            const beamTopSize = Railing.getBeamTopSize(options.sizeScale ?? 0);
+            const beamBottomSize = Railing.getBeamBottomSize(options.sizeScale ?? 0);
+            const pillarSize = Railing.getPillarSize(options.sizeScale ?? 0);
+            const pillarHeight = Railing.getPillarHeight(options.heightScale ?? 0);
+            const n = options.n ?? 12;
+            let colliderSize = [
+                settings.chunkSize,
+                Math.max(beamTopSize, beamBottomSize, pillarSize),
+            ];
+            if (facing === "y") {
+                colliderSize.reverse();
+            }
+            super(chunk, colliderSize, data);
+            this.facing = facing;
+            this.beamTopSize = beamTopSize;
+            this.beamBottomSize = beamBottomSize;
+            this.pillarSize = pillarSize;
+            this.pillarHeight = pillarHeight;
+            this.n = n;
+            if (facing === "y")
+                this.object.rotateY(Math.PI / 2);
+            const beamTop = new Mesh(Railing.getBeamGeometry(beamTopSize), WALLMATERIAL);
+            beamTop.position.set(0, pillarHeight, 0);
+            beamTop.receiveShadow = true;
+            beamTop.castShadow = true;
+            this.object.add(beamTop);
+            const beamBottom = new Mesh(Railing.getBeamGeometry(beamBottomSize), WALLMATERIAL);
+            beamBottom.position.set(0, beamBottomSize / 2, 0);
+            beamBottom.receiveShadow = true;
+            beamBottom.castShadow = true;
+            this.object.add(beamBottom);
+            for (let i = 0; i < n; i++) {
+                let rx = (settings.chunkSize / n) * (i + 0.5) - settings.chunkSize / 2;
+                const pillar = new Mesh(Railing.getPillarGeometry(pillarSize, pillarHeight), new Array(6).fill(WALLMATERIALTEXTURED));
+                pillar.position.set(rx, pillarHeight / 2, 0);
+                pillar.receiveShadow = true;
+                pillar.castShadow = true;
+                this.object.add(pillar);
+            }
+        }
+    }
+    class Arch extends Structure {
+        facing;
+        constructor(chunk, options, data) {
+            const facing = options.facing ?? "x";
+            super(chunk, data);
+            this.facing = facing;
+            if (facing === "y")
+                this.object.rotateY(Math.PI / 2);
+            const arch = new Mesh(ARCHGEOMETRY, WALLMATERIAL);
+            const archBBox = new Box3().setFromObject(arch);
+            const axisSizes = [
+                archBBox.max.x - archBBox.min.x,
+                archBBox.max.y - archBBox.min.y,
+                archBBox.max.z - archBBox.min.z,
+            ];
+            axisSizes.sort((a, b) => a - b);
+            const scale = (settings.chunkSize / axisSizes[1]) * 1.1;
+            arch.scale.set(scale, scale, scale);
+            arch.receiveShadow = true;
+            arch.castShadow = true;
+            this.object.add(arch);
+        }
+    }
+    class Bamboo extends Structure {
+        facing;
+        scale;
+        constructor(chunk, options, data) {
+            const facing = options.facing ?? "x";
+            let scale = options.scale ?? 1;
+            super(chunk, data);
+            this.facing = facing;
+            this.scale = scale;
+            if (facing === "y")
+                this.object.rotateY(Math.PI / 2);
+            const bamboo = new Mesh(BAMBOOGEOMETRY, PLANTMATERIAL);
+            const bambooBBox = new Box3().setFromObject(bamboo);
+            const bambooSizes = [
+                bambooBBox.max.x - bambooBBox.min.x,
+                bambooBBox.max.y - bambooBBox.min.y,
+                bambooBBox.max.z - bambooBBox.min.z,
+            ];
+            bambooSizes.sort((a, b) => a - b);
+            scale *=
+                (settings.wallThickness * 8) / ((bambooSizes[0] + bambooSizes[1]) / 2);
+            bamboo.scale.set(scale, scale, scale);
+            bamboo.receiveShadow = true;
+            bamboo.castShadow = true;
+            this.object.add(bamboo);
+        }
+    }
+    class Carpet extends Structure {
+        static geometryCache = {};
+        static getSize(scale) {
+            return settings.chunkSize * (0.65 + scale);
+        }
+        static getGeometry(width, height) {
+            if (!(width in this.geometryCache))
+                this.geometryCache[width] = {};
+            if (!(height in this.geometryCache[width]))
+                this.geometryCache[width][height] = new PlaneGeometry(width, height);
+            return this.geometryCache[width][height];
+        }
+        static textureCache = { center: {}, centerless: {} };
+        static getTexture(width, height, center = false) {
+            const cache = center
+                ? this.textureCache.center
+                : this.textureCache.centerless;
+            if (!(width in cache))
+                cache[width] = {};
+            if (!(height in cache[width])) {
                 const canvas = document.createElement("canvas");
-                const { width, height, scale } = (await new Promise((res, rej) => {
-                    const offCanvas = canvas.transferControlToOffscreen();
-                    const worker = new Worker("./worker.js");
-                    worker.addEventListener("message", (e) => res(e.data));
-                    worker.addEventListener("error", (e) => rej(e));
-                    worker.postMessage({ name, maxWidth, maxHeight, canvas: offCanvas }, [
-                        offCanvas,
-                    ]);
-                }));
-                return (artworkCache[name] = { width, height, scale, canvas });
-            })();
-            const tex = new CanvasTexture(canvas);
-            tex.colorSpace = SRGBColorSpace;
-            const plane = new Mesh(new PlaneGeometry(width * scale, height * scale), new MeshBasicMaterial({ map: tex, color: 0xffffff }));
-            obj.add(plane);
-            const hGeo = getArtworkFrameHGeometry(width * scale);
-            const vGeo = getArtworkFrameVGeometry(height * scale);
-            const frameH1 = new Mesh(hGeo, FRAMEMATERIAL);
-            frameH1.position.set(0, (height * scale + settings.artworkFrameThickness) / 2, 0);
-            frameH1.receiveShadow = true;
-            frameH1.castShadow = true;
-            obj.add(frameH1);
-            const frameH2 = new Mesh(hGeo, FRAMEMATERIAL);
-            frameH2.position.set(0, -(height * scale + settings.artworkFrameThickness) / 2, 0);
-            frameH2.receiveShadow = true;
-            frameH2.castShadow = true;
-            obj.add(frameH2);
-            const frameV1 = new Mesh(vGeo, FRAMEMATERIAL);
-            frameV1.position.set((width * scale + settings.artworkFrameThickness) / 2, 0, 0);
-            frameV1.receiveShadow = true;
-            frameV1.castShadow = true;
-            obj.add(frameV1);
-            const frameV2 = new Mesh(vGeo, FRAMEMATERIAL);
-            frameV2.position.set(-(width * scale + settings.artworkFrameThickness) / 2, 0, 0);
-            frameV2.receiveShadow = true;
-            frameV2.castShadow = true;
-            obj.add(frameV2);
-            if (name in artworks) {
-                const artwork = artworks[name];
-                addInfoBox(chunkX, chunkY, {
-                    x: data.x,
-                    y: data.y,
-                    z: data.z - 0.2 - (height * scale) / 2,
-                    other: {
+                canvas.width = Math.ceil(width * settings.carpetPatternSize);
+                canvas.height = Math.ceil(height * settings.carpetPatternSize);
+                const ctx = canvas.getContext("2d");
+                if (ctx) {
+                    color.set(0xffffff);
+                    color.lerp(wallColor, settings.carpetPatternColor2);
+                    ctx.fillStyle = "#" + color.getHexString();
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    const sizeBig = settings.carpetPatternSizeBig;
+                    const sizeSmall = settings.carpetPatternSizeSmall;
+                    color.set(0xffffff);
+                    color.lerp(wallColor, settings.carpetPatternColor1);
+                    ctx.strokeStyle = "#" + color.getHexString();
+                    ctx.lineWidth = settings.carpetPatternLine;
+                    ctx.beginPath();
+                    const nX = Math.ceil(canvas.width / (sizeBig + sizeSmall)) + 2;
+                    const nY = Math.ceil(canvas.height / (sizeBig + sizeSmall)) + 2;
+                    for (let iX = 0; iX < nX; iX++) {
+                        for (let iY = 0; iY < nY; iY++) {
+                            const x = (iX - (nX - 1) / 2) * (sizeBig + sizeSmall) + canvas.width / 2;
+                            const y = (iY - (nY - 1) / 2) * (sizeBig + sizeSmall) + canvas.height / 2;
+                            const points = [];
+                            for (let i = 0; i < 4; i++) {
+                                const forwardX = [1, 0, -1, 0][i];
+                                const forwardY = [0, 1, 0, -1][i];
+                                const rightX = [0, -1, 0, 1][i];
+                                const rightY = [1, 0, -1, 0][i];
+                                for (const side of [-1, 1])
+                                    points.push([
+                                        forwardX * (sizeBig / 2 + sizeSmall) +
+                                            rightX * (sizeBig / 2 - sizeSmall) * side,
+                                        forwardY * (sizeBig / 2 + sizeSmall) +
+                                            rightY * (sizeBig / 2 - sizeSmall) * side,
+                                    ]);
+                            }
+                            for (let i = 0; i <= points.length; i++) {
+                                let [px, py] = points[i % points.length];
+                                px += x;
+                                py += y;
+                                if (i > 0)
+                                    ctx.lineTo(px, py);
+                                else
+                                    ctx.moveTo(px, py);
+                            }
+                        }
+                    }
+                    ctx.stroke();
+                    const padding = settings.carpetPatternPadding;
+                    ctx.fillRect(0, 0, padding, canvas.height);
+                    ctx.fillRect(0, 0, canvas.width, padding);
+                    ctx.fillRect(canvas.width - padding, 0, padding, canvas.height);
+                    ctx.fillRect(0, canvas.height - padding, canvas.width, padding);
+                    for (const factor of [1, settings.carpetPatternLine / 2 / padding]) {
+                        ctx.beginPath();
+                        ctx.moveTo(padding * factor, padding * factor);
+                        ctx.lineTo(canvas.width - padding * factor, padding * factor);
+                        ctx.lineTo(canvas.width - padding * factor, canvas.height - padding * factor);
+                        ctx.lineTo(padding * factor, canvas.height - padding * factor);
+                        ctx.closePath();
+                        ctx.stroke();
+                    }
+                    if (center) {
+                        const centerSize = settings.carpetPatterCenterSize;
+                        ctx.beginPath();
+                        ctx.arc(canvas.width / 2, canvas.height / 2, centerSize / 2, 0, 2 * Math.PI);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.arc(canvas.width / 2, canvas.height / 2, (centerSize / 2) * 0.9, 0, 2 * Math.PI);
+                        ctx.closePath();
+                        ctx.stroke();
+                    }
+                }
+                cache[width][height] = new CanvasTexture(canvas);
+            }
+            return cache[width][height];
+        }
+        static materialCache = {};
+        static getMaterial(width, height, center = false) {
+            if (!(width in this.materialCache))
+                this.materialCache[width] = {};
+            if (!(height in this.materialCache[width]))
+                this.materialCache[width][height] = new MeshLambertMaterial({
+                    color: wallColor,
+                    map: this.getTexture(width, height, center),
+                });
+            return this.materialCache[width][height];
+        }
+        width;
+        height;
+        constructor(chunk, options, data) {
+            const width = Carpet.getSize(options.widthScale ?? 0);
+            const height = Carpet.getSize(options.heightScale ?? 0);
+            const center = options.center ?? false;
+            super(chunk, data);
+            this.width = width;
+            this.height = height;
+            const carpet = new Mesh(Carpet.getGeometry(width, height), Carpet.getMaterial(width, height, center));
+            carpet.rotateX(-Math.PI / 2);
+            carpet.position.set(0, 0.05, 0);
+            carpet.receiveShadow = true;
+            this.object.add(carpet);
+        }
+    }
+    class PLight extends Structure {
+        static geometryCache = {};
+        static getRadius(scale) {
+            return settings.lightSphereSize * scale;
+        }
+        static getGeometry(radius) {
+            if (!(radius in this.geometryCache))
+                this.geometryCache[radius] = new SphereGeometry(radius, 24, 24);
+            return this.geometryCache[radius];
+        }
+        color;
+        intensity;
+        distance;
+        decay;
+        radius;
+        constructor(chunk, options, data) {
+            const color = new Color(options.color ?? "#ffffff");
+            const invColor = new Color(color);
+            const intensity = options.intensity ?? 1;
+            const distance = options.distance ?? 3;
+            const decay = options.decay ?? 0.75;
+            const radius = PLight.getRadius(options.radius ?? 1);
+            super(chunk, data);
+            this.color = color;
+            this.intensity = intensity;
+            this.distance = distance;
+            this.decay = decay;
+            this.radius = radius;
+            const light = new PointLight(color, intensity, distance, decay);
+            light.castShadow = true;
+            light.shadow.mapSize.width = 1024;
+            light.shadow.mapSize.height = 1024;
+            light.shadow.camera.near = 0.1;
+            light.shadow.camera.far = 10;
+            this.object.add(light);
+            const sphere = new Mesh(PLight.getGeometry(radius), new MeshBasicMaterial({ color: invColor }));
+            this.object.add(sphere);
+        }
+    }
+    class InfoBox extends Structure {
+        elem;
+        scale;
+        constructor(chunk, options, data) {
+            const text = (options.text ?? "").replaceAll("\\s", " ");
+            const type = options.type ?? "span";
+            super(chunk, data);
+            const elem = document.createElement("div");
+            const ielem = (this.elem = document.createElement(type));
+            ielem.classList.add("infobox");
+            ielem.textContent = text;
+            elem.appendChild(ielem);
+            const obj = new CSS2DObject(elem);
+            this.object.add(obj);
+            this.scale = 0;
+        }
+        update(delta) {
+            super.update(delta);
+            this.elem.style.transform = "scale(" + this.scale + ")";
+            const dist = this.object.position.distanceTo(camera.position);
+            this.scale += (+(dist < settings.infoBoxShowRadius) - this.scale) * 0.1;
+        }
+    }
+    class Artwork extends Structure {
+        static geometryCache = { horizontal: {}, vertical: {} };
+        static getFrameHGeo(size) {
+            if (!(size in this.geometryCache.horizontal))
+                this.geometryCache.horizontal[size] = new BoxGeometry(size + settings.artworkFrameThickness * 2, settings.artworkFrameThickness, settings.artworkFrameThickness);
+            return this.geometryCache.horizontal[size];
+        }
+        static getFrameVGeo(size) {
+            if (!(size in this.geometryCache.vertical))
+                this.geometryCache.vertical[size] = new BoxGeometry(settings.artworkFrameThickness, size + settings.artworkFrameThickness * 2, settings.artworkFrameThickness);
+            return this.geometryCache.vertical[size];
+        }
+        facing;
+        name;
+        maxWidth;
+        maxHeight;
+        width;
+        height;
+        constructor(chunk, options, data) {
+            const facing = options.facing ?? "x+";
+            const name = options.name ?? "";
+            const maxWidth = options.maxWidth ?? settings.chunkSize * 0.65;
+            const maxHeight = options.maxHeight ?? settings.wallHeight * 0.65;
+            super(chunk, data);
+            this.facing = facing;
+            this.name = name;
+            this.maxWidth = maxWidth;
+            this.maxHeight = maxHeight;
+            const angle = facing === "x+"
+                ? -Math.PI / 2
+                : facing === "x-"
+                    ? (-3 * Math.PI) / 2
+                    : facing === "y+"
+                        ? 0
+                        : Math.PI;
+            this.object.rotateY(angle);
+            this.width = this.height = 0;
+            (async () => {
+                const { width, height, scale, canvas } = await (async () => {
+                    if (name in artworkCache)
+                        return artworkCache[name];
+                    const canvas = document.createElement("canvas");
+                    const { width, height, scale } = (await new Promise((res, rej) => {
+                        const offCanvas = canvas.transferControlToOffscreen();
+                        const worker = new Worker("./worker.js");
+                        worker.addEventListener("message", (e) => res(e.data));
+                        worker.addEventListener("error", (e) => rej(e));
+                        worker.postMessage({ name, maxWidth, maxHeight, canvas: offCanvas }, [offCanvas]);
+                    }));
+                    return (artworkCache[name] = { width, height, scale, canvas });
+                })();
+                const tex = new CanvasTexture(canvas);
+                tex.colorSpace = SRGBColorSpace;
+                const plane = new Mesh(new PlaneGeometry(width * scale, height * scale), new MeshBasicMaterial({ map: tex, color: 0xffffff }));
+                this.object.add(plane);
+                const hGeo = Artwork.getFrameHGeo(width * scale);
+                const vGeo = Artwork.getFrameVGeo(height * scale);
+                const frameH1 = new Mesh(hGeo, FRAMEMATERIAL);
+                frameH1.position.set(0, (height * scale + settings.artworkFrameThickness) / 2, 0);
+                frameH1.receiveShadow = true;
+                frameH1.castShadow = true;
+                this.object.add(frameH1);
+                const frameH2 = new Mesh(hGeo, FRAMEMATERIAL);
+                frameH2.position.set(0, -(height * scale + settings.artworkFrameThickness) / 2, 0);
+                frameH2.receiveShadow = true;
+                frameH2.castShadow = true;
+                this.object.add(frameH2);
+                const frameV1 = new Mesh(vGeo, FRAMEMATERIAL);
+                frameV1.position.set((width * scale + settings.artworkFrameThickness) / 2, 0, 0);
+                frameV1.receiveShadow = true;
+                frameV1.castShadow = true;
+                this.object.add(frameV1);
+                const frameV2 = new Mesh(vGeo, FRAMEMATERIAL);
+                frameV2.position.set(-(width * scale + settings.artworkFrameThickness) / 2, 0, 0);
+                frameV2.receiveShadow = true;
+                frameV2.castShadow = true;
+                this.object.add(frameV2);
+                if (name in artworks) {
+                    const artwork = artworks[name];
+                    new InfoBox(chunk, {
                         text: artwork.name,
                         type: "h2",
-                    },
-                });
-                addInfoBox(chunkX, chunkY, {
-                    x: data.x,
-                    y: data.y,
-                    z: data.z - 0.3 - (height * scale) / 2,
-                    other: {
+                    }, {
+                        offset: [
+                            this.offsetX,
+                            this.offsetY,
+                            this.offsetZ - (height * scale) / 2 - 0.2,
+                        ],
+                        loop: data?.loop,
+                    });
+                    new InfoBox(chunk, {
                         text: getArtworkDate(artwork.date),
                         type: "h6",
-                    },
-                });
-                let [w, h] = [width * scale * 1.5, settings.artworkFrameThickness * 6];
-                if (xWise)
-                    [w, h] = [h, w];
-                colliders.push([x, y, w, h, "artwork:" + name]);
-            }
-        })();
-        obj.position.set(x, z, y);
-        obj.rotateY(angle);
-        scene.add(obj);
-        return obj;
-    };
+                    }, {
+                        offset: [
+                            this.offsetX,
+                            this.offsetY,
+                            this.offsetZ - (height * scale) / 2 - 0.3,
+                        ],
+                        loop: data?.loop,
+                    });
+                    this.width = width * scale;
+                    this.height = height * scale;
+                }
+            })();
+        }
+        get collider() {
+            return {
+                x: this.x,
+                y: this.y,
+                w: this.facing[0] === "x"
+                    ? settings.artworkFrameThickness * 6
+                    : this.width * 1.5,
+                h: this.facing[0] === "x"
+                    ? this.width * 1.5
+                    : settings.artworkFrameThickness * 6,
+                type: "artwork:" + this.name,
+            };
+        }
+    }
+    class Portal extends Structure {
+        static portals = {};
+        static getPortal(id) {
+            return id in this.portals ? this.portals[id] : null;
+        }
+        id;
+        linkId;
+        facing;
+        normal;
+        colliding;
+        constructor(chunk, options, data) {
+            const id = options.id ?? "";
+            const linkId = options.linkId ?? "";
+            const facing = options.facing ?? "x+";
+            super(chunk, data);
+            this.id = id;
+            this.linkId = linkId;
+            this.facing = facing;
+            this.normal = new Vector2();
+            if (this.facing[0] === "x")
+                this.normal.x = 1;
+            else
+                this.normal.y = 1;
+            if (this.facing[1] === "-")
+                this.normal.multiplyScalar(-1);
+            Portal.portals[this.id] = this;
+            this.colliding = false;
+        }
+        get collider() {
+            return {
+                x: this.x,
+                y: this.y,
+                w: this.facing[0] === "x"
+                    ? settings.chunkSize
+                    : settings.wallThickness * 0.25,
+                h: this.facing[0] === "x"
+                    ? settings.wallThickness * 0.25
+                    : settings.chunkSize,
+                type: "portal:" + this.id + ">" + this.linkId,
+            };
+        }
+    }
+    const artworkCache = {};
     const renderer = new WebGLRenderer({
         canvas: canvas,
     });
@@ -35272,6 +35642,7 @@ const main = async () => {
     onResize();
     const cameraHeadingVector = new Vector3();
     const origin2 = new Vector2(0, 0);
+    const playerCollider = [settings.playerSize, settings.playerSize];
     const camCentricAccel = new Vector2();
     const worldAccel = new Vector2();
     const worldVel = new Vector2();
@@ -35279,40 +35650,87 @@ const main = async () => {
     let xyz0 = [camera.position.x, camera.position.y, camera.position.z];
     let rxyz0 = [camera.rotation.x, camera.rotation.y, camera.rotation.z];
     let activeArtwork = null;
-    const chunkedObjects = {};
-    structures
-        .map(({ type, chunkX, chunkY, data }) => {
-        if (type === "wallX")
-            return addWallX(chunkX, chunkY, data);
-        if (type === "wallY")
-            return addWallY(chunkX, chunkY, data);
-        if (type === "railX")
-            return addRailingX(chunkX, chunkY, data);
-        if (type === "railY")
-            return addRailingY(chunkX, chunkY, data);
-        if (type === "pillar")
-            return addPillar(chunkX, chunkY, data);
-        if (type === "arch")
-            return addArch(chunkX, chunkY, data);
-        if (type === "bamboo")
-            return addBamboo(chunkX, chunkY, data);
-        if (type === "plight")
-            return addPLight(chunkX, chunkY, data);
-        if (type === "infobox")
-            return addInfoBox(chunkX, chunkY, data);
-        if (type === "art")
-            return addArtwork(chunkX, chunkY, data);
-    })
-        .forEach((obj, i) => {
-        if (!obj)
+    structures.forEach(({ type, chunk, data }) => {
+        if (type === "wall") {
+            const facing = data.other.facing;
+            return new Wall(chunk, {
+                facing: facing === "x" ? "x" : facing === "y" ? "y" : undefined,
+                sizeScale: castOptionalFloat(data.other.size),
+                heightScale: castOptionalFloat(data.other.height),
+                pillar1: castOptionalBool(data.other.p1),
+                pillar2: castOptionalBool(data.other.p2),
+            }, data);
+        }
+        if (type === "pillar") {
+            return new Pillar(chunk, {
+                sizeScale: castOptionalFloat(data.other.size),
+                heightScale: castOptionalFloat(data.other.height),
+            }, data);
+        }
+        if (type === "rail") {
+            const facing = data.other.facing;
+            return new Railing(chunk, {
+                facing: facing === "x" ? "x" : facing === "y" ? "y" : undefined,
+                sizeScale: castOptionalFloat(data.other.size),
+                heightScale: castOptionalFloat(data.other.height),
+                n: castOptionalInt(data.other.n),
+            }, data);
+        }
+        if (type === "arch") {
+            const facing = data.other.facing;
+            return new Arch(chunk, {
+                facing: facing === "x" ? "x" : facing === "y" ? "y" : undefined,
+            }, data);
+        }
+        if (type === "bamboo") {
+            const facing = data.other.facing;
+            return new Bamboo(chunk, {
+                facing: facing === "x" ? "x" : facing === "y" ? "y" : undefined,
+                scale: castOptionalFloat(data.other.scale),
+            }, data);
+        }
+        if (type === "carpet") {
+            return new Carpet(chunk, {
+                widthScale: castOptionalFloat(data.other.width),
+                heightScale: castOptionalFloat(data.other.height),
+                center: castOptionalBool(data.other.center),
+            }, data);
+        }
+        if (type === "plight") {
+            return new PLight(chunk, {
+                color: data.other.color,
+                intensity: castOptionalFloat(data.other.intensity),
+                distance: castOptionalFloat(data.other.distance),
+                decay: castOptionalFloat(data.other.decay),
+                radius: castOptionalFloat(data.other.radius),
+            }, data);
+        }
+        if (type === "infobox") {
+            return new InfoBox(chunk, {
+                text: data.other.text,
+                type: data.other.type,
+            }, data);
+        }
+        if (type === "art") {
+            const facing = data.other.facing;
+            return new Artwork(chunk, {
+                facing: facing === "x+"
+                    ? "x+"
+                    : facing === "x-"
+                        ? "x-"
+                        : facing === "y+"
+                            ? "y+"
+                            : facing === "y-"
+                                ? "y-"
+                                : undefined,
+                name: data.other.name,
+                maxWidth: castOptionalFloat(data.other.width),
+                maxHeight: castOptionalFloat(data.other.height),
+            }, data);
+        }
+        if (type === "portal") {
             return;
-        const chunkX = Math.round(structures[i].chunkX);
-        const chunkY = Math.round(structures[i].chunkY);
-        if (!chunkedObjects[chunkX])
-            chunkedObjects[chunkX] = {};
-        if (!chunkedObjects[chunkX][chunkY])
-            chunkedObjects[chunkX][chunkY] = { visible: true, list: [] };
-        chunkedObjects[chunkX][chunkY].list.push(obj);
+        }
     });
     const removeAllCanvases = () => {
         for (const name in artworkCache)
@@ -35417,8 +35835,12 @@ const main = async () => {
         camera.position.z += worldVel.x * (delta / 10);
         let [playerX, playerY] = [camera.position.x, camera.position.z];
         const [playerW, playerH] = playerCollider;
-        for (const [x, y, w, h, type] of colliders) {
-            if (type === "wall") {
+        for (const structure of Structure.structures) {
+            const collider = structure.collider;
+            if (!collider)
+                continue;
+            const { x, y, w, h, type } = collider;
+            if (type === "solid") {
                 let shiftX = (playerW + w) / 2 - Math.abs(playerX - x);
                 let shiftY = (playerH + h) / 2 - Math.abs(playerY - y);
                 if (shiftX <= 0)
@@ -35438,12 +35860,49 @@ const main = async () => {
                 continue;
             }
             if (type.startsWith("artwork:")) {
-                const name = type.slice("artwork:".length);
                 if (Math.abs(playerX - x) >= (playerW + w) / 2)
                     continue;
                 if (Math.abs(playerY - y) >= (playerH + h) / 2)
                     continue;
-                activeArtwork = name;
+                activeArtwork = type.slice("artwork:".length);
+                continue;
+            }
+            if (type.startsWith("portal:")) {
+                if (Math.abs(playerX - x) >= (playerW + w) / 2) {
+                    if (structure instanceof Portal)
+                        structure.colliding = false;
+                    continue;
+                }
+                if (Math.abs(playerY - y) >= (playerH + h) / 2) {
+                    if (structure instanceof Portal)
+                        structure.colliding = false;
+                    continue;
+                }
+                if (structure instanceof Portal)
+                    if (structure.colliding)
+                        continue;
+                const ids = type.slice("portal:".length).split(">");
+                if (ids.length !== 2) {
+                    if (structure instanceof Portal)
+                        structure.colliding = false;
+                    continue;
+                }
+                const [fromId, toId] = ids;
+                const fromPortal = Portal.getPortal(fromId);
+                if (!fromPortal)
+                    continue;
+                const toPortal = Portal.getPortal(toId);
+                if (!toPortal)
+                    continue;
+                const fromPortalNormal = fromPortal.normal;
+                const toPortalNormal = toPortal.normal;
+                const angleShift = toPortalNormal.angle() - fromPortalNormal.angle();
+                const portalOffset = new Vector2(playerX - fromPortal.x, playerY - fromPortal.y);
+                portalOffset.rotateAround({ x: 0, y: 0 }, angleShift);
+                playerX = portalOffset.x + toPortal.x;
+                playerY = portalOffset.y + toPortal.y;
+                fromPortal.colliding = toPortal.colliding = true;
+                worldVel.rotateAround({ x: 0, y: 0 }, angleShift);
                 continue;
             }
         }
@@ -35455,12 +35914,7 @@ const main = async () => {
             camWantedElevation -= 0.5;
         camElevation += (camWantedElevation - camElevation) * 0.1;
         camera.position.y = camElevation;
-        for (let i = 0; i < infoBoxes.length; i++) {
-            const [obj, elem, scale] = infoBoxes[i];
-            elem.style.transform = "scale(" + scale + ")";
-            const dist = obj.position.distanceTo(camera.position);
-            infoBoxes[i][2] += (+(dist < settings.infoBoxShowRadius) - scale) * 0.1;
-        }
+        Structure.update(delta);
         let xyz1 = [camera.position.x, camera.position.y, camera.position.z];
         let rxyz1 = [camera.rotation.x, camera.rotation.y, camera.rotation.z];
         let speed = 0, rspeed = 0;
@@ -35501,24 +35955,6 @@ const main = async () => {
             hud.classList.add("inspecting");
             if (keysJustDown.has("KeyE"))
                 hudInspectBtn.click();
-        }
-        const chunkX = Math.round(camera.position.x / settings.chunkSize);
-        const chunkY = Math.round(camera.position.z / settings.chunkSize);
-        for (const xS in chunkedObjects) {
-            const x = parseInt(xS);
-            const xValid = Math.abs(x - chunkX) <= settings.renderDist;
-            for (const yS in chunkedObjects[x]) {
-                const y = parseInt(yS);
-                const valid = xValid && Math.abs(y - chunkY) <= settings.renderDist;
-                if (chunkedObjects[x][y].visible === valid)
-                    continue;
-                chunkedObjects[x][y].visible = valid;
-                for (const obj of chunkedObjects[x][y].list) {
-                    obj.visible = valid;
-                    obj.receiveShadow = valid;
-                    obj.castShadow = valid;
-                }
-            }
         }
         controller.update(delta);
         if (settings.saoEnabled)

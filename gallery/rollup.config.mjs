@@ -6,6 +6,8 @@ import rollupPluginReplace from "@rollup/plugin-replace";
 import fs from "fs";
 import path from "path";
 
+import compile from "./compile.mjs";
+
 function build(input, output, externals = []) {
   let plugins = [
     rollupPluginTypescript(),
@@ -28,6 +30,8 @@ function build(input, output, externals = []) {
 }
 
 export default (args) => {
+  compile();
+
   return [
     build(path.join("app.ts"), path.join("app.js")),
     build(path.join("worker.ts"), path.join("worker.js")),
