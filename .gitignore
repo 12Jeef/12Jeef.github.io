@@ -1,7 +1,5 @@
 .DS_Store
 
-ppatrol/archive
-
 node_modules
 
 tests
