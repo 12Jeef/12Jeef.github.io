@@ -25,15 +25,549 @@
     </script>
   </head>
   <body>
-    <div id="window">
-      <div class="bg"></div>
-      <div class="mg">
-        <h1 id="light">Jeffrey Fan</h1>
-      </div>
-      <div class="fg">
-        <div class="shield"></div>
-      </div>
+    <canvas id="canvas"></canvas>
+    <header>
+      <a target="_blank" href="https://github.com/12Jeef"
+        ><ion-icon src="./assets/icons/github.svg"></ion-icon
+      ></a>
+      <a
+        target="_blank"
+        href="https://www.linkedin.com/in/jeffrey-fan-5b4769284/"
+        ><ion-icon src="./assets/icons/linkedin.svg"></ion-icon
+      ></a>
+      <a target="_blank" href="https://replit.com/@jfancode"
+        ><ion-icon src="./assets/icons/replit.svg"></ion-icon
+      ></a>
+    </header>
+    <div class="window">
+      <h1>
+        <span class="tag" style="--i: 0; filter: blur(0.05em)"
+          >&lt;<span class="tag">body</span>&gt;</span
+        >
+      </h1>
+      <br />
+      <h1 id="title-card" style="margin-left: 2rem"></h1>
+      <br />
+      <h1>
+        <span class="tag" style="--i: 0; filter: blur(0.05em)"
+          >&lt;/<span class="tag">body</span>&gt;</span
+        >
+      </h1>
+      <br />
     </div>
+    <p>
+      Student at Palo Alto High School engaged in web, game, and app
+      development. Software engineer and graphic designer. Focused on delivering
+      the user experience to your doorstep.
+    </p>
+    <address>Palo Alto, California</address>
+    <!-- <nav>
+            <a href="mailto:example@example.com"><button special cool>Contact Me</button></a>
+        </nav> -->
+    <article id="about">
+      <h3><span>01</span><span>About</span></h3>
+      <section class="about row">
+        <section>
+          <p>
+            Hi! My name is Jeffrey Fan, and I make apps. I started my
+            programming journey, surprisingly, on
+            <a target="_blank" href="https://scratch.mit.edu/">Scratch</a>, a
+            block programming website, in 2018. After multiple years of game
+            development, I migrated to Python and started using
+            <a target="_blank" href="https://www.pygame.org/docs/">PyGame</a> to
+            make more games. When I encountered issues with performance and
+            distribution, I shifted away from Python and worked on web
+            development. And here we are!
+          </p>
+          <p>
+            I do more than programming though! I spend my free time doodling and
+            drawing, and it has been over a decade of learning. You can check
+            out some of my works in the <a href="gallery">gallery</a>!
+          </p>
+          <p>Here's some skills I have so far:</p>
+        </section>
+        <section class="picture" flip>
+          <div>
+            <img src="./assets/picture.png" />
+          </div>
+          <p>My hand-drawn profile picture for most accounts</p>
+        </section>
+      </section>
+    </article>
+    <article class="conjoin this">
+      <section class="list normal">
+        <a target="_blank" href="https://www.python.org" override
+          ><button>Python</button></a
+        >
+        <a
+          target="_blank"
+          href="https://developer.mozilla.org/en-US/docs/Web/JavaScript"
+          override
+          ><button>Javascript</button></a
+        >
+        <a target="_blank" href="https://www.java.com" override
+          ><button>Java</button></a
+        >
+        <a target="_blank" href="https://cplusplus.com" override
+          ><button>C++</button></a
+        >
+        <a target="_blank" href="https://nodejs.org" override
+          ><button>Node.js</button></a
+        >
+        <a target="_blank" href="https://www.electronjs.org" override
+          ><button>Electron.js</button></a
+        >
+        <a
+          target="_blank"
+          href="https://en.wikipedia.org/wiki/OpenGL_Shading_Language"
+          override
+          ><button>GLSL</button></a
+        >
+        <a target="_blank" href="https://www.r-project.org/about.html" override
+          ><button>R</button></a
+        >
+        <a target="_blank" href="https://procreate.com" override
+          ><button>Procreate</button></a
+        >
+      </section>
+    </article>
+    <article id="activities">
+      <h3><span>02</span><span>Activities</span></h3>
+      <section class="nav">
+        <nav>
+          <button id="frc">FRC</button>
+          <button id="sssip">SSSIP</button>
+          <button id="acf">ACF</button>
+          <button id="cosmos">COSMOS</button>
+          <button id="coding">Coding</button>
+        </nav>
+        <section>
+          <section id="frc-content">
+            <h1>
+              <span>Software Captain & App Development Lead</span> @
+              <a target="_blank" href="https://www.team6036.com/"
+                >FIRST Robotics</a
+              >
+            </h1>
+            <h3>August 2023 - Present</h3>
+            <ul>
+              <li>
+                Robot competes in three regionals annually and was ranked 8th in
+                the world in 2023
+              </li>
+              <li>
+                Work on applications our team needs for proper robot diagnosis
+                and debugging
+              </li>
+              <li>
+                Creation of robot diagnostic tool rivaling current FRC standard,
+                with over $1.3M estimated development cost
+              </li>
+              <li>
+                Team pit display has been featured on
+                <a
+                  target="_blank"
+                  href="https://www.youtube.com/watch?v=eQnNk1OwPT0"
+                  >Behind the Bumpers</a
+                >
+              </li>
+              <li>
+                Developed entire
+                <a target="_blank" href="https://ppatrol.vercel.app/"
+                  >scouting system</a
+                >
+                for information gathering during FIRST competitions
+              </li>
+              <li>Team summer camp lead counselor</li>
+            </ul>
+          </section>
+          <section id="sssip-content">
+            <h1><span>Lab Group Lead</span> @ <a>Stanford SSSIP Camp</a></h1>
+            <h3>Summer 2023</h3>
+            <ul>
+              <li>Led lab group through experiments and data gathering</li>
+              <li>
+                Organized and designed final presentation to Stanford professors
+              </li>
+              <li>
+                Developed image processing algorithm to count transfected cells,
+                which surprised camp mentors
+              </li>
+            </ul>
+          </section>
+          <section id="acf-content">
+            <h1>
+              <span>Development Lead</span> @
+              <a target="_blank" href="https://www.applied-computing.org/"
+                >ACF</a
+              >
+            </h1>
+            <h3>2022-2024</h3>
+            <ul>
+              <li>
+                Developed and managed entire codebase of
+                <a target="_blank" href="https://github.com/Noteblast/noteblast"
+                  >Noteblast</a
+                >, a music-oriented sight reading game
+              </li>
+              <li>
+                <a
+                  target="_blank"
+                  href="https://www.congressionalappchallenge.us/"
+                  >Congressional App Challenge</a
+                >
+                Honorable mention
+              </li>
+              <li>
+                <a target="_blank" href="https://www.svttt.org/">SVTTT</a> 9th
+                Summit participant
+              </li>
+              <li>
+                <a target="_blank" href="https://www.fic.applied-computing.org/"
+                  >FIC</a
+                >
+                Honorable mention
+              </li>
+            </ul>
+          </section>
+          <section id="cosmos-content">
+            <h1>
+              <span>Project Group Lead</span> @
+              <a
+                target="_blank"
+                href="https://cosmos.sf.ucdavis.edu/cluster-9-mathematical-modeling-biological-systems"
+                >UCD COSMOS Cluster 9</a
+              >
+            </h1>
+            <h3>Summer 2024</h3>
+            <ul>
+              <li>
+                Led group of 4 through modeling reaction-diffusion, more
+                specifically Gierer-Meinhardt equations, mathematically
+              </li>
+              <li>
+                Helped with clarification of complex topics including
+                linearization at equilibria and usage of eigenvalues
+              </li>
+              <li>
+                Wrote simulations for not just our group but others,
+                implementing them
+                <a href="https://jbiotech.vercel.app/">here</a>
+              </li>
+              <li>
+                Organized paper and presentation for professors, aiding group
+                members in good speech technique
+              </li>
+            </ul>
+          </section>
+          <section id="coding-content">
+            <h1><span>Programming Journey</span></h1>
+            <h3></h3>
+            <ul>
+              <li>
+                <a
+                  target="_blank"
+                  href="https://scratch.mit.edu/users/jfan-deanza/"
+                  >Scratch</a
+                >
+                during middle school (>850 followers, >40K cumulative views)
+              </li>
+              <li>20+ projects and games in JS and Python</li>
+              <li>
+                Chrome Extension Developer with
+                <a
+                  target="_blank"
+                  href="https://chromewebstore.google.com/detail/merge-game/neemdnfmagdkajnbljpccdechakhfgeb"
+                  >one</a
+                >
+                with about 450 weekly users and over 550 installs total
+              </li>
+            </ul>
+          </section>
+        </section>
+      </section>
+    </article>
+    <article id="projects">
+      <h3><span>03</span><span>Featured Projects</span></h3>
+      <section class="list big-items">
+        <section class="item">
+          <div class="display">
+            <div>
+              <img
+                style="transform: scale(1.09) translateY(2%)"
+                src="./assets/projects/peninsulaportal.png"
+              />
+            </div>
+          </div>
+          <div class="content">
+            <h1>
+              <a
+                target="_blank"
+                href="https://github.com/team6036/peninsulaportal"
+                >PeninsulaPortal</a
+              >
+            </h1>
+            <p class="main">
+              A complete FRC robot diagnostic and debugger, path generator, and
+              competition pit display. Sleek, navigable design focused on user
+              experience
+            </p>
+            <p>
+              <span>JS</span><span>Node.js</span><span>Electron.js</span
+              ><span>UI/UX</span>
+            </p>
+            <p>
+              <a
+                target="_blank"
+                href="https://github.com/team6036/peninsulaportal"
+                ><button>
+                  <ion-icon src="./assets/icons/github.svg"></ion-icon></button
+              ></a>
+              <a
+                target="_blank"
+                href="https://github.com/team6036/peninsulaportal/releases/latest"
+                ><button>
+                  <ion-icon
+                    src="./assets/icons/download.svg"
+                  ></ion-icon></button
+              ></a>
+            </p>
+          </div>
+        </section>
+        <section class="item" flip>
+          <div class="display">
+            <div>
+              <img src="./assets/projects/noteblast.png" />
+            </div>
+          </div>
+          <div class="content">
+            <h1>
+              <a target="_blank" href="https://play.noteblast.org/"
+                >NoteBlast</a
+              >
+            </h1>
+            <p class="main">
+              A sight-reading rhythm game to help musicians practice! Comes with
+              a built-in <i>free</i> tuner to provide feedback on the accuracy
+              of your instrument
+            </p>
+            <p>
+              <span>JS</span><span>Algorithm</span><span>UI/UX</span
+              ><span>Game</span>
+            </p>
+            <p>
+              <a target="_blank" href="https://github.com/Noteblast/noteblast"
+                ><button>
+                  <ion-icon src="./assets/icons/github.svg"></ion-icon></button
+              ></a>
+              <a target="_blank" href="https://play.noteblast.org/"
+                ><button>
+                  <ion-icon src="./assets/icons/open.svg"></ion-icon></button
+              ></a>
+            </p>
+          </div>
+        </section>
+        <section class="item">
+          <div class="display">
+            <div>
+              <img
+                style="width: 50%; filter: brightness(2)"
+                src="./assets/projects/transfection1.png"
+              />
+              <img
+                style="width: 50%; filter: brightness(2)"
+                src="./assets/projects/transfection2.png"
+              />
+            </div>
+          </div>
+          <div class="content">
+            <h1><a>Transfection Counter</a></h1>
+            <p class="main">
+              Though not currently uploaded anywhere, this transfection counter
+              algorithm calculates the number of transfected cells and
+              transfection efficiency in immuno-fluorescent stains
+            </p>
+            <p><span>Python</span><span>PyGame</span><span>Algorithm</span></p>
+            <p></p>
+          </div>
+        </section>
+      </section>
+      <h3 class="center">
+        <span style="display: none"></span><span>More Projects</span>
+      </h3>
+      <section class="list small-items">
+        <section class="item">
+          <header>
+            <ion-icon src="./assets/icons/bookmark.svg"></ion-icon>
+            <span></span>
+            <a target="_blank" href="https://github.com/12Jeef/MergeGame"
+              ><button>
+                <ion-icon src="./assets/icons/github.svg"></ion-icon></button
+            ></a>
+            <a
+              target="_blank"
+              href="https://chromewebstore.google.com/detail/merge-game/neemdnfmagdkajnbljpccdechakhfgeb"
+              ><button>
+                <ion-icon src="./assets/icons/open.svg"></ion-icon></button
+            ></a>
+          </header>
+          <h1>MergeGame</h1>
+          <p class="main">
+            A fun Chrome extension 2048-like game to play when bored
+          </p>
+          <p><span>JS</span><span>Canvas</span><span>Game</span></p>
+        </section>
+        <section class="item">
+          <header>
+            <ion-icon src="./assets/icons/bookmark.svg"></ion-icon>
+            <span></span>
+            <a target="_blank" href="https://github.com/12Jeef/12Jeef.github.io"
+              ><button>
+                <ion-icon src="./assets/icons/github.svg"></ion-icon></button
+            ></a>
+          </header>
+          <h1>Portfolio</h1>
+          <p class="main">
+            This site you're seeing now! Built using basic HTML, JS, and CSS
+          </p>
+          <p><span>JS</span></p>
+        </section>
+        <section class="item">
+          <header>
+            <ion-icon src="./assets/icons/bookmark.svg"></ion-icon>
+            <span></span>
+            <a target="_blank" href="https://github.com/12Jeef/CelestialPY"
+              ><button>
+                <ion-icon src="./assets/icons/github.svg"></ion-icon></button
+            ></a>
+          </header>
+          <h1>Celestial.PY</h1>
+          <p class="main">
+            A top down space shooter game where you defeat asteroids and enemies
+          </p>
+          <p>
+            <span>Python</span><span>PyGame</span><span>Game</span
+            ><span>WIP</span>
+          </p>
+        </section>
+        <section class="item">
+          <header>
+            <ion-icon src="./assets/icons/bookmark.svg"></ion-icon>
+            <span></span>
+            <a target="_blank" href="https://github.com/12Jeef/CelestialJS"
+              ><button>
+                <ion-icon src="./assets/icons/github.svg"></ion-icon></button
+            ></a>
+          </header>
+          <h1>Celestial.JS</h1>
+          <p class="main">
+            A top down space shooter game where you defeat asteroids and enemies
+          </p>
+          <p>
+            <span>JS</span><span>Canvas</span><span>Game</span><span>WIP</span>
+          </p>
+        </section>
+        <section class="item">
+          <header>
+            <ion-icon src="./assets/icons/bookmark.svg"></ion-icon>
+            <span></span>
+            <a target="_blank" href="https://github.com/12Jeef/BlobBlast"
+              ><button>
+                <ion-icon src="./assets/icons/github.svg"></ion-icon></button
+            ></a>
+          </header>
+          <h1>BlobBlast</h1>
+          <p class="main">
+            A unique pixel shooter game with interesting movement mechanics
+          </p>
+          <p><span>Python</span><span>PyGame</span><span>Game</span></p>
+        </section>
+      </section>
+    </article>
+    <article id="awards" class="this">
+      <h3 class="center"><span>04</span><span>Awards</span></h3>
+      <section
+        class="list normal"
+        style="padding-left: 10rem; padding-right: 10rem"
+      >
+        <a target="_blank" href="https://usaco.org/" override
+          ><button>USACO Silver</button></a
+        >
+        <a
+          target="_blank"
+          href="https://maa.org/math-competitions/american-invitational-mathematics-examination-aime"
+          override
+          ><button>AIME Qualifier <span>2023</span></button></a
+        >
+        <a
+          target="_blank"
+          href="https://eshoo.house.gov/services/art-competition"
+          override
+          ><button>
+            Congressional Art Competition Honorable Mention <span>2023</span>
+          </button></a
+        >
+        <a
+          target="_blank"
+          href="https://www.congressionalappchallenge.us/"
+          override
+          ><button>
+            Congressional App Challenge Honorable Mention <span>2023</span>
+          </button></a
+        >
+        <a target="_blank" href="https://www.artandwriting.org/" override
+          ><button>
+            Scholastic Art Competition Gold Key <span>x2</span>
+          </button></a
+        >
+        <a target="_blank" href="https://www.artandwriting.org/" override
+          ><button>
+            Scholastic Art Competition Silver Key <span>x2</span>
+          </button></a
+        >
+        <a
+          target="_blank"
+          href="https://presidentialserviceawards.gov/"
+          override
+          ><button>PVSA</button></a
+        >
+        <a
+          target="_blank"
+          href="https://cosmos-ucop.ucdavis.edu/app/main"
+          override
+          ><button>Cosmos <span>2024</span></button></a
+        >
+        <a override
+          ><button>Palo Alto High Biology Award <span>2023</span></button></a
+        >
+      </section>
+    </article>
+    <article id="education">
+      <h3 class="center"><span>05</span><span>What's Next?</span></h3>
+      <section class="single">
+        <h1>Get in touch</h1>
+        <p>
+          Interested in what I've worked on so far? Feel free to contact me
+          through
+          <a
+            target="_blank"
+            href="https://www.linkedin.com/in/jeffrey-fan-5b4769284/"
+            >LinkedIn</a
+          >
+        </p>
+        <div class="icon"></div>
+      </section>
+    </article>
+    <footer>
+      <a target="_blank" href="https://github.com/12Jeef/12Jeef.github.io"
+        >Built by Jeffrey Fan</a
+      >
+      <p>
+        Inspired by
+        <a target="_blank" href="https://v4.brittanychiang.com/">Brittany</a>'s
+        portfolio. No code was copied.
+      </p>
+    </footer>
     <script
       type="module"
       src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"

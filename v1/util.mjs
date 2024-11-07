@@ -4,13 +4,211 @@ export const NUMBERS = "0123456789";
 export const ALPHABETUPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 export const ALPHABETLOWER = ALPHABETUPPER.toLowerCase();
 export const ALPHABETALL = ALPHABETLOWER + ALPHABETUPPER;
-export const BASE16 = NUMBERS + ALPHABETLOWER.substring(0, 6);
+export const BASE16 = NUMBERS + ALPHABETLOWER.slice(0, 6);
 export const BASE64 = NUMBERS + ALPHABETALL + "-_";
+export const BASE256 = [
+  ...BASE64.split("").map((c) => c.charCodeAt(0)),
+  192,
+  193,
+  194,
+  195,
+  196,
+  197,
+  198,
+  199,
+  200,
+  201,
+  202,
+  203,
+  204,
+  205,
+  206,
+  207,
+  208,
+  209,
+  210,
+  211,
+  212,
+  213,
+  214,
+  216,
+  217,
+  218,
+  219,
+  220,
+  221,
+  222,
+  223,
+  224,
+  225,
+  226,
+  227,
+  228,
+  229,
+  230,
+  231,
+  232,
+  233,
+  234,
+  235,
+  236,
+  237,
+  238,
+  239,
+  240,
+  241,
+  242,
+  243,
+  244,
+  245,
+  246,
+  248,
+  249,
+  250,
+  251,
+  252,
+  253,
+  254,
+  255,
+  256,
+  257,
+  258,
+  259,
+  260,
+  261,
+  262,
+  263,
+  264,
+  265,
+  266,
+  267,
+  268,
+  269,
+  270,
+  271,
+  272,
+  273,
+  274,
+  275,
+  276,
+  277,
+  278,
+  279,
+  280,
+  281,
+  282,
+  283,
+  284,
+  285,
+  286,
+  287,
+  288,
+  289,
+  290,
+  291,
+  292,
+  293,
+  294,
+  295,
+  296,
+  297,
+  298,
+  299,
+  300,
+  301,
+  302,
+  303,
+  304,
+  305,
+  306,
+  307,
+  308,
+  309,
+  310,
+  311,
+  312,
+  313,
+  314,
+  315,
+  316,
+  317,
+  318,
+  319,
+  320,
+  321,
+  322,
+  323,
+  324,
+  325,
+  326,
+  327,
+  328,
+  329,
+  330,
+  331,
+  332,
+  333,
+  334,
+  335,
+  336,
+  337,
+  338,
+  339,
+  340,
+  341,
+  342,
+  343,
+  344,
+  345,
+  346,
+  347,
+  348,
+  349,
+  350,
+  351,
+  352,
+  353,
+  354,
+  355,
+  356,
+  357,
+  358,
+  359,
+  360,
+  361,
+  362,
+  363,
+  364,
+  365,
+  366,
+  367,
+  368,
+  369,
+  370,
+  371,
+  372,
+  373,
+  374,
+  375,
+  376,
+  377,
+  378,
+  379,
+  380,
+  381,
+  382,
+  383,
+  384,
+  385,
+]
+  .map((c) => String.fromCharCode(c))
+  .join("");
 export const VARIABLE = NUMBERS + ALPHABETALL + "_";
 
 export const MAGIC = "_*[[;ƒ";
 
-export const VERSION = 1;
+export const TEXTENCODER = new TextEncoder();
+export const TEXTDECODER = new TextDecoder();
 
 Array.prototype.sum = function () {
   return this.reduce((sum, x) => sum + x, 0);
@@ -22,110 +220,105 @@ Array.prototype.flatten = function () {
     return sum;
   }, []);
 };
+Array.prototype.collapse = function () {
+  return this.reduce((sum, x) => {
+    if (!is(x, "arr")) sum.push(x);
+    else sum.push(...x);
+    return sum;
+  }, []);
+};
+Array.prototype.all = function (f = null) {
+  for (let v of this) {
+    if (f == null) {
+      if (!v) return false;
+    } else if (!f(v)) return false;
+  }
+  return true;
+};
+Array.prototype.any = function (f = null) {
+  for (let v of this) {
+    if (f == null) {
+      if (v) return true;
+    } else if (f(v)) return true;
+  }
+  return false;
+};
 
-export function is(o, type) {
-  if (type == "num" || type == "float")
-    return typeof o == "number" && !Number.isNaN(o) && Number.isFinite(o);
-  if (type == "int")
-    return (
-      typeof o == "number" &&
+const isfs = {
+  num: (o) =>
+    (typeof o == "number" && !Number.isNaN(o) && Number.isFinite(o)) ||
+    typeof o == "bigint",
+  int: (o) =>
+    (typeof o == "number" &&
       !Number.isNaN(o) &&
       Number.isFinite(o) &&
-      o % 1 == 0
-    );
-  if (type == "any_num") return typeof o == "number" && !Number.isNaN(o);
-  let typefs = {
-    bool: () => {
-      return typeof o == "boolean";
-    },
-    str: () => {
-      return typeof o == "string";
-    },
-    arr: () => {
-      return (
-        Array.isArray(o) ||
-        (o &&
-          typefs.obj() &&
-          is(o.length, "num") &&
-          (o.length == 0 || (o.length > 0 && o.length - 1 in o)) &&
-          !(o instanceof Target))
-      );
-    },
-    obj: () => {
-      return typeof o == "object" && !is(o, "null");
-    },
-    func: () => {
-      return typeof o == "function";
-    },
-    async_func: () => {
-      return typefs.func() && o.constructor.name == "AsyncFunction";
-    },
-    null: () => {
-      return o == null;
-    },
-  };
-  if (type in typefs) return typefs[type]();
-  if (is(type, "func")) return o instanceof type;
-  return o == type;
+      o % 1 == 0) ||
+    typeof o == "bigint",
+  obj: (o) => typeof o == "object" && o != null,
+  any_num: (o) =>
+    (typeof o == "number" && !Number.isNaN(o)) || typeof o == "bigint",
+  bool: (o) => typeof o == "boolean",
+  str: (o) => typeof o == "string",
+  arr: (o) =>
+    Array.isArray(o) ||
+    (o &&
+      isfs.obj(o) &&
+      isfs.int(o.length) &&
+      (o.length == 0 || (o.length > 0 && o.length - 1 in o)) &&
+      !(o instanceof Target)),
+  func: (o) => typeof o == "function",
+  async_func: (o) => isfs.func(o) && o.constructor.name == "AsyncFunction",
+};
+isfs.float = isfs.num;
+export function is(o, type) {
+  return isfs[type] ? isfs[type](o) : o == type;
 }
-
+const ensurefs = {
+  num: (o, useDef, def) => (isfs.num(o) ? Number(o) : useDef ? 0 : def),
+  int: (o, useDef, def) =>
+    isfs.num(o) ? Math.round(Number(o)) : useDef ? 0 : def,
+  obj: (o, useDef, def) => (isfs.obj(o) ? o : useDef ? {} : def),
+  any_num: (o, useDef, def) => (isfs.any_num(o) ? Number(o) : useDef ? 0 : def),
+  bool: (o, useDef, def) => (isfs.bool(o) ? !!o : useDef ? false : def),
+  str: (o, useDef, def) => (isfs.str(o) ? o : useDef ? "" : def),
+  arr: (o, useDef, def) => (isfs.arr(o) ? Array.from(o) : useDef ? [] : def),
+  func: (o, useDef, def) => (isfs.func(o) ? o : useDef ? () => {} : def),
+  async_func: (o, useDef, def) =>
+    isfs.async_func(o) ? o : useDef ? async () => {} : def,
+};
+ensurefs.float = ensurefs.num;
 export function ensure(o, type) {
   let useDef = arguments.length != 3;
   let def = arguments[2];
-  if (type == "num" || type == "float")
-    return typeof o == "number" && !Number.isNaN(o) && Number.isFinite(o)
-      ? o
-      : useDef
-      ? 0
-      : def;
-  if (type == "int")
-    return typeof o == "number" && !Number.isNaN(o) && Number.isFinite(o)
-      ? Math.round(o)
-      : useDef
-      ? 0
-      : def;
-  if (type == "any_num")
-    return typeof o == "number" && !Number.isNaN(o) ? o : useDef ? 0 : def;
-  let typefs = {
-    bool: () => {
-      return !!o;
-    },
-    str: () => {
-      if (is(o, "str")) return o;
-      return useDef ? "" : def;
-    },
-    arr: () => {
-      if (is(o, "arr")) return Array.from(o);
-      return useDef ? [] : def;
-    },
-    obj: () => {
-      if (is(o, "obj")) return o;
-      return useDef ? {} : def;
-    },
-    func: () => {
-      if (is(o, "func")) return o;
-      return useDef ? () => {} : def;
-    },
-    async_func: () => {
-      if (is(o, "async_func")) return o;
-      if (is(o, "func")) return async () => o();
-      return useDef ? async () => {} : def;
-    },
-    null: () => {
-      return null;
-    },
-  };
-  if (type in typefs) return typefs[type]();
-  if (is(o, type)) return o;
-  return useDef ? null : def;
+  return ensurefs[type]
+    ? ensurefs[type](o, useDef, def)
+    : is(o, type)
+    ? o
+    : useDef
+    ? null
+    : def;
 }
 
-export function arrEquals(a1, a2) {
-  a1 = ensure(a1, "arr");
-  a2 = ensure(a2, "arr");
-  if (a1.length != a2.length) return false;
-  for (let i = 0; i < a1.length; i++) if (a1[i] != a2[i]) return false;
-  return true;
+export function equals(v1, v2) {
+  if (is(v1, "arr")) {
+    if (!is(v2, "arr")) return false;
+    if (v1.length != v2.length) return false;
+    for (let i = 0; i < v1.length; i++) if (!equals(v1[i], v2[i])) return false;
+    return true;
+  }
+  if (is(v1, "obj")) {
+    if (!is(v2, "obj")) return false;
+    for (let k in v1) {
+      if (!(k in v2)) return false;
+      if (!equals(v1[k], v2[k])) return false;
+    }
+    for (let k in v2) {
+      if (!(k in v1)) return false;
+      if (!equals(v2[k], v1[k])) return false;
+    }
+    return true;
+  }
+  return v1 == v2;
 }
 
 export function sin(x) {
@@ -133,6 +326,18 @@ export function sin(x) {
 }
 export function cos(x) {
   return Math.cos(x * (Math.PI / 180));
+}
+export function tan(x) {
+  return Math.tan(x * (Math.PI / 180));
+}
+export function csc(x) {
+  return Math.csc(x * (Math.PI / 180));
+}
+export function sec(x) {
+  return Math.sec(x * (Math.PI / 180));
+}
+export function cot(x) {
+  return Math.cot(x * (Math.PI / 180));
 }
 
 export function lerp(a, b, p) {
@@ -209,7 +414,7 @@ export function angleRelRadians(a, b) {
 }
 
 export function getTime() {
-  return new Date().getTime();
+  return Date.now();
 }
 export const UNITVALUES = {
   ms: 1,
@@ -317,24 +522,243 @@ export async function timeout(t, v) {
   });
 }
 
-export function generateArrayPath(...path) {
-  return path
+export function generateArrayPath(...pth) {
+  return pth
     .flatten()
     .join("/")
     .split("/")
     .filter((part) => part.length > 0);
 }
-export function generatePath(...path) {
-  return generateArrayPath(...path).join("/");
+export function generatePath(...pth) {
+  return generateArrayPath(...pth).join("/");
 }
 
+export function toUint8Array(v) {
+  if (v instanceof Uint8Array) return v;
+  if (is(v, "str")) return TEXTENCODER.encode(v);
+  try {
+    return Uint8Array.from(v);
+  } catch (e) {}
+  return new Uint8Array();
+}
+export function encodeUint8Array(v) {
+  v = toUint8Array(v);
+  return Array.from(new Array(v.length).keys())
+    .map((i) => BASE256[v[i]])
+    .join("");
+}
+export function decodeUint8Array(v) {
+  v = String(v);
+  let out = new Uint8Array(v.length);
+  for (let i = 0; i < v.length; i++) out[i] = BASE256.indexOf(v[i]);
+  return out;
+}
+
+const TYPEIDX = [
+  "arr",
+  "bool",
+  "float",
+  "int8",
+  "int16",
+  "int32",
+  "int64",
+  "obj",
+  "raw",
+  "str",
+];
+export function encodeJSON(o) {
+  if (is(o, "arr") && !(o instanceof Uint8Array)) {
+    const encoded = o.map((o) => encodeJSON(o));
+    let l = 1 + 4;
+    encoded.forEach((bytes) => (l += bytes.byteLength));
+    const data = new Uint8Array(l);
+    const dataView = new DataView(data.buffer);
+    dataView.setInt8(0, TYPEIDX.indexOf("arr"));
+    dataView.setUint32(1, encoded.length);
+    let x = 1 + 4;
+    encoded.forEach((bytes) => {
+      data.set(bytes, x);
+      x += bytes.byteLength;
+    });
+    return data;
+  }
+  if (is(o, "bool")) {
+    let l = 1 + 1;
+    const data = new Uint8Array(l);
+    const dataView = new DataView(data.buffer);
+    dataView.setInt8(0, TYPEIDX.indexOf("bool"));
+    dataView.setUint8(1, o ? 1 : 0);
+    return data;
+  }
+  if (is(o, "float") && !is(o, "int")) {
+    let l = 1 + 8;
+    const data = new Uint8Array(l);
+    const dataView = new DataView(data.buffer);
+    dataView.setInt8(0, TYPEIDX.indexOf("float"));
+    dataView.setFloat64(1, o);
+    return data;
+  }
+  if (is(o, "int")) {
+    let type =
+      -(2 ** 7) <= o && o < 2 ** 7
+        ? "int8"
+        : -(2 ** 15) <= o && o < 2 ** 15
+        ? "int16"
+        : -(2 ** 31) <= o && o < 2 ** 31
+        ? "int32"
+        : "int64";
+    let l =
+      1 +
+      {
+        int8: 1,
+        int16: 2,
+        int32: 4,
+        int64: 8,
+      }[type];
+    const data = new Uint8Array(l);
+    const dataView = new DataView(data.buffer);
+    dataView.setInt8(0, TYPEIDX.indexOf(type));
+    if (type == "int8") dataView.setInt8(1, o);
+    else if (type == "int16") dataView.setInt16(1, o);
+    else if (type == "int32") dataView.setInt32(1, o);
+    else dataView.setBigInt64(1, BigInt(o));
+    return data;
+  }
+  if (is(o, "obj")) {
+    let l = 1 + 4;
+    const keys = Object.keys(o);
+    const n = keys.length;
+    const encodedKeys = keys.map((key) => encodeJSON(key));
+    const encodedValues = keys.map((key) => encodeJSON(o[key]));
+    encodedKeys.forEach((bytes) => (l += bytes.byteLength));
+    encodedValues.forEach((bytes) => (l += bytes.byteLength));
+    const data = new Uint8Array(l);
+    const dataView = new DataView(data.buffer);
+    dataView.setInt8(0, TYPEIDX.indexOf("obj"));
+    dataView.setUint32(1, n);
+    let x = 1 + 4;
+    [...encodedKeys, ...encodedValues].forEach((bytes) => {
+      data.set(bytes, x);
+      x += bytes.byteLength;
+    });
+    return data;
+  }
+  if (o instanceof Uint8Array) {
+    let l = 1 + 4 + o.byteLength;
+    const data = new Uint8Array(l);
+    const dataView = new DataView(data.buffer);
+    dataView.setInt8(0, TYPEIDX.indexOf("raw"));
+    dataView.setUint32(1, o.byteLength);
+    data.set(o, 1 + 4);
+    return data;
+  }
+  if (is(o, "str")) {
+    o = TEXTENCODER.encode(o);
+    let l = 1 + 4 + o.byteLength;
+    const data = new Uint8Array(l);
+    const dataView = new DataView(data.buffer);
+    dataView.setInt8(0, TYPEIDX.indexOf("str"));
+    dataView.setUint32(1, o.byteLength);
+    data.set(o, 1 + 4);
+    return data;
+  }
+  return null;
+}
+function _decodeJSON(data, x) {
+  const dataViewer = new DataView(data, x);
+  const type = TYPEIDX[dataViewer.getInt8(0)];
+  x += 1;
+  let value = null;
+  if (type == "arr") {
+    value = [];
+    let n = dataViewer.getUint32(1);
+    x += 4;
+    while (n-- > 0) {
+      let decoded = _decodeJSON(data, x);
+      value.push(decoded.value);
+      x = decoded.x;
+    }
+  } else if (type == "bool") {
+    value = dataViewer.getUint8(1);
+    x += 1;
+  } else if (type == "float") {
+    value = dataViewer.getFloat64(1);
+    x += 8;
+  } else if (type == "int8") {
+    value = dataViewer.getInt8(1);
+    x += 1;
+  } else if (type == "int16") {
+    value = dataViewer.getInt16(1);
+    x += 2;
+  } else if (type == "int32") {
+    value = dataViewer.getInt32(1);
+    x += 4;
+  } else if (type == "int64") {
+    value = Number(dataViewer.getBigInt64(1));
+    x += 8;
+  } else if (type == "obj") {
+    value = {};
+    let n = dataViewer.getUint32(1);
+    x += 4;
+    let keys = [],
+      values = [];
+    for (let i = 0; i < n; i++) {
+      let decoded = _decodeJSON(data, x);
+      keys.push(decoded.value);
+      x = decoded.x;
+    }
+    for (let i = 0; i < n; i++) {
+      let decoded = _decodeJSON(data, x);
+      values.push(decoded.value);
+      x = decoded.x;
+    }
+    for (let i = 0; i < n; i++) value[keys[i]] = values[i];
+  } else if (type == "raw") {
+    let n = dataViewer.getUint32(1);
+    x += 4;
+    value = new Uint8Array(data.slice(x, x + n));
+    x += n;
+  } else if (type == "str") {
+    let n = dataViewer.getUint32(1);
+    x += 4;
+    value = TEXTDECODER.decode(new Uint8Array(data.slice(x, x + n)));
+    x += n;
+  }
+  return {
+    value: value,
+    x: x,
+  };
+}
+export function decodeJSON(data) {
+  data = toUint8Array(data);
+  return _decodeJSON(data.buffer, 0).value;
+}
+
+function splitString(s) {
+  let parts = [];
+  for (let i = 0; i < s.length; i++) {
+    let c = s[i];
+    if (NUMBERS.includes(c)) {
+      c = NUMBERS.indexOf(c);
+      if (typeof parts.at(-1) != "number") parts.push(c);
+      else parts[parts.length - 1] = parts[parts.length - 1] * 10 + c;
+      continue;
+    }
+    if (typeof parts.at(-1) != "string") parts.push(c);
+    else parts[parts.length - 1] += c;
+  }
+  return parts;
+}
 export function compareStr(s1, s2) {
   s1 = String(s1).toLowerCase();
   s2 = String(s2).toLowerCase();
-  if (is(parseInt(s1), "int") && is(parseInt(s2), "int")) return s1 - s2;
-  if (s1 < s2) return -1;
-  if (s1 > s2) return +1;
-  return 0;
+  let s1parts = splitString(s1);
+  let s2parts = splitString(s2);
+  for (let i = 0; i < Math.min(s1parts.length, s2parts.length); i++) {
+    if (s1parts[i] < s2parts[i]) return -1;
+    if (s1parts[i] > s2parts[i]) return +1;
+  }
+  return s1parts.length - s2parts.length;
 }
 
 export function choose(source) {
@@ -371,9 +795,36 @@ export function jargonVariable(l) {
   return jargon(l, VARIABLE);
 }
 
-export const ease = {
-  // https://easings.net/
+export function stringifyError(e, nl = "") {
+  if (typeof ErrorEvent != "undefined" && e instanceof ErrorEvent) {
+    return [
+      String(e.message),
+      "  " + e.filename + " @ " + e.lineno + ":" + e.colno,
+    ].join("\n");
+  }
+  let lines = [String(e)];
+  if (e instanceof Error) {
+    if (e.stack) lines.push(String(e.stack));
+    if (e.cause) lines.push(stringifyError(e.cause, nl + "  "));
+  }
+  lines = lines
+    .flatten()
+    .join("\n")
+    .split("\n")
+    .filter((part) => part.length > 0);
+  if (lines[0] == lines[1]) lines.shift();
+  return lines.map((line) => nl + line).join("\n");
+}
+export function getStack() {
+  try {
+    throw new Error("stack-get");
+  } catch (e) {
+    return e.stack;
+  }
+}
 
+// https://easings.net/
+export const ease = {
   sinI: (t) => {
     t = Math.min(1, Math.max(0, ensure(t, "num")));
     return 1 - Math.cos((t * Math.PI) / 2);
@@ -750,13 +1201,17 @@ export class Color extends Target {
     this.#r = this.#g = this.#b = this.#a = null;
     this.#hsv = null;
 
-    if (a.length <= 0 || a.length == 2 || a.length > 4) a = [null];
+    this.set(...a);
+  }
+
+  static args(...a) {
+    if (a.length <= 0 || [2].includes(a.length) || a.length > 4) a = [null];
     if (a.length == 1) {
       a = a[0];
       if (a instanceof Color) a = a.rgba;
       else if (a instanceof V3) a = [...a.xyz, 1];
       else if (a instanceof V4) a = a.wxyz;
-      else if (is(a, "arr")) a = new Color(...a).rgba;
+      else if (is(a, "arr")) return this.args(...a);
       else if (is(a, "obj")) a = [a.r, a.g, a.b, a.a];
       else if (is(a, "num")) {
         if (a < 0) a = new Array(3).fill(-a);
@@ -785,7 +1240,7 @@ export class Color extends Target {
         } else a = [0, 0, 0];
       } else if (is(a, "str")) {
         if (a[0] == "#") {
-          a = a.substring(1).toLowerCase();
+          a = a.slice(1).toLowerCase();
           let all = true;
           for (let c of a) {
             if (BASE16.includes(c)) continue;
@@ -811,9 +1266,9 @@ export class Color extends Target {
           }
           if (a.length == 4) a[3] /= 255;
         } else if (a.startsWith("rgb")) {
-          a = a.substring(a.startsWith("rgba") ? 4 : 3);
+          a = a.slice(a.startsWith("rgba") ? 4 : 3);
           if (a.at(0) == "(" && a.at(-1) == ")") {
-            a = a.substring(1, a.length - 1);
+            a = a.slice(1, -1);
             a = a
               .split(",")
               .map((v) => v.trim())
@@ -827,12 +1282,13 @@ export class Color extends Target {
       } else a = [0, 0, 0];
     }
     if (a.length == 3) a = [...a, 1];
-
-    [this.r, this.g, this.b, this.a] = a;
+    return a;
   }
-
+  args(...a) {
+    return this.constructor.args(...a);
+  }
   set(...a) {
-    this.rgba = new Color(...a).rgba;
+    [this.r, this.g, this.b, this.a] = this.args(...a);
     return this;
   }
 
@@ -880,22 +1336,22 @@ export class Color extends Target {
     return [this.r, this.g, this.b];
   }
   set rgb(v) {
-    [this.r, this.g, this.b] = new Color(v).rgb;
+    this.set(v);
   }
   get rgba() {
     return [this.r, this.g, this.b, this.a];
   }
   set rgba(v) {
-    [this.r, this.g, this.b, this.a] = new Color(v).rgba;
+    this.set(v);
   }
 
   diff(...v) {
-    v = new Color(...v);
+    v = this.args(...v);
     return (
-      (Math.abs(this.r - v.r) +
-        Math.abs(this.g - v.g) +
-        Math.abs(this.b - v.b) +
-        Math.abs(this.a - v.a)) /
+      (Math.abs(this.r - v[0]) +
+        Math.abs(this.g - v[1]) +
+        Math.abs(this.b - v[2]) +
+        Math.abs(this.a - v[3])) /
       4
     );
   }
@@ -986,6 +1442,15 @@ export class Color extends Target {
     this.hsva = hsva;
   }
 
+  equals(...v) {
+    v = this.args(...v);
+    if (this.r != v[0]) return false;
+    if (this.g != v[1]) return false;
+    if (this.b != v[2]) return false;
+    if (this.a != v[3]) return false;
+    return true;
+  }
+
   toHex(a = true) {
     let v = a ? this.#hex : this.#hexNoAlpha;
     if (v == null) {
@@ -1013,7 +1478,6 @@ export class Color extends Target {
 
   toJSON() {
     return Reviver.revivable(this.constructor, {
-      VERSION: VERSION,
       r: this.r,
       g: this.g,
       b: this.b,
@@ -1031,19 +1495,31 @@ export class Range extends Target {
   constructor(...a) {
     super();
 
+    this.#l = this.#r = 0;
+    this.#lInclude = this.#rInclude = true;
+
+    this.set(...a);
+  }
+
+  static args(...a) {
     if (a.length <= 0 || [3].includes(a.length) || a.length > 2) a = [null];
     if (a.length == 1) {
       a = a[0];
       if (a instanceof Range) a = [a.l, a.r, a.lInclude, a.rInclude];
-      else if (is(a, "arr")) {
-        a = new Range(...a);
-        a = [a.l, a.r, a.lInclude, a.rInclude];
-      } else if (is(a, "obj")) a = [a.l, a.r, a.lInclude, a.rInclude];
+      else if (is(a, "arr")) return this.args(...a);
+      else if (is(a, "obj")) a = [a.l, a.r, a.lInclude, a.rInclude];
       else if (is(a, "any_num")) a = [a, Infinity];
       else a = [-Infinity, Infinity];
     }
     if (a.length == 2) a = [...a, true, true];
-    [this.l, this.r, this.lInclude, this.rInclude] = a;
+    return a;
+  }
+  args(...a) {
+    return this.constructor.args(...a);
+  }
+  set(...a) {
+    [this.l, this.r, this.lInclude, this.rInclude] = this.args(...a);
+    return this;
   }
 
   get l() {
@@ -1102,6 +1578,15 @@ export class Range extends Target {
     return lerp(this.l, this.r, v);
   }
 
+  equals(...v) {
+    v = new Range(...v);
+    if (this.l != v.l) return false;
+    if (this.r != v.r) return false;
+    if (this.lInclude != v.lInclude) return false;
+    if (this.rInclude != v.rInclude) return false;
+    return true;
+  }
+
   toString() {
     return (
       (this.lInclude ? "[" : "(") +
@@ -1114,7 +1599,6 @@ export class Range extends Target {
 
   toJSON() {
     return Reviver.revivable(this.constructor, {
-      VERSION: VERSION,
       l: this.l,
       r: this.r,
       lInclude: this.lInclude,
@@ -1130,18 +1614,38 @@ export class V extends Target {
   constructor(...a) {
     super();
 
+    this.#x = this.#y = 0;
+
+    this.set(...a);
+  }
+
+  get length() {
+    return 2;
+  }
+
+  static args(...a) {
     if (a.length <= 0 || a.length > 2) a = [0];
     if (a.length == 1) {
       a = a[0];
       if (a instanceof V) a = a.xy;
       else if (a instanceof V3) a = [a.x, a.y];
       else if (a instanceof V4) a = [a.x, a.y];
-      else if (is(a, "arr")) a = new V(...a).xy;
+      else if (is(a, "arr")) return this.args(...a);
       else if (is(a, "obj")) a = [a.x, a.y];
       else if (is(a, "num")) a = [a, a];
       else a = [0, 0];
     }
-    [this.x, this.y] = a;
+    return a;
+  }
+  args(...a) {
+    return this.constructor.args(...a);
+  }
+  set(...a) {
+    [this.x, this.y] = this.args(...a);
+    return this;
+  }
+  clone() {
+    return new V(this);
   }
 
   get x() {
@@ -1164,33 +1668,28 @@ export class V extends Target {
     return [this.x, this.y];
   }
   set xy(v) {
-    [this.x, this.y] = new V(v).xy;
-  }
-
-  set(...a) {
-    this.xy = a;
-    return this;
+    this.set(v);
   }
 
   add(...a) {
-    a = new V(...a);
-    return new V(this.x + a.x, this.y + a.y);
+    a = this.args(...a);
+    return new V(this.x + a[0], this.y + a[1]);
   }
   sub(...a) {
-    a = new V(...a);
-    return new V(this.x - a.x, this.y - a.y);
+    a = this.args(...a);
+    return new V(this.x - a[0], this.y - a[1]);
   }
   mul(...a) {
-    a = new V(...a);
-    return new V(this.x * a.x, this.y * a.y);
+    a = this.args(...a);
+    return new V(this.x * a[0], this.y * a[1]);
   }
   div(...a) {
-    a = new V(...a);
-    return new V(this.x / a.x, this.y / a.y);
+    a = this.args(...a);
+    return new V(this.x / a[0], this.y / a[1]);
   }
   pow(...a) {
-    a = new V(...a);
-    return new V(this.x ** a.x, this.y ** a.y);
+    a = this.args(...a);
+    return new V(this.x ** a[0], this.y ** a[1]);
   }
 
   map(f) {
@@ -1217,41 +1716,40 @@ export class V extends Target {
     );
   }
   rotate(d, o) {
-    o = new V(o);
-    return this.sub(o).rotateOrigin(d).add(o);
+    return this.sub(o).irotateOrigin(d).iadd(o);
   }
   normalize() {
     return this.dist(0) > 0 ? this.div(this.dist(0)) : new V(this);
   }
 
   iadd(...a) {
-    a = new V(...a);
-    this.x += a.x;
-    this.y += a.y;
+    a = this.args(...a);
+    this.x += a[0];
+    this.y += a[1];
     return this;
   }
   isub(...a) {
-    a = new V(...a);
-    this.x -= a.x;
-    this.y -= a.y;
+    a = this.args(...a);
+    this.x -= a[0];
+    this.y -= a[1];
     return this;
   }
   imul(...a) {
-    a = new V(...a);
-    this.x *= a.x;
-    this.y *= a.y;
+    a = this.args(...a);
+    this.x *= a[0];
+    this.y *= a[1];
     return this;
   }
   idiv(...a) {
-    a = new V(...a);
-    this.x /= a.x;
-    this.y /= a.y;
+    a = this.args(...a);
+    this.x /= a[0];
+    this.y /= a[1];
     return this;
   }
   ipow(...a) {
-    a = new V(...a);
-    this.x **= a.x;
-    this.y **= a.y;
+    a = this.args(...a);
+    this.x **= a[0];
+    this.y **= a[1];
     return this;
   }
 
@@ -1274,29 +1772,34 @@ export class V extends Target {
   }
 
   irotateOrigin(d) {
-    return this.set(this.rotateOrigin(d));
+    d = ensure(d, "num");
+    [this.x, this.y] = [
+      this.x * cos(d) + this.y * sin(d),
+      this.x * cos(d - 90) + this.y * sin(d - 90),
+    ];
+    return this;
   }
   irotate(d, o) {
-    return this.set(this.rotate(d, o));
+    return this.isub(o).irotateOrigin(d).iadd(o);
   }
   inormalize() {
-    return this.set(this.normalize());
+    return this.dist(0) > 0 ? this.idiv(this.dist(0)) : this[0];
   }
 
   distSquared(...v) {
-    v = new V(...v);
-    return (this.x - v.x) ** 2 + (this.y - v.y) ** 2;
+    v = this.args(...v);
+    return (this.x - v[0]) ** 2 + (this.y - v[1]) ** 2;
   }
   dist(...v) {
     return Math.sqrt(this.distSquared(...v));
   }
   towards(...v) {
-    v = new V(...v);
-    return (180 / Math.PI) * Math.atan2(v.y - this.y, v.x - this.x);
+    v = this.args(...v);
+    return (180 / Math.PI) * Math.atan2(v[1] - this.y, v[0] - this.x);
   }
   equals(...v) {
-    v = new V(...v);
-    return this.x == v.x && this.y == v.y;
+    v = this.args(...v);
+    return this.x == v[0] && this.y == v[1];
   }
 
   static dir(d, m = 1) {
@@ -1311,12 +1814,27 @@ export class V extends Target {
 
   toJSON() {
     return Reviver.revivable(this.constructor, {
-      VERSION: VERSION,
       x: this.x,
       y: this.y,
     });
   }
 }
+Object.defineProperty(V.prototype, "0", {
+  get: function () {
+    return this.x;
+  },
+  set: function (v) {
+    this.x = v;
+  },
+});
+Object.defineProperty(V.prototype, "1", {
+  get: function () {
+    return this.y;
+  },
+  set: function (v) {
+    this.y = v;
+  },
+});
 
 export class V3 extends Target {
   #x;
@@ -1326,19 +1844,39 @@ export class V3 extends Target {
   constructor(...a) {
     super();
 
+    this.#x = this.#y = this.#z = 0;
+
+    this.set(...a);
+  }
+
+  get length() {
+    return 3;
+  }
+
+  static args(...a) {
     if (a.length <= 0 || a.length > 3) a = [0];
     if (a.length == 1) {
       a = a[0];
       if (a instanceof V3) a = [a.x, a.y, a.z];
       else if (a instanceof V) a = [a.x, a.y, 0];
       else if (a instanceof V4) a = [a.x, a.y, a.z];
-      else if (is(a, "arr")) a = new V3(...a).xyz;
+      else if (is(a, "arr")) return this.args(...a);
       else if (is(a, "obj")) a = [a.x, a.y, a.z];
       else if (is(a, "num")) a = [a, a, a];
       else a = [0, 0, 0];
     }
     if (a.length == 2) a = [...a, 0];
-    [this.x, this.y, this.z] = a;
+    return a;
+  }
+  args(...a) {
+    return this.constructor.args(...a);
+  }
+  set(...a) {
+    [this.x, this.y, this.z] = this.args(...a);
+    return this;
+  }
+  clone() {
+    return new V3(this);
   }
 
   get x() {
@@ -1369,49 +1907,44 @@ export class V3 extends Target {
     return [this.x, this.y, this.z];
   }
   set xyz(v) {
-    [this.x, this.y, this.z] = new V3(v).xyz;
-  }
-
-  set(...a) {
-    this.xyz = a;
-    return this;
+    this.set(v);
   }
 
   add(...a) {
-    a = new V3(...a);
-    return new V3(this.x + a.x, this.y + a.y, this.z + a.z);
+    a = this.args(...a);
+    return new V3(this.x + a[0], this.y + a[1], this.z + a[2]);
   }
   sub(...a) {
-    a = new V3(...a);
-    return new V3(this.x - a.x, this.y - a.y, this.z - a.z);
+    a = this.args(...a);
+    return new V3(this.x - a[0], this.y - a[1], this.z - a[2]);
   }
   mul(...a) {
-    a = new V3(...a);
-    return new V3(this.x * a.x, this.y * a.y, this.z * a.z);
+    a = this.args(...a);
+    return new V3(this.x * a[0], this.y * a[1], this.z * a[2]);
   }
   div(...a) {
-    a = new V3(...a);
-    return new V3(this.x / a.x, this.y / a.y, this.z / a.z);
+    a = this.args(...a);
+    return new V3(this.x / a[0], this.y / a[1], this.z / a[2]);
   }
   pow(...a) {
-    a = new V3(...a);
-    return new V3(this.x ** a.x, this.y ** a.y, this.z ** a.z);
+    a = this.args(...a);
+    return new V3(this.x ** a[0], this.y ** a[1], this.z ** a[2]);
   }
 
   map(f) {
     return new V3(f(this.x), f(this.y), f(this.z));
   }
   abs() {
-    return this.map((v) => Math.abs(v));
+    return this.map(Math.abs);
   }
   floor() {
-    return this.map((v) => Math.floor(v));
+    return this.map(Math.floor);
   }
   ceil() {
-    return this.map((v) => Math.ceil(v));
+    return this.map(Math.ceil);
   }
   round() {
-    return this.map((v) => Math.round(v));
+    return this.map(Math.round);
   }
 
   rotateOrigin(...d) {
@@ -1421,7 +1954,6 @@ export class V3 extends Target {
     return V3.dir(d, m);
   }
   rotate(d, o) {
-    o = new V3(o);
     return this.sub(o).rotateOrigin(d).add(o);
   }
   normalize() {
@@ -1429,35 +1961,58 @@ export class V3 extends Target {
   }
 
   iadd(...a) {
-    return this.set(this.add(...a));
+    a = this.args(...a);
+    this.x += a[0];
+    this.y += a[1];
+    this.z += a[2];
+    return this;
   }
   isub(...a) {
-    return this.set(this.sub(...a));
+    a = this.args(...a);
+    this.x -= a[0];
+    this.y -= a[1];
+    this.z -= a[2];
+    return this;
   }
   imul(...a) {
-    return this.set(this.mul(...a));
+    a = this.args(...a);
+    this.x *= a[0];
+    this.y *= a[1];
+    this.z *= a[2];
+    return this;
   }
   idiv(...a) {
-    return this.set(this.div(...a));
+    a = this.args(...a);
+    this.x /= a[0];
+    this.y /= a[1];
+    this.z /= a[2];
+    return this;
   }
   ipow(...a) {
-    return this.set(this.pow(...a));
+    a = this.args(...a);
+    this.x **= a[0];
+    this.y **= a[1];
+    this.z **= a[2];
+    return this;
   }
 
   imap(f) {
-    return this.set(this.map(f));
+    this.x = f(this.x);
+    this.y = f(this.y);
+    this.z = f(this.z);
+    return this;
   }
   iabs() {
-    return this.set(this.abs());
+    return this.imap(Math.abs);
   }
   ifloor() {
-    return this.set(this.floor());
+    return this.imap(Math.floor);
   }
   iceil() {
-    return this.set(this.ceil());
+    return this.imap(Math.ceil);
   }
   iround() {
-    return this.set(this.round());
+    return this.imap(Math.round);
   }
 
   irotateOrigin(d) {
@@ -1478,16 +2033,16 @@ export class V3 extends Target {
     return Math.sqrt(this.distSquared(...v));
   }
   towards(...v) {
-    v = new V3(...v);
+    v = this.args(...v);
     let thisFlat = new V(this.x, this.z);
-    let thatFlat = new V(v.x, v.z);
+    let thatFlat = new V(v[0], v[2]);
     let azimuth = thisFlat.towards(thatFlat);
     let elevation = new V().towards(thisFlat.dist(thatFlat), v.y - this.y);
     return new V3(elevation, azimuth, 0);
   }
   equals(...v) {
-    v = new V3(...v);
-    return this.x == v.x && this.y == v.y && this.z == v.z;
+    v = this.args(...v);
+    return this.x == v[0] && this.y == v[1] && this.z == v[2];
   }
 
   static dir(d, m = 1) {
@@ -1496,7 +2051,7 @@ export class V3 extends Target {
     let azimuth = V.dir(d.y);
     let elevation = V.dir(d.x);
     azimuth.imul(elevation.x);
-    return new V3(azimuth.x, elevation.y, azimuth.y).mul(m);
+    return new V3(azimuth.x, elevation.y, azimuth.y).imul(m);
   }
 
   toString() {
@@ -1505,13 +2060,36 @@ export class V3 extends Target {
 
   toJSON() {
     return Reviver.revivable(this.constructor, {
-      VERSION: VERSION,
       x: this.x,
       y: this.y,
       z: this.z,
     });
   }
 }
+Object.defineProperty(V3.prototype, "0", {
+  get: function () {
+    return this.x;
+  },
+  set: function (v) {
+    this.x = v;
+  },
+});
+Object.defineProperty(V3.prototype, "1", {
+  get: function () {
+    return this.y;
+  },
+  set: function (v) {
+    this.y = v;
+  },
+});
+Object.defineProperty(V3.prototype, "2", {
+  get: function () {
+    return this.z;
+  },
+  set: function (v) {
+    this.z = v;
+  },
+});
 
 export class V4 extends Target {
   #w;
@@ -1522,20 +2100,40 @@ export class V4 extends Target {
   constructor(...a) {
     super();
 
+    this.#w = this.#x = this.#y = this.#z = 0;
+
+    this.set(...a);
+  }
+
+  get length() {
+    return 4;
+  }
+
+  static args(...a) {
     if (a.length <= 0 || a.length > 4) a = [0];
     if (a.length == 1) {
       a = a[0];
       if (a instanceof V4) a = a.wxyz;
       else if (a instanceof V) a = [0, a.x, a.y, 0];
       else if (a instanceof V3) a = [0, a.x, a.y, a.z];
-      else if (is(a, "arr")) a = new V4(...a).wxyz;
+      else if (is(a, "arr")) return this.args(...a);
       else if (is(a, "obj")) a = [a.w, a.x, a.y, a.z];
       else if (is(a, "num")) a = [a, a, a, a];
       else a = [0, 0, 0, 0];
     }
     if (a.length == 2) a = [...a, 0];
     if (a.length == 3) a = [0, ...a];
-    [this.w, this.x, this.y, this.z] = a;
+    return a;
+  }
+  args(...a) {
+    return this.constructor.args(...a);
+  }
+  set(...a) {
+    [this.w, this.x, this.y, this.z] = this.args(...a);
+    return this;
+  }
+  clone() {
+    return new V4(this);
   }
 
   get w() {
@@ -1574,49 +2172,80 @@ export class V4 extends Target {
     return [this.w, this.x, this.y, this.z];
   }
   set wxyz(v) {
-    [this.w, this.x, this.y, this.z] = new V4(v).wxyz;
+    this.set(v);
   }
 
-  set(...a) {
-    this.wxyz = a;
-    return this;
+  get t() {
+    return this.w;
+  }
+  set t(v) {
+    this.w = v;
+  }
+  get b() {
+    return this.x;
+  }
+  set b(v) {
+    this.x = v;
+  }
+  get l() {
+    return this.y;
+  }
+  set l(v) {
+    this.y = v;
+  }
+  get r() {
+    return this.z;
+  }
+  set r(v) {
+    this.z = v;
+  }
+  get tblr() {
+    return [this.t, this.b, this.l, this.r];
+  }
+  set tblr(v) {
+    [this.t, this.b, this.l, this.r] = new V4(v).tblr;
   }
 
   add(...a) {
-    a = new V4(...a);
-    return new V4(this.w + a.w, this.x + a.x, this.y + a.y, this.z + a.z);
+    a = this.args(...a);
+    return new V4(this.w + a[0], this.x + a[1], this.y + a[2], this.z + a[4]);
   }
   sub(...a) {
-    a = new V4(...a);
-    return new V4(this.w - a.w, this.x - a.x, this.y - a.y, this.z - a.z);
+    a = this.args(...a);
+    return new V4(this.w - a[0], this.x - a[1], this.y - a[2], this.z - a[4]);
   }
   mul(...a) {
-    a = new V4(...a);
-    return new V4(this.w * a.w, this.x * a.x, this.y * a.y, this.z * a.z);
+    a = this.args(...a);
+    return new V4(this.w * a[0], this.x * a[1], this.y * a[2], this.z * a[4]);
   }
   div(...a) {
-    a = new V4(...a);
-    return new V4(this.w / a.w, this.x / a.x, this.y / a.y, this.z / a.z);
+    a = this.args(...a);
+    return new V4(this.w / a[0], this.x / a[1], this.y / a[2], this.z / a[4]);
   }
   pow(...a) {
-    a = new V4(...a);
-    return new V4(this.w ** a.w, this.x ** a.x, this.y ** a.y, this.z ** a.z);
+    a = this.args(...a);
+    return new V4(
+      this.w ** a[0],
+      this.x ** a[1],
+      this.y ** a[2],
+      this.z ** a[4],
+    );
   }
 
   map(f) {
     return new V4(f(this.w), f(this.x), f(this.y), f(this.z));
   }
   abs() {
-    return this.map((v) => Math.abs(v));
+    return this.map(Math.abs);
   }
   floor() {
-    return this.map((v) => Math.floor(v));
+    return this.map(Math.floor);
   }
   ceil() {
-    return this.map((v) => Math.ceil(v));
+    return this.map(Math.ceil);
   }
   round() {
-    return this.map((v) => Math.round(v));
+    return this.map(Math.round);
   }
 
   normalize() {
@@ -1660,20 +2289,20 @@ export class V4 extends Target {
   }
 
   distSquared(...v) {
-    v = new V4(...v);
+    v = this.args(...v);
     return (
-      (this.w - v.w) ** 2 +
-      (this.x - v.x) ** 2 +
-      (this.y - v.y) ** 2 +
-      (this.z - v.z) ** 2
+      (this.w - v[0]) ** 2 +
+      (this.x - v[1]) ** 2 +
+      (this.y - v[2]) ** 2 +
+      (this.z - v[3]) ** 2
     );
   }
   dist(...v) {
     return Math.sqrt(this.distSquared(...v));
   }
   equals(...v) {
-    v = new V4(...v);
-    return this.w == v.w && this.x == v.x && this.y == v.y && this.z == v.z;
+    v = this.args(...v);
+    return this.w == v[0] && this.x == v[1] && this.y == v[2] && this.z == v[3];
   }
 
   toString() {
@@ -1682,13 +2311,47 @@ export class V4 extends Target {
 
   toJSON() {
     return Reviver.revivable(this.constructor, {
-      VERSION: VERSION,
+      w: this.w,
       x: this.x,
       y: this.y,
       z: this.z,
     });
   }
 }
+Object.defineProperty(V4.prototype, "0", {
+  get: function () {
+    return this.w;
+  },
+  set: function (v) {
+    this.w = v;
+  },
+});
+Object.defineProperty(V4.prototype, "1", {
+  get: function () {
+    return this.x;
+  },
+  set: function (v) {
+    this.x = v;
+  },
+});
+Object.defineProperty(V4.prototype, "2", {
+  get: function () {
+    return this.y;
+  },
+  set: function (v) {
+    this.y = v;
+  },
+});
+Object.defineProperty(V4.prototype, "3", {
+  get: function () {
+    return this.z;
+  },
+  set: function (v) {
+    this.z = v;
+  },
+});
+
+// TODO: revamp these apis
 
 export class Shape extends Target {
   get p() {
@@ -1729,6 +2392,11 @@ export class Line extends Shape {
   constructor(...a) {
     super();
 
+    this.#p1 = new V();
+    this.#p2 = new V();
+    this.p1.addHandler("change", (c, f, t) => this.change("p1." + c, f, t));
+    this.p2.addHandler("change", (c, f, t) => this.change("p2." + c, f, t));
+
     if (a.length <= 0 || a.length == 3 || a.length > 4) a = [0];
     if (a.length == 1) {
       a = a[0];
@@ -1745,14 +2413,7 @@ export class Line extends Shape {
         ];
       else a = [0, 0];
     }
-    if (a.length == 2) {
-      a = [...new V(a[0]).xy, ...new V(a[1]).xy];
-    }
-
-    this.#p1 = new V();
-    this.#p2 = new V();
-    this.p1.addHandler("change", (c, f, t) => this.change("p1." + c, f, t));
-    this.p2.addHandler("change", (c, f, t) => this.change("p2." + c, f, t));
+    if (a.length == 2) a = [...new V(a[0]).xy, ...new V(a[1]).xy];
 
     [this.x1, this.y1, this.x2, this.y2] = a;
   }
@@ -1860,7 +2521,6 @@ export class Line extends Shape {
 
   toJSON() {
     return Reviver.revivable(this.constructor, {
-      VERSION: VERSION,
       x1: this.x1,
       y1: this.y1,
       x2: this.x2,
@@ -1877,6 +2537,10 @@ export class Circle extends Shape {
   constructor(...a) {
     super();
 
+    this.#p = new V();
+    this.p.addHandler("change", (c, f, t) => this.change("p." + c, f, t));
+    this.#r = 0;
+
     if (a.length <= 0 || a.length > 3) a = [0];
     if (a.length == 1) {
       a = a[0];
@@ -1889,13 +2553,7 @@ export class Circle extends Shape {
       else if (is(a, "num")) a = [0, a];
       else a = [0, 0];
     }
-    if (a.length == 2) {
-      a = [...new V(a[0]).xy, a[1]];
-    }
-
-    this.#p = new V();
-    this.p.addHandler("change", (c, f, t) => this.change("p." + c, f, t));
-    this.#r = 0;
+    if (a.length == 2) a = [...new V(a[0]).xy, a[1]];
 
     [this.x, this.y, this.r] = a;
   }
@@ -1971,7 +2629,6 @@ export class Circle extends Shape {
 
   toJSON() {
     return Reviver.revivable(this.constructor, {
-      VERSION: VERSION,
       x: this.x,
       y: this.y,
       r: this.r,
@@ -1986,6 +2643,11 @@ export class Rect extends Shape {
 
   constructor(...a) {
     super();
+
+    this.#xy = new V();
+    this.#wh = new V();
+    this.xy.addHandler("change", (c, f, t) => this.change("xy." + c, f, t));
+    this.wh.addHandler("change", (c, f, t) => this.change("wh." + c, f, t));
 
     if (a.length <= 0 || a.length == 3 || a.length > 4) a = [0];
     if (a.length == 1) {
@@ -2007,11 +2669,6 @@ export class Rect extends Shape {
       if (is(a[0], "num") && is(a[1], "num")) a = [0, 0, ...a];
       else a = [...new V(a[0]).xy, ...new V(a[1]).xy];
     }
-
-    this.#xy = new V();
-    this.#wh = new V();
-    this.xy.addHandler("change", (c, f, t) => this.change("xy." + c, f, t));
-    this.wh.addHandler("change", (c, f, t) => this.change("wh." + c, f, t));
 
     [this.x, this.y, this.w, this.h] = a;
   }
@@ -2245,7 +2902,6 @@ export class Rect extends Shape {
 
   toJSON() {
     return Reviver.revivable(this.constructor, {
-      VERSION: VERSION,
       x: this.x,
       y: this.y,
       w: this.w,
@@ -2263,6 +2919,15 @@ export class Polygon extends Shape {
   #pointsmn;
 
   constructor(...a) {
+    super();
+
+    this.#p = new V();
+    this.p.addHandler("change", (c, f, t) => this.change("p." + c, f, t));
+    this.#d = 0;
+    this.#points = [];
+    this.#pointsmx = new V();
+    this.#pointsmn = new V();
+
     if (a.length <= 0) a = [0];
     if (a.length == 1) {
       a = a[0];
@@ -2287,13 +2952,6 @@ export class Polygon extends Shape {
       else if (is(a[1], "arr") && a[1].length >= 3) a = [a[0], ...a[1]];
     }
     a = a.map((v) => new V(v));
-
-    this.#p = new V();
-    this.p.addHandler("change", (c, f, t) => this.change("p." + c, f, t));
-    this.#d = 0;
-    this.#points = [];
-    this.#pointsmx = new V();
-    this.#pointsmn = new V();
 
     this.p = a.shift();
     this.points = a;
@@ -2435,7 +3093,6 @@ export class Polygon extends Shape {
 
   toJSON() {
     return Reviver.revivable(this.constructor, {
-      VERSION: VERSION,
       p: this.p,
       points: this.points,
     });
@@ -2462,13 +3119,7 @@ export class Resolver extends Target {
   set state(v) {
     if (this.state == v) return;
     this.change("state", this.state, (this.#state = v));
-    let resolves = this.#resolves.filter((o) => {
-      let methodfs = {
-        "==": o.v == this.state,
-        "!=": o.v != this.state,
-      };
-      return methodfs[o.method];
-    });
+    let resolves = this.#resolves.filter((o) => o.f(this.state));
     for (let o of resolves) {
       this.#resolves.splice(this.#resolves.indexOf(o), 1);
       let stateChanged = false;
@@ -2480,17 +3131,18 @@ export class Resolver extends Target {
     }
   }
 
-  async when(v) {
-    if (this.state == v) return;
+  async whenCondition(f) {
+    f = ensure(f, "func");
+    if (f(this.state)) return;
     return await new Promise((res, rej) =>
-      this.#resolves.push({ v: v, res: res, method: "==" }),
+      this.#resolves.push({ f: f, res: res }),
     );
   }
+  async when(v) {
+    return await this.whenCondition((v2) => v2 == v);
+  }
   async whenNot(v) {
-    if (this.state != v) return;
-    return await new Promise((res, rej) =>
-      this.#resolves.push({ v: v, res: res, method: "!=" }),
-    );
+    return await this.whenCondition((v2) => v2 != v);
   }
   async whenTrue() {
     return await this.when(true);
@@ -2578,12 +3230,12 @@ export class Reviver extends Target {
   get f() {
     return (k, v) => {
       if (is(v, "obj")) {
-        if (!("%cstm" in v) && !("%CUSTOM" in v)) return v;
-        let custom = "%cstm" in v ? v["%cstm"] : v["%CUSTOM"];
-        if (!("%o" in v) && !("%OBJ" in v)) return v;
-        let o = "%o" in v ? v["%o"] : v["%OBJ"];
-        if (!("%a" in v) && !("%ARGS" in v)) return v;
-        let a = "%a" in v ? v["%a"] : v["%ARGS"];
+        if (!("%cstm" in v)) return v;
+        let custom = v["%cstm"];
+        if (!("%o" in v)) return v;
+        let o = v["%o"];
+        if (!("%a" in v)) return v;
+        let a = v["%a"];
         if (!custom) return v;
         if (!this.hasRule(o)) return v;
         let rule = this.getRule(o);
@@ -2617,7 +3269,7 @@ export class Playback extends Target {
 
   #signal;
 
-  constructor(...a) {
+  constructor(a) {
     super();
 
     this.#ts = this.#tsMin = this.#tsMax = 0;
@@ -2627,22 +3279,6 @@ export class Playback extends Target {
 
     this.#signal = null;
 
-    if (a.length <= 0 || a.length > 4) a = [null];
-    if (a.length == 1) {
-      a = a[0];
-      if (a instanceof Playback) a = [a.ts, a.tsMin, a.tsMax, a.paused];
-      else if (is(a, "arr")) {
-        a = new Playback(...a);
-        a = [a.ts, a.tsMin, a.tsMax, a.paused];
-      } else if (is(a, "num")) a = [0, a];
-      else if (is(a, "obj")) a = [a.ts, a.tsMin, a.tsMax, a.paused];
-      else a = [0, 0];
-    }
-    if (a.length == 2) a = [a[0], ...a];
-    if (a.length == 3) a = [...a, false];
-
-    [this.ts, this.tsMin, this.tsMax, this.paused] = a;
-
     this.addHandler("update", (delta) => {
       if (this.paused) return;
       this.ts += delta;
@@ -2650,6 +3286,12 @@ export class Playback extends Target {
       if (this.#restartTimer >= 10) return;
       this.#restartTimer++;
     });
+
+    a = ensure(a, "obj");
+    this.ts = a.ts;
+    this.tsMin = a.tsMin;
+    this.tsMax = a.tsMax;
+    this.paused = a.paused;
   }
 
   get ts() {
@@ -2739,12 +3381,14 @@ export class Timer extends Target {
   #t;
   #paused;
 
-  constructor() {
+  constructor(autoStart = false) {
     super();
 
     this.#tSum = 0;
     this.#t = 0;
     this.#paused = true;
+
+    if (autoStart) this.play();
   }
 
   get paused() {
@@ -2799,6 +3443,14 @@ export class Timer extends Target {
   get time() {
     return this.#tSum + this.playing * (getTime() - this.#t);
   }
+  set time(t) {
+    t = Math.max(0, ensure(t, "num"));
+    let tSub = Math.min(this.#tSum, t);
+    this.#tSum -= tSub;
+    t -= tSub;
+    if (!this.playing) return;
+    this.#t = getTime() - t;
+  }
 
   pauseAndClear() {
     this.pause();
@@ -2807,5 +3459,18 @@ export class Timer extends Target {
   playAndClear() {
     this.play();
     return this.clear();
+  }
+
+  dequeue(t) {
+    t = Math.max(0, ensure(t, "num"));
+    if (t > this.time) return false;
+    this.time -= t;
+    return true;
+  }
+  dequeueAll(t) {
+    t = Math.max(0, ensure(t, "num"));
+    let n = Math.floor(this.time / t);
+    if (n > 0) this.time -= n * t;
+    return n;
   }
 }
