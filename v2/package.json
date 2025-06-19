@@ -1,10 +1,10 @@
 {
-  "name": "jeef-website-v3",
+  "name": "jeef-website-v2",
   "version": "1.0.0",
-  "description": "Jeef's website V3",
+  "description": "Jeef's website V2",
   "main": "../app.js",
   "scripts": {
-    "start": "npx serve ..",
+    "start": "npx serve .",
     "build": "rollup -c",
     "run": "npm run build && npm start"
   },
