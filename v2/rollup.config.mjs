@@ -13,7 +13,7 @@ function build(input, output, externals = []) {
   return {
     input: path.join("src", input),
     output: {
-      file: path.join("..", output),
+      file: path.join("build", output),
       format: "es",
     },
     context: "this",
