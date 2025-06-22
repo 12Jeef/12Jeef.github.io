@@ -1,0 +1,106 @@
+@import "tailwindcss";
+@tailwind utilities;
+
+@font-face {
+  font-family: "Blob1";
+  src: url("./assets/fonts/LoveDays.ttf");
+}
+
+@font-face {
+  font-family: "Blob2";
+  src: url("./assets/fonts/RebellionSquad.ttf");
+}
+
+@font-face {
+  font-family: "Blob3";
+  src: url("./assets/fonts/SuperFrog.ttf");
+}
+
+@theme {
+  --color-bg1: #232540;
+  --color-bg1a: #23254088;
+  --color-bg1aa: #23254044;
+
+  --color-fg1: #fff;
+  --color-fg1a: #fff8;
+  --color-fg1aa: #fff4;
+
+  --color-fg2: #d2d5f7;
+  --color-fg2a: #d2d5f788;
+  --color-fg2aa: #d2d5f744;
+
+  --color-mg: #45507d;
+  --color-mga: #45507d88;
+  --color-mgaa: #45507d44;
+
+  --color-a1: #1cff77;
+  --color-a1a: #1cff7788;
+  --color-a1aa: #1cff7744;
+
+  --font-blob1: "Blob1";
+  --font-blob2: "Blob2";
+  --font-blob3: "Blob3";
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  overscroll-behavior: none;
+
+  background: var(--color-bg1);
+  color: var(--color-fg1);
+}
+
+button {
+  cursor: pointer;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: var(--color-a1a);
+  color: var(--color-fg1);
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+a:not(:has(button)) {
+  position: relative;
+
+  color: var(--color-a1);
+}
+
+a:not(:has(button))::before {
+  content: "";
+
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 100%;
+
+  height: 0.1rem;
+
+  background: currentColor;
+
+  transition: right 0.3s ease-in-out;
+}
+a:not(:has(button)):hover::before {
+  right: 0%;
+}
+
+ul {
+  list-style-type: disc;
+  padding-left: 2rem;
+  line-height: 2em;
+}
