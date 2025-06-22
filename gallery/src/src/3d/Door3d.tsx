@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DECO_GROUP,
-  getCollisions,
   getHat,
   nextId,
   rotateYCW90,
   SHADOWS,
+  useTrigger,
   type AzimuthName,
   type Box,
   type vec2,
@@ -160,7 +160,7 @@ export default function Door3d({
     ],
   };
 
-  const [triggered, setTriggered] = useState(false);
+  const triggered = useTrigger({ box: triggerBox });
   const changeTimeRef = useRef(0);
   useEffect(() => {
     changeTimeRef.current = Date.now() / 1e3;
@@ -192,10 +192,6 @@ export default function Door3d({
       setProngsVisible(nextProngsVisible);
     const nextCoreVisible = heightRef.current > 0;
     if (coreVisible !== nextCoreVisible) setCoreVisible(nextCoreVisible);
-
-    const nextTriggered = getCollisions(triggerBox, [1]).length > 0;
-    if (triggered === nextTriggered) return;
-    setTriggered(nextTriggered);
   });
 
   const { centerWedgeGeometry, sideWedgeGeometry } = useMemo(

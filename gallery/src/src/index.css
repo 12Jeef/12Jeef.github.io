@@ -55,7 +55,7 @@ body,
   overscroll-behavior: none;
 
   background: var(--color-bg1);
-  color: var(--color-fg1);
+  filter: brightness(1.5);
 }
 
 button {

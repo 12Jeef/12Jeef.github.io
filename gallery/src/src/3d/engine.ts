@@ -1,5 +1,5 @@
 import { useFrame, type RootState } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Object3D } from "three";
 
 // GENERIC
@@ -401,4 +401,22 @@ export const usePhysicsBox = ({
   });
 
   return { ...boxInfo, physicsRef, accelerate };
+};
+
+// USE TRIGGER
+
+export type UseTriggerProps = {
+  box: Box;
+  groupFilter?: number[];
+};
+export const useTrigger = ({ box, groupFilter = [1] }: UseTriggerProps) => {
+  const [triggered, setTriggered] = useState(false);
+
+  useEffect(() => {
+    const nextTriggered = getCollisions(box, groupFilter).length > 0;
+    if (triggered === nextTriggered) return;
+    setTriggered(nextTriggered);
+  });
+
+  return triggered;
 };

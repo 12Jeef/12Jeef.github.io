@@ -1,11 +1,10 @@
 import { Canvas, useThree } from "@react-three/fiber";
-import Box3d from "./3d/Box3d";
 import Player3d from "./3d/Player3d";
 import { useMemo } from "react";
 import { PerspectiveCamera } from "three";
-import Door3d from "./3d/Door3d";
-import Railing3d from "./3d/Railing3d";
 import { SHADOWS } from "./3d/engine";
+import MovingBox3d from "./3d/MovingBox3d";
+import StartingPlatform from "./features/StartingPlatform";
 
 function Internals() {
   const { gl } = useThree();
@@ -13,19 +12,39 @@ function Internals() {
 
   return (
     <>
-      <ambientLight color={0xffffff} intensity={2.5} />
-      <hemisphereLight color={0xffffff} groundColor={0x888888} intensity={5} />
+      <fog
+        attach="fog"
+        args={[
+          getComputedStyle(document.body).getPropertyValue("--color-bg1"),
+          10,
+          15,
+        ]}
+      ></fog>
+      <hemisphereLight
+        color={0xffffff}
+        groundColor={0x888888}
+        intensity={2}
+        castShadow={SHADOWS}
+      />
 
-      <Player3d position={[0, 0, 0]} />
-      <Box3d position={[0, -1, 0]} size={[5, 0.5, 5]} />
-      <Door3d facing="z" position={[0, -0.75, 1]} size={[2, 2]} />
-      <Door3d facing="z" position={[0, -0.75, -1]} size={[2, 2]} />
-      <Door3d facing="x" position={[1, -0.75, 0]} size={[2, 2]} />
-      <Door3d facing="x" position={[-1, -0.75, 0]} size={[2, 2]} />
-      <Railing3d start={[-2.5, -0.75, -2.5]} stop={[-2.5, -0.75, 2.5]} />
-      <Railing3d start={[-2.5, -0.75, 2.5]} stop={[2.5, -0.75, 2.5]} />
-      <Railing3d start={[2.5, -0.75, 2.5]} stop={[2.5, -0.75, -2.5]} />
-      <Railing3d start={[2.5, -0.75, -2.5]} stop={[-2.5, -0.75, -2.5]} />
+      <Player3d position={[0, 3, 0]} />
+
+      <StartingPlatform position={[0, 0, 0]} size={[7.5, 7.5]} />
+
+      {new Array(10).fill(null).map((_, i) => (
+        <MovingBox3d
+          size={[2, 0.5, 2]}
+          keyframes={[
+            { position: [0, -4, -7.5 / 2 - 1], duration: 1e-3 },
+            {
+              position: [0, -0.25, -7.5 / 2 - 1 - 2 * i],
+              duration: 3,
+              prefixDelay: 0.5 * i,
+            },
+          ]}
+          loop={false}
+        />
+      ))}
     </>
   );
 }

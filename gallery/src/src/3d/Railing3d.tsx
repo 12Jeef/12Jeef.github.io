@@ -15,7 +15,7 @@ export default function Railing3d({
   start,
   stop,
   height = 1,
-  gap = 1.5,
+  gap = 1,
   thickness = 0.1,
 }: Railing3dProps) {
   const [startX, startY, startZ] = start;
@@ -50,22 +50,15 @@ export default function Railing3d({
           (startZ + stopZ) / 2,
         ]}
         scale={[
-          azimuth === "z" ? thickness : length,
+          azimuth === "z" ? thickness : length + thickness,
           thickness,
-          azimuth === "z" ? length : thickness,
+          azimuth === "z" ? length + thickness : thickness,
         ]}
         castShadow={SHADOWS}
         receiveShadow={SHADOWS}
       ></mesh>
       {Array.from(new Array(n).keys()).map((i) => {
-        const t =
-          clamp(
-            (i - (n - 1) / 2) * gap,
-            (-length + thickness) / 2,
-            (length - thickness) / 2,
-          ) /
-            length +
-          0.5;
+        const t = clamp(((i - (n - 1) / 2) * gap) / length + 0.5, 0, 1);
         const x = lerp(startX, stopX, t);
         const z = lerp(startZ, stopZ, t);
         return (
