@@ -24,6 +24,7 @@ export type Light3dProps = {
   radius: number;
 
   on?: boolean;
+  showMesh?: boolean;
 
   distanceMult?: number;
   intensityMult?: number;
@@ -36,6 +37,7 @@ export default function Light3d({
   color,
   radius,
   on = true,
+  showMesh = true,
   distanceMult = 1,
   intensityMult = 1,
   update,
@@ -51,11 +53,13 @@ export default function Light3d({
   return (
     <>
       <object3D ref={ref} position={position}>
-        <mesh
-          geometry={lightGeometry}
-          material={on ? getLightMaterial(color) : defaultMaterial}
-          scale={[radius, radius, radius]}
-        ></mesh>
+        {showMesh && (
+          <mesh
+            geometry={lightGeometry}
+            material={on ? getLightMaterial(color) : defaultMaterial}
+            scale={[radius, radius, radius]}
+          ></mesh>
+        )}
         {on && (
           <pointLight
             color={color}

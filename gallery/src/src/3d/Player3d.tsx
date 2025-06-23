@@ -42,7 +42,7 @@ export default function Player3d({ position }: { position?: vec3 }) {
       const airborne = physicsRef.current.airborne >= 3;
 
       const a = (airborne ? 2.5 : 25) * (shift ? 0.3 : 1);
-      const aY = airborne ? 0 : 200;
+      const aY = airborne ? 0 : 150;
       const ax = x * a;
       const ay = y * aY;
       const az = z * a;
@@ -55,10 +55,17 @@ export default function Player3d({ position }: { position?: vec3 }) {
       if (box.position[1] < -20) box.position = position ?? [0, 0, 0];
     },
     render: (box, state) => {
-      state.camera.position.set(
-        box.position[0],
-        box.position[1] + box.size[1] * 0.25,
-        box.position[2],
+      const x = box.position[0];
+      const y = box.position[1] + box.size[1] * 0.25;
+      const z = box.position[2];
+      state.camera.position.setX(
+        state.camera.position.x + 0.25 * (x - state.camera.position.x),
+      );
+      state.camera.position.setY(
+        state.camera.position.y + 0.25 * (y - state.camera.position.y),
+      );
+      state.camera.position.setZ(
+        state.camera.position.z + 0.25 * (z - state.camera.position.z),
       );
     },
   });

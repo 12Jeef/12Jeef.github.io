@@ -8,6 +8,7 @@ export type vec2 = [number, number];
 export type vec3 = [number, number, number];
 
 export const SHADOWS = false;
+export const FAST = true;
 
 // AXIS
 
@@ -82,8 +83,22 @@ export const getCollision = (
   staticBox: Box,
   dynamicBox: Box,
 ): Collision | null => {
+  let topCollision: Collision | null = null;
   const axesCollisions: Collision[] = [];
   for (let j = 0; j < 3; j++) {
+    if (j === 1) {
+      const staticTop = staticBox.position[j] + staticBox.size[j] / 2;
+      const dynamicBottom = dynamicBox.position[j] - dynamicBox.size[j] / 2;
+      const shiftToTop = staticTop - dynamicBottom;
+      if (shiftToTop > 0 && shiftToTop <= 0.25) {
+        topCollision = {
+          axis: { name: "y", sign: "+" },
+          shift: shiftToTop,
+          box: staticBox,
+        };
+        console.log(topCollision);
+      }
+    }
     const shift =
       Math.abs(staticBox.position[j] - dynamicBox.position[j]) -
       (staticBox.size[j] + dynamicBox.size[j]) / 2;
@@ -98,6 +113,7 @@ export const getCollision = (
     });
   }
   if (axesCollisions.length < 3) return null;
+  if (topCollision) return topCollision;
   axesCollisions.sort((a, b) => a.shift - b.shift);
   return axesCollisions[0];
 };
@@ -409,11 +425,11 @@ export type UseTriggerProps = {
   box: Box;
   groupFilter?: number[];
 };
-export const useTrigger = ({ box, groupFilter = [1] }: UseTriggerProps) => {
+export const useTrigger = ({ box, groupFilter }: UseTriggerProps) => {
   const [triggered, setTriggered] = useState(false);
 
-  useEffect(() => {
-    const nextTriggered = getCollisions(box, groupFilter).length > 0;
+  useFrame(() => {
+    const nextTriggered = getCollisions(box, groupFilter ?? [1]).length > 0;
     if (triggered === nextTriggered) return;
     setTriggered(nextTriggered);
   });

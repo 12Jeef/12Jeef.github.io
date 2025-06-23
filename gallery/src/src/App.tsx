@@ -2,9 +2,11 @@ import { Canvas, useThree } from "@react-three/fiber";
 import Player3d from "./3d/Player3d";
 import { useMemo } from "react";
 import { PerspectiveCamera } from "three";
-import { SHADOWS } from "./3d/engine";
-import MovingBox3d from "./3d/MovingBox3d";
+import { FAST, SHADOWS } from "./3d/engine";
 import StartingPlatform from "./features/StartingPlatform";
+import MovingPlatform from "./features/MovingPlatform";
+import Box3d from "./3d/Box3d";
+import MainPlatform from "./features/MainPlatform";
 
 function Internals() {
   const { gl } = useThree();
@@ -29,22 +31,18 @@ function Internals() {
 
       <Player3d position={[0, 3, 0]} />
 
-      <StartingPlatform position={[0, 0, 0]} size={[7.5, 7.5]} />
-
-      {new Array(10).fill(null).map((_, i) => (
-        <MovingBox3d
-          size={[2, 0.5, 2]}
-          keyframes={[
-            { position: [0, -4, -7.5 / 2 - 1], duration: 1e-3 },
-            {
-              position: [0, -0.25, -7.5 / 2 - 1 - 2 * i],
-              duration: 3,
-              prefixDelay: 0.5 * i,
-            },
-          ]}
-          loop={false}
-        />
-      ))}
+      <StartingPlatform position={[0, 0, 0]} size={[7.5, 7.5]} gateSize={3} />
+      <MovingPlatform
+        start={[0, -0.25, -7.5 / 2 - 3 / 2]}
+        stop={[0, -0.25, -40 + 3 / 2]}
+        size={[3, 3]}
+        velocity={0.75 * (FAST ? 5 : 1)}
+      />
+      <MainPlatform
+        position={[0, 0, -40 - 15 / 2]}
+        size={[15, 15]}
+        gateSize={3}
+      />
     </>
   );
 }

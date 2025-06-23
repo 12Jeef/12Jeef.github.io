@@ -1,34 +1,11 @@
-import { useMemo, useState } from "react";
-import Box3d, { defaultGeometry, defaultMaterial } from "../3d/Box3d";
-import type { vec2, vec3 } from "../3d/engine";
+import { useMemo } from "react";
+import { defaultGeometry, defaultMaterial } from "../3d/Box3d";
+import type { vec3 } from "../3d/engine";
 import Light3d from "../3d/Light3d";
 import Railing3d from "../3d/Railing3d";
-import { useFrame } from "@react-three/fiber";
 import { lerp } from "three/src/math/MathUtils.js";
-
-function BlinkingLight({
-  position,
-  offset = 0,
-}: {
-  position: vec3;
-  offset?: number;
-}) {
-  const [on, setOn] = useState(true);
-  useFrame(() => {
-    const nextOn = (Date.now() / 1e3 + 2 * offset) % 2 < 0.5;
-    if (on !== nextOn) setOn(nextOn);
-  });
-
-  return (
-    <Light3d
-      position={position}
-      color={0xff0000}
-      radius={0.1}
-      on={on}
-      intensityMult={25}
-    />
-  );
-}
+import BlinkingLight3d from "../3d/BlinkingLight3d";
+import Platform3d, { type Platform3dProps } from "../3d/Platform3d";
 
 function OrbitLight({
   position,
@@ -103,25 +80,19 @@ function Pillar({ position }: { position: vec3 }) {
   );
 }
 
-export type StartingPlatformProps = {
-  position: vec3;
-  size: vec2;
-  depth?: number;
+export type StartingPlatformProps = Platform3dProps & {
+  gateSize: number;
 };
 
 export default function StartingPlatform({
+  gateSize,
+
   position,
   size,
-  depth = 20,
+  ...props
 }: StartingPlatformProps) {
   const [x, y, z] = position;
   const [w, h] = size;
-
-  const platformDepth = 1;
-  const decoShift = -0.25;
-  const decoSize = [1.5, 3];
-  const innerShift = 0.5;
-  const innerSize = [w - innerShift, h - innerShift];
 
   const railThickness = 0.1;
 
@@ -141,37 +112,15 @@ export default function StartingPlatform({
 
   return (
     <>
-      <Box3d
-        position={[x, y - platformDepth / 2, z]}
-        size={[w, platformDepth, h]}
-      />
+      <Platform3d position={position} size={size} {...props} />
       {[
         [1, 1],
         [-1, 1],
         [1, -1],
         [-1, -1],
-      ].map(([sx, sz], i) => (
-        <>
-          <mesh
-            key={i}
-            geometry={defaultGeometry}
-            material={defaultMaterial}
-            position={[
-              x + sx * (w / 2 + decoShift),
-              y - platformDepth / 2 - decoSize[1] / 2,
-              z + sz * (h / 2 + decoShift),
-            ]}
-            scale={[decoSize[0], decoSize[1], decoSize[0]]}
-          ></mesh>
-          <Pillar position={[x + sx * w, y, z + sz * h]} />
-        </>
+      ].map(([sx, sz]) => (
+        <Pillar position={[x + sx * w, y, z + sz * h]} />
       ))}
-      <mesh
-        geometry={defaultGeometry}
-        material={defaultMaterial}
-        position={[x, y - platformDepth / 2 - depth / 2, z]}
-        scale={[innerSize[0], depth, innerSize[1]]}
-      ></mesh>
 
       <Railing3d
         start={[x - railX, y, z - railZ]}
@@ -190,38 +139,41 @@ export default function StartingPlatform({
       />
       <Railing3d
         start={[x - railX, y, z - railZ]}
-        stop={[x - 1, y, z - railZ]}
+        stop={[x - gateSize / 2, y, z - railZ]}
         thickness={railThickness}
       />
       <Railing3d
         start={[x + railX, y, z - railZ]}
-        stop={[x + 1, y, z - railZ]}
+        stop={[x + gateSize / 2, y, z - railZ]}
         thickness={railThickness}
       />
 
-      <BlinkingLight
-        position={[
-          x + innerSize[0] / 2 - 0.5,
-          y - platformDepth / 2 - decoSize[1] - 2,
-          z - innerSize[1] / 2 - 0.05,
-        ]}
+      <BlinkingLight3d
+        position={[x + w / 2 - 0.75, y - 5, z - h / 2 + 0.2]}
+        color={0xff0000}
+        radius={0.1}
+        intensityMult={25}
+        duration={2}
         offset={0}
+        percentOn={0.25}
       />
-      <BlinkingLight
-        position={[
-          x + innerSize[0] / 2 - 0.5,
-          y - platformDepth / 2 - decoSize[1] - 2.5,
-          z - innerSize[1] / 2 - 0.05,
-        ]}
+      <BlinkingLight3d
+        position={[x + w / 2 - 0.75, y - 5.5, z - h / 2 + 0.2]}
+        color={0xff0000}
+        radius={0.1}
+        intensityMult={25}
+        duration={2}
         offset={0.25}
+        percentOn={0.25}
       />
-      <BlinkingLight
-        position={[
-          x - innerSize[0] / 2 + 0.5,
-          y - platformDepth / 2 - decoSize[1] - 4,
-          z - innerSize[1] / 2 - 0.05,
-        ]}
-        offset={0.75}
+      <BlinkingLight3d
+        position={[x - w / 2 + 0.75, y - 7.5, z - h / 2 + 0.2]}
+        color={0xff0000}
+        radius={0.1}
+        intensityMult={25}
+        duration={2}
+        offset={0.5}
+        percentOn={0.25}
       />
 
       {orbitLights.map((light) => (

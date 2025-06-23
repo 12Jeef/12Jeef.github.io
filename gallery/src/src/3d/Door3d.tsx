@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DECO_GROUP,
+  FAST,
   getHat,
   nextId,
   rotateYCW90,
@@ -116,6 +117,8 @@ export type Door3dProps = {
   position: vec3;
   size: vec2;
 
+  overrideTrigger?: boolean;
+
   thickness?: number;
   showUpper?: boolean;
   showLower?: boolean;
@@ -128,6 +131,7 @@ export default function Door3d({
   facing,
   position,
   size,
+  overrideTrigger,
   thickness = 0.1,
   showUpper = true,
   showLower = true,
@@ -147,25 +151,25 @@ export default function Door3d({
     rotateYCW90({ sign: "+", name: facing }),
   ).map((v) => Math.abs(v));
 
-  const triggerBoxId = useMemo(() => nextId(), []);
+  const triggerId = useMemo(() => nextId(), []);
   const triggerBox: Box = {
-    id: triggerBoxId,
+    id: triggerId,
     name: "Door3dTrigger",
 
     position: [baseX, baseY + height / 2, baseZ],
     size: [
-      facingX * 2.5 + rightX * width * 1.25,
+      facingX * 2.5 + rightX * width * 1.25 - 0.25,
       height,
-      facingZ * 2.5 + rightZ * width * 1.25,
+      facingZ * 2.5 + rightZ * width * 1.25 - 0.25,
     ],
   };
-
   const triggered = useTrigger({ box: triggerBox });
+  const actuallyTriggered = overrideTrigger ?? triggered;
   const changeTimeRef = useRef(0);
   useEffect(() => {
     changeTimeRef.current = Date.now() / 1e3;
     heightVeloRef.current = 0;
-  }, [triggered]);
+  }, [actuallyTriggered]);
 
   const heightRef = useRef(height);
   const heightVeloRef = useRef(0);
@@ -175,9 +179,9 @@ export default function Door3d({
     const time = Date.now() / 1e3 - changeTimeRef.current;
     if (time > 0) {
       const a = lerp(0, 1.5, Math.min(1, (time - 0) / 2));
-      if (triggered) heightVeloRef.current -= a * dt;
+      if (actuallyTriggered) heightVeloRef.current -= a * dt;
       else heightVeloRef.current += a * dt;
-      heightRef.current += heightVeloRef.current * dt;
+      heightRef.current += heightVeloRef.current * dt * (FAST ? 5 : 1);
     }
     if (heightRef.current <= -prongHeight / 2) {
       heightRef.current = -prongHeight / 2;
