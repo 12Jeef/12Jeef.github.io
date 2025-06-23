@@ -1,11 +1,11 @@
 import { useMemo } from "react";
-import { defaultGeometry, defaultMaterial } from "../3d/Box3d";
 import type { vec3 } from "../3d/engine";
 import Light3d from "../3d/Light3d";
 import Railing3d from "../3d/Railing3d";
 import { lerp } from "three/src/math/MathUtils.js";
 import BlinkingLight3d from "../3d/BlinkingLight3d";
 import Platform3d, { type Platform3dProps } from "../3d/Platform3d";
+import Pillar3d from "../3d/Pillar3d";
 
 function OrbitLight({
   position,
@@ -41,42 +41,6 @@ function OrbitLight({
         obj.position.set(x + dx, y + dy, z + dz);
       }}
     />
-  );
-}
-
-function Pillar({ position }: { position: vec3 }) {
-  const [x, y, z] = position;
-
-  return (
-    <>
-      <mesh
-        geometry={defaultGeometry}
-        material={defaultMaterial}
-        position={position}
-        scale={[2, 40, 2]}
-      ></mesh>
-      {[
-        [1, 0],
-        [-1, 0],
-        [0, 1],
-        [0, -1],
-      ].map(([sx, sz]) => (
-        <>
-          <mesh
-            geometry={defaultGeometry}
-            material={defaultMaterial}
-            position={[x + sx * 0.75, y - 20 + 15 / 2, z + sz * 0.75]}
-            scale={[1, 15, 1]}
-          ></mesh>
-          <mesh
-            geometry={defaultGeometry}
-            material={defaultMaterial}
-            position={[x + sx * 0.75, y + 20 - 15 / 2, z + sz * 0.75]}
-            scale={[1, 15, 1]}
-          ></mesh>
-        </>
-      ))}
-    </>
   );
 }
 
@@ -119,7 +83,21 @@ export default function StartingPlatform({
         [1, -1],
         [-1, -1],
       ].map(([sx, sz]) => (
-        <Pillar position={[x + sx * w, y, z + sz * h]} />
+        <Pillar3d position={[x + sx * w, y, z + sz * h]} height={40} size={2} />
+      ))}
+      {Array.from(new Array(4).keys()).map((i) => (
+        <>
+          <Pillar3d
+            position={[x + w, y, z - h * (i + 2)]}
+            height={40}
+            size={2}
+          />
+          <Pillar3d
+            position={[x - w, y, z - h * (i + 2)]}
+            height={40}
+            size={2}
+          />
+        </>
       ))}
 
       <Railing3d

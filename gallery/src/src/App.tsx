@@ -5,7 +5,6 @@ import { PerspectiveCamera } from "three";
 import { FAST, SHADOWS } from "./3d/engine";
 import StartingPlatform from "./features/StartingPlatform";
 import MovingPlatform from "./features/MovingPlatform";
-import Box3d from "./3d/Box3d";
 import MainPlatform from "./features/MainPlatform";
 
 function Internals() {

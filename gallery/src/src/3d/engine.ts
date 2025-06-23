@@ -96,7 +96,6 @@ export const getCollision = (
           shift: shiftToTop,
           box: staticBox,
         };
-        console.log(topCollision);
       }
     }
     const shift =
