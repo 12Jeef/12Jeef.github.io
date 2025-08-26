@@ -85,7 +85,7 @@ export default function StartingPlatform({
       ].map(([sx, sz]) => (
         <Pillar3d position={[x + sx * w, y, z + sz * h]} height={40} size={2} />
       ))}
-      {Array.from(new Array(4).keys()).map((i) => (
+      {Array.from(new Array(3).keys()).map((i) => (
         <>
           <Pillar3d
             position={[x + w, y, z - h * (i + 2)]}

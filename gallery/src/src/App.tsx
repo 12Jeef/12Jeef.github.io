@@ -38,8 +38,8 @@ function Internals() {
         velocity={0.75 * (FAST ? 5 : 1)}
       />
       <MainPlatform
-        position={[0, 0, -40 - 15 / 2]}
-        size={[15, 15]}
+        position={[0, 0, -40 - 10 / 2]}
+        size={[10, 10]}
         gateSize={3}
       />
     </>
