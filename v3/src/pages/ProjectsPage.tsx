@@ -168,8 +168,17 @@ function FeaturedProject({
       <motion.div
         className="max-h-full"
         style={{ width: sidePercent + "%", maxWidth: sidePercent + "%" }}
-        initial={{ scale: 0, x: side === "left" ? "-50%" : "50%" }}
-        whileInView={{ scale: 1, x: "0%", transition: defaultMotionSpring({}) }}
+        initial={{
+          scale: 0.75,
+          opacity: 0,
+          x: side === "left" ? "-25%" : "25%",
+        }}
+        whileInView={{
+          scale: 1,
+          opacity: 1,
+          x: "0%",
+          transition: defaultMotionSpring({}),
+        }}
       >
         <motion.div
           className="group relative max-w-full max-h-full rounded-[3rem] overflow-hidden bg-a1 cursor-pointer"
@@ -215,11 +224,13 @@ function FeaturedProject({
           className="text-3xl font-black"
           variants={{
             hidden: {
-              scale: 0,
-              x: side === "left" ? "100%" : "-100%",
+              scale: 0.75,
+              opacity: 0,
+              x: side === "left" ? "50%" : "-50%",
             },
             visible: {
               scale: 1,
+              opacity: 1,
               x: "0%",
             },
           }}
@@ -240,11 +251,13 @@ function FeaturedProject({
           }}
           variants={{
             hidden: {
-              scale: 0,
-              x: side === "left" ? "100%" : "-100%",
+              scale: 0.75,
+              opacity: 0,
+              x: side === "left" ? "50%" : "-50%",
             },
             visible: {
               scale: 1,
+              opacity: 1,
               x: "0%",
             },
           }}
@@ -264,8 +277,13 @@ function Project({ title, urls = "", tags = [], children }: ProjectProps) {
   return (
     <motion.div
       className="w-[20rem] max-w-[20rem] h-[25rem] max-h-[25rem] bg-bg1 p-8 rounded-[2rem] flex flex-col gap-4"
-      initial={{ scale: 0, y: "-50%" }}
-      whileInView={{ scale: 1, y: "0%", transition: defaultMotionSpring({}) }}
+      initial={{ scale: 0.75, opacity: 0, y: "-25%" }}
+      whileInView={{
+        scale: 1,
+        opacity: 1,
+        y: "0%",
+        transition: defaultMotionSpring({}),
+      }}
       style={{
         filter: "drop-shadow(0 0 1rem #0008)",
       }}
@@ -434,6 +452,7 @@ export default function ProjectsPage() {
           urls={{
             main: "https://github.com/12Jeef/CelestialJS",
             github: "https://github.com/12Jeef/CelestialJS",
+            open: "https://12jeef.github.io/CelestialJS/",
           }}
         >
           A top down space shooter game where you defeat asteroids and enemies.

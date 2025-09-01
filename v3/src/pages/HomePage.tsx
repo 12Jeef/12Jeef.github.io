@@ -18,9 +18,10 @@ function IconButton({
   return (
     <a href={href}>
       <motion.button
-        initial={{ scale: 0, x: "-100%", y: "-100%" }}
+        initial={{ scale: 0.75, opacity: 0, x: "-50%", y: "-50%" }}
         animate={{
           scale: 1,
+          opacity: 1,
           x: "0%",
           y: "0%",
           transition: defaultMotionSpring({ delay }),
@@ -39,9 +40,10 @@ function IconButton({
 
 export default function HomePage() {
   const makeProps = (x: number, delay: number) => ({
-    initial: { scale: 0, x: x * -100 + "%", y: "-100%" },
+    initial: { scale: 0.75, opacity: 0, x: x * -50 + "%", y: "-50%" },
     animate: {
       scale: 1,
+      opacity: 1,
       x: "0%",
       y: "0%",
       transition: defaultMotionSpring({ delay }),
@@ -62,9 +64,10 @@ export default function HomePage() {
       <Title className="mb-10" />
       <motion.p
         className="text-[1.25rem] text-fg2"
-        initial={{ scale: 0, y: "-100%", height: "0em" }}
+        initial={{ scale: 0.75, opacity: 0, y: "-50%", height: "0em" }}
         animate={{
           scale: 1,
+          opacity: 1,
           y: "0",
           height: "1.5em",
           transition: defaultMotionSpring({ delay: 0.5 }),
@@ -74,9 +77,10 @@ export default function HomePage() {
       </motion.p>
       <motion.p
         className="text-[1.25rem] text-fg2"
-        initial={{ scale: 0, y: "-100%", height: "0em" }}
+        initial={{ scale: 0.75, opacity: 0, y: "-50%", height: "0em" }}
         animate={{
           scale: 1,
+          opacity: 1,
           y: "0",
           height: "1.5em",
           transition: defaultMotionSpring({ delay: 0.8 }),

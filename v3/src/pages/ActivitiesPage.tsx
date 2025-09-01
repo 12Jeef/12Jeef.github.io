@@ -43,9 +43,9 @@ function Pane({
   return (
     <motion.section
       className={`absolute top-0 left-0 right-0 flex flex-col gap-2 ${className}`}
-      initial={{ scale: 0 }}
-      animate={{ scale: 1, transition: defaultMotionSpring({}) }}
-      exit={{ scale: 0 }}
+      initial={{ scale: 0.75, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1, transition: defaultMotionSpring({}) }}
+      exit={{ scale: 0.75, opacity: 0 }}
       style={{
         transformOrigin: "0 0",
       }}

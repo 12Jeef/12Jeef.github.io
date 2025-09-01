@@ -39,7 +39,10 @@ export const defaultParentVariants = ({
 };
 
 export const defaultChildVariants = ({}) => {
-  return { hidden: { scale: 0 }, visible: { scale: 1 } };
+  return {
+    hidden: { scale: 0.75, opacity: 0 },
+    visible: { scale: 1, opacity: 1 },
+  };
 };
 
 export const defaultParentProps = ({

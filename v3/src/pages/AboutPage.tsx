@@ -27,9 +27,10 @@ function Section({
     >
       <motion.h1
         className="text-a1 text-5xl font-black lowercase"
-        initial={{ scale: 0 }}
+        initial={{ scale: 0.75, opacity: 0 }}
         whileInView={{
           scale: 1,
+          opacity: 1,
           transition: defaultMotionSpring({}),
         }}
         style={{ transformOrigin: "0 0" }}
