@@ -12,7 +12,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 type PaneName = "frc" | "sssip" | "cosmos" | "acf" | "lbl";
-const paneNames: PaneName[] = ["frc", "sssip", "cosmos", "acf", "lbl"];
+const paneNames: PaneName[] = ["lbl", "sssip", "cosmos", "frc", "acf"];
 
 function Ul({
   delay,
@@ -69,7 +69,7 @@ export type ActivitiesPageProps = { pane?: string };
 export default function ActivitiesPage({ pane: thePane }: ActivitiesPageProps) {
   const navigate = useNavigate();
 
-  const pane = (thePane ?? "frc") as PaneName;
+  const pane = (thePane ?? "lbl") as PaneName;
 
   return (
     <Page key="ActivitiesPage" className="h-full">
