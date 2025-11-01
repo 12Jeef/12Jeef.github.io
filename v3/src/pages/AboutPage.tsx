@@ -71,6 +71,16 @@ export default function AboutPage() {
 
   const awards = [
     {
+      name: "AP Scholar with Distinction",
+      href: "https://apstudents.collegeboard.org/awards-recognitions/ap-scholar-award",
+      suffix: "2025",
+    },
+    {
+      name: "National Merit Semifinalist",
+      href: "https://www.nationalmerit.org/s/1758/start.aspx?gid=2&pgid=61",
+      suffix: "2025",
+    },
+    {
       name: "FRC Auto Award",
       href: "https://www.firstinspires.org/resource-library/frc/awards-based-on-machine-creativity-innovation",
     },
@@ -180,9 +190,10 @@ export default function AboutPage() {
         >
           <motion.p {...defaultChildProps({})}>
             I started programming in 2018 (8th grade) in{" "}
-            <a href="https://scratch.mit.edu/">Scratch</a> before teaching
-            myself Python and <a href="https://www.pygame.org/docs/">PyGame</a>,
-            just so I could continue making games just as I had in Scratch.
+            <a href="https://scratch.mit.edu/users/jfan-deanza/">Scratch</a>{" "}
+            before teaching myself Python and{" "}
+            <a href="https://www.pygame.org/docs/">PyGame</a>, just so I could
+            continue making games just as I had in Scratch.
           </motion.p>
           <motion.p {...defaultChildProps({})}>
             Following the game-dev dream, I started doing web development, since

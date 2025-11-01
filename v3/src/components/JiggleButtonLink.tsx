@@ -19,7 +19,7 @@ export default function JiggleButtonLink({
           <JiggleButton {...props} />
         </Link>
       )}
-      {href && (
+      {typeof href === "string" && (
         <a href={href}>
           <JiggleButton {...props} />
         </a>
