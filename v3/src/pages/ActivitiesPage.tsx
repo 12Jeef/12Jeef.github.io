@@ -11,8 +11,8 @@ import {
 } from "../features/jiggle";
 import { useNavigate } from "react-router-dom";
 
-type PaneName = "frc" | "sssip" | "cosmos" | "acf" | "lbl";
-const paneNames: PaneName[] = ["lbl", "sssip", "cosmos", "frc", "acf"];
+type PaneName = "frc" | "sssip" | "cosmos" | "acf" | "lbl" | "pub";
+const paneNames: PaneName[] = ["lbl", "cosmos", "sssip", "frc", "acf", "pub"];
 
 function Ul({
   delay,
@@ -115,7 +115,7 @@ export default function ActivitiesPage({ pane: thePane }: ActivitiesPageProps) {
                   title="Software Captain"
                   location="FIRST Robotics Competition"
                   locationUrl="https://www.team6036.com/"
-                  time="August 2023 - Present"
+                  time="September 2022 - Present"
                 >
                   <Ul delay={0.3} className="text-fg2">
                     <Li>Management of a team of over 30 software recruits</Li>
@@ -265,7 +265,7 @@ export default function ActivitiesPage({ pane: thePane }: ActivitiesPageProps) {
                   title="General Intern"
                   location="LBL"
                   locationUrl="https://scienceit-docs.lbl.gov/hpc/"
-                  time="2024"
+                  time="2024-2025"
                 >
                   <Ul delay={0.3} className="text-fg2">
                     <Li>
@@ -295,6 +295,61 @@ export default function ActivitiesPage({ pane: thePane }: ActivitiesPageProps) {
                       <a href="https://en.wikipedia.org/wiki/DNA#Alternative_DNA_structures">
                         forms
                       </a>
+                    </Li>
+                  </Ul>
+                </Pane>
+              )}
+              {pane === "pub" && (
+                <Pane
+                  key="pub"
+                  title="Researcher"
+                  location=""
+                  locationUrl=""
+                  time="2023-2025"
+                >
+                  <Ul delay={0.3} className="text-fg2">
+                    <Li>
+                      First author of a research paper on specific molecular
+                      insight of IsPETase, a PET-degrading enzyme, and proposed
+                      future research directions including alkaline-stability
+                      and reducing amide group distances to ester, in 2025,
+                      currently submitted. Titled:{" "}
+                      <i>
+                        Active Site Local Environment Allows Acidic and Basic
+                        Synergy in Enzymatic Ester Hydrolysis by PETase
+                      </i>
+                    </Li>
+                    <Li>
+                      First author of a{" "}
+                      <a href="https://www.mdpi.com/2673-5601/5/4/52">
+                        review paper
+                      </a>{" "}
+                      on the specific immune system effects of
+                      micro/nanoplastics in 2025, titled:{" "}
+                      <i>
+                        Micro- and Nanoplastics and the Immune System:
+                        Mechanistic Insights and Future Directions
+                      </i>
+                    </Li>
+                    <Li>
+                      Coauthored a{" "}
+                      <a href="https://pubmed.ncbi.nlm.nih.gov/40600832/">
+                        research paper
+                      </a>{" "}
+                      on the enzymatic mechanisms of a plastizyme in 2025,
+                      titled:{" "}
+                      <i>
+                        Molecular Insight Into the Hydrolysis of Phthalate
+                        Esters by a Family IV Esterase
+                      </i>
+                    </Li>
+                    <Li>
+                      Created{" "}
+                      <a href="https://docs.google.com/presentation/d/1JpkKavw91ZA6D9Y7LGdCvxBNj0th03M81-iCdGtyXX4/edit?usp=sharing">
+                        poster
+                      </a>{" "}
+                      on the general health effects of micro/nanoplastic
+                      exposure in 2023
                     </Li>
                   </Ul>
                 </Pane>
