@@ -1,9 +1,9 @@
 import { useFrame, useThree, type ThreeElements } from "@react-three/fiber";
 import FancyLight from "./FancyLight";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { LinearFilter, Mesh, Object3D, Texture, Vector3 } from "three";
 import { lerp } from "three/src/math/MathUtils.js";
-import { materialBackground, type Artwork } from "./Game";
+import { context, materialBackground, type Artwork } from "./Game";
 
 export type WallProps = ThreeElements["object3D"] & {
   width?: number;
@@ -32,6 +32,8 @@ export default function Wall({
   children,
   ...props
 }: WallProps) {
+  const { mobile } = useContext(context);
+
   const ref = useRef<Object3D | null>(null);
   const meshRef = useRef<Mesh | null>(null);
   const worldPosition = useMemo(() => new Vector3(), []);
@@ -122,8 +124,15 @@ export default function Wall({
     const distance = Math.min(
       ...positions.map((position) => position.distanceTo(worldPosition)),
     );
+    const distanceZ = Math.min(
+      ...positions.map((position) => Math.abs(position.z - worldPosition.z)),
+    );
 
-    const close = !!artwork && distance < (width / 2) * 1.5;
+    const close =
+      !!artwork &&
+      (mobile
+        ? distance < width * 2 && distanceZ < width / 2
+        : distance < (width / 2) * 1.5);
     if (closeRef.current != close) {
       closeRef.current = close;
       if (close) onClose?.();
@@ -139,7 +148,7 @@ export default function Wall({
 
     const timeSinceChange = now - loadChangeTimeRef.current;
     const show =
-      timeSinceChange > 0.5
+      timeSinceChange > (mobile ? 0 : 0.5)
         ? load
         : (() => {
             const timeSinceFlicker = now - flickerChangeTimeRef.current;

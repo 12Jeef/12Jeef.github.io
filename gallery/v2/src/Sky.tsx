@@ -13,7 +13,7 @@ import { createBloomCanvas } from "./FancyLight";
 import { lerp } from "three/src/math/MathUtils.js";
 import { materialBackground } from "./Game";
 
-const skyBlooms = ["#ffffff", "#aaaaff", "#aaccff", "#0088ff"].map((color) =>
+const skyBlooms = ["#ffffff", "#aaaaff", "#aaccff", "#88ddff"].map((color) =>
   createBloomCanvas(256, color, 1),
 );
 const skyTextures = skyBlooms.map((bloom) => {
@@ -32,18 +32,22 @@ export default function Sky() {
   const introStartTime = useMemo(() => Date.now() / 1e3 + 1.5, []);
 
   const n = 500;
-  const scale = 0.1;
+  const scale = 0.15;
 
   useFrame(({ camera }) => {
     const obj = ref.current;
     if (!obj) return;
-    obj.position.set(camera.position.x, 4, camera.position.z);
+    obj.position.set(
+      camera.position.x,
+      camera.position.y + 3,
+      camera.position.z,
+    );
 
     const globalAlpha = Math.min(1, (Date.now() / 1e3 - introStartTime) / 3);
 
     const galaxy = galaxyRef.current;
     if (!galaxy) return;
-    (galaxy.material as MeshBasicMaterial).opacity = 0.5 * globalAlpha;
+    (galaxy.material as MeshBasicMaterial).opacity = 0.75 * globalAlpha;
 
     const stars = starsRef.current;
     if (!stars) return;
@@ -121,10 +125,10 @@ export default function Sky() {
       {galaxyTexture && (
         <mesh
           ref={galaxyRef}
-          position={[0, 1.5, 0]}
+          position={[0, 2, 0]}
           rotation={[Math.PI / 2, 0, 0]}
         >
-          <planeGeometry args={[15, 15]} />
+          <planeGeometry args={[17.5 * (16 / 9), 17.5]} />
           <meshBasicMaterial
             map={galaxyTexture}
             color={0xffffff}
@@ -147,7 +151,7 @@ export default function Sky() {
             <spriteMaterial
               map={skyTextures[Math.floor(skyTextures.length * state[3])]}
               transparent
-              depthWrite={false}
+              depthWrite={true}
               blending={AdditiveBlending}
             />
           </sprite>

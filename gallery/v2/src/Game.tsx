@@ -3,7 +3,7 @@ import { PointerLockControls } from "@react-three/drei";
 import Player from "./Player";
 import Wall from "./Wall";
 import { Fragment } from "react/jsx-runtime";
-import { useEffect, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { GiArrowCursor, GiMove } from "react-icons/gi";
 import Inspect from "./Inspect";
@@ -14,9 +14,9 @@ import {
 } from "./displays";
 import Sky from "./Sky";
 
-export const cssBackground = "#000011";
-export const materialBackground = "#000022";
-export const lightBackground = "#000044";
+export const cssBackground = "#000022"; // "#000011";
+export const materialBackground = "#000033"; // "#000022";
+export const lightBackground = "#000066"; // "#000044";
 
 export type Artwork = {
   name: string;
@@ -26,17 +26,23 @@ export type Artwork = {
   canvas: HTMLCanvasElement;
 };
 
-export type Artworks = { [key: string]: Artwork };
+export type Artworks = Artwork[];
 
 const introDisplay = createIntroDisplay();
 const digitalArtDisplay = createDigitalArtDisplay();
 const traditionalArtDisplay = createTraditionalArtDisplay();
 
+export type Context = {
+  mobile: boolean;
+};
+
+export const context = createContext<Context>({ mobile: false });
+
 export type GameParams = {};
 
 export default function Game({}: GameParams) {
-  const [digitalArtworks, setDigitalArtworks] = useState<Artworks>({});
-  const nDigitalArtworks = Object.keys(digitalArtworks).length;
+  const [digitalArtworks, setDigitalArtworks] = useState<Artworks>([]);
+  const nDigitalArtworks = digitalArtworks.length;
 
   useEffect(() => {
     (async () => {
@@ -75,7 +81,7 @@ export default function Game({}: GameParams) {
   }, []);
 
   const [tutorial, setTutorial] = useState<
-    "INTRO" | "LOCK" | "LOOK" | "MOVE" | "DONE" | "RELOCK"
+    "INTRO" | "LOCK" | "LOOK" | "MOVE" | "RELOCK" | "DONE"
   >("INTRO");
   const [close, setClose] = useState<Artwork | null>(null);
   const [inspect, setInspect] = useState<Artwork | null>(null);
@@ -112,204 +118,234 @@ export default function Game({}: GameParams) {
     if (inspect) controls.unlock();
   }, [inspect, controls]);
 
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const onResize = () => setMobile(window.innerWidth < window.innerHeight);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   return (
-    <div
-      className="relative w-full h-full"
-      style={{ background: cssBackground }}
-    >
-      <Canvas
-        shadows
-        onMouseMove={() => {
-          if (tutorial === "LOOK") setTutorial("MOVE");
-        }}
+    <context.Provider value={{ mobile }}>
+      <div
+        className="relative w-full h-full"
+        style={{ background: cssBackground }}
       >
-        <fogExp2 attach="fog" args={[cssBackground, 0.1]} />
-        <ambientLight color={lightBackground} intensity={1} />
-
-        <Sky />
-
-        <PointerLockControls
-          ref={setControls}
-          enabled={tutorial != "INTRO"}
-          onLock={() => {
-            if (tutorial === "LOCK") setTutorial("LOOK");
-            else if (tutorial === "RELOCK") setTutorial("DONE");
+        <Canvas
+          shadows
+          onMouseMove={() => {
+            if (tutorial === "LOOK") setTutorial("MOVE");
           }}
-          onUnlock={() => {
-            if (tutorial === "DONE") setTutorial("RELOCK");
-            else setTutorial("LOCK");
-          }}
-        />
-        <Player
-          onIntroDone={() => setTutorial("LOCK")}
-          onMove={() => {
-            if (tutorial === "MOVE") setTutorial("DONE");
-          }}
-          onInspect={() => setInspect(close)}
-          loopDigital={nDigitalArtworks * 3 + 3}
-        />
+        >
+          <fogExp2 attach="fog" args={[cssBackground, 0.1]} />
+          <ambientLight color={lightBackground} intensity={1} />
 
-        <Wall
-          height={3}
-          lights={2}
-          position={[0, 0, 0]}
-          canvas={introDisplay}
-          onLost={onLost}
-          onFound={onFound}
-        />
-        <Wall
-          height={3}
-          lights={2}
-          position={[-10, 0, 1]}
-          rotation={[0, Math.PI / 2, 0]}
-          canvas={digitalArtDisplay}
-          onLost={onLost}
-          onFound={onFound}
-        />
-        <Wall
-          height={3}
-          lights={2}
-          position={[10, 0, 1]}
-          rotation={[0, -Math.PI / 2, 0]}
-          canvas={traditionalArtDisplay}
-          onLost={onLost}
-          onFound={onFound}
-        />
-        {Object.values(digitalArtworks).map((artwork, i) => (
-          <Fragment key={artwork.file}>
-            <Wall
-              position={[-10, 0, 1 - (i + 1) * 3]}
-              rotation={[0, Math.PI / 2, 0]}
-              artwork={artwork}
-              onClose={() => setClose(artwork)}
-              onFar={() => setClose(null)}
-              loop={nDigitalArtworks * 3 + 3}
-              onLost={onLost}
-              onFound={onFound}
-            />
-            <Wall
-              position={[-10, 0, 1 - (i - nDigitalArtworks) * 3]}
-              rotation={[0, Math.PI / 2, 0]}
-              artwork={artwork}
-              onClose={() => setClose(artwork)}
-              onFar={() => setClose(null)}
-              loop={nDigitalArtworks * 3 + 3}
-              onLost={onLost}
-              onFound={onFound}
-            />
-          </Fragment>
-        ))}
-      </Canvas>
-      <div className="absolute top-0 bottom-0 left-0 right-0 edge-blur"></div>
-      <div className="absolute bottom-0 left-1/2">
-        <AnimatePresence>
-          {(tutorial === "LOCK" || tutorial === "RELOCK") && !lost && (
-            <motion.div
-              key="LOCK"
-              initial={{ bottom: "-4rem", opacity: 0 }}
-              animate={{
-                bottom: "2rem",
-                opacity: 1,
-                transition: { duration: 0.5, ease: "easeOut" },
-              }}
-              exit={{
-                bottom: "-4rem",
-                opacity: 0,
-                transition: { duration: 0.5, ease: "easeOut" },
-              }}
-              className="absolute left-1/2 -translate-x-1/2 font-black text-xl text-white flex flex-row items-center justify-center gap-4"
-            >
-              <GiArrowCursor size={100} />
-            </motion.div>
-          )}
-          {tutorial === "LOOK" && (
-            <motion.div
-              key="LOOK"
-              initial={{ bottom: "-4rem", opacity: 0 }}
-              animate={{
-                bottom: "2rem",
-                opacity: 1,
-                transition: { duration: 0.5, ease: "easeOut" },
-              }}
-              exit={{
-                bottom: "-4rem",
-                opacity: 0,
-                transition: { duration: 0.5, ease: "easeOut" },
-              }}
-              className="absolute left-1/2 -translate-x-1/2 font-black text-xl text-white flex flex-row items-center justify-center gap-4"
-            >
-              <GiMove size={100} />
-            </motion.div>
-          )}
-          {tutorial === "MOVE" && (
-            <motion.div
-              key="MOVE"
-              initial={{ bottom: "-4rem", opacity: 0 }}
-              animate={{
-                bottom: "2rem",
-                opacity: 1,
-                transition: { duration: 0.5, ease: "easeOut" },
-              }}
-              exit={{
-                bottom: "-4rem",
-                opacity: 0,
-                transition: { duration: 0.5, ease: "easeOut" },
-              }}
-              className="absolute left-1/2 -translate-x-1/2 font-black text-xl text-white flex flex-row items-center justify-center gap-4"
-            >
-              <div
-                className="grid gap-2 text-3xl text-black"
-                style={{
-                  gridTemplateRows: "repeat(2, 4rem)",
-                  gridTemplateColumns: "repeat(3, 4rem)",
-                }}
-              >
-                <div className=""></div>
-                <div className="bg-white rounded-xl flex flex-row items-center justify-center">
-                  W
-                </div>
-                <div className=""></div>
-                <div className="bg-white rounded-xl flex flex-row items-center justify-center">
-                  A
-                </div>
-                <div className="bg-white rounded-xl flex flex-row items-center justify-center">
-                  S
-                </div>
-                <div className="bg-white rounded-xl flex flex-row items-center justify-center">
-                  D
-                </div>
-              </div>
-            </motion.div>
-          )}
-          {tutorial === "DONE" && !lost && close && !inspect && (
-            <motion.div
-              key="inspect"
-              initial={{ bottom: "-4rem", opacity: 0 }}
-              animate={{
-                bottom: "2rem",
-                opacity: 1,
-                transition: { duration: 0.5, ease: "easeOut" },
-              }}
-              exit={{
-                bottom: "-4rem",
-                opacity: 0,
-                transition: { duration: 0.5, ease: "easeOut" },
-              }}
-              className="absolute left-1/2 -translate-x-1/2 font-black text-xl text-white flex flex-row items-center justify-center gap-4"
-            >
-              <div
-                className="bg-white rounded-xl text-3xl text-black flex flex-row items-center justify-center"
-                style={{ width: "4rem", height: "4rem" }}
-              >
-                E
-              </div>
-              <span className="text-3xl font-light">Inspect</span>
-            </motion.div>
-          )}
-          {(tutorial === "DONE" || tutorial === "RELOCK") &&
-            lost &&
-            !close &&
-            !inspect && (
+          <Sky />
+
+          <PointerLockControls
+            ref={setControls}
+            enabled={!mobile && tutorial !== "INTRO"}
+            onLock={() => {
+              if (tutorial === "LOCK") setTutorial("LOOK");
+              else if (tutorial === "RELOCK") setTutorial("DONE");
+            }}
+            onUnlock={() => {
+              if (tutorial === "DONE") setTutorial("RELOCK");
+              else setTutorial("LOCK");
+            }}
+          />
+
+          <Player
+            onIntroDone={() => setTutorial("LOCK")}
+            onMove={() => {
+              if (tutorial === "MOVE") setTutorial("DONE");
+            }}
+            onInspect={() => setInspect(close)}
+            onSwipe={(swipe) => {
+              if (!inspect) return;
+              if (swipe.direction === "down" || swipe.direction === "up")
+                setInspect(null);
+              else {
+                if (digitalArtworks.includes(inspect))
+                  setInspect(
+                    digitalArtworks[
+                      (digitalArtworks.indexOf(inspect) +
+                        (swipe.direction === "left"
+                          ? 1
+                          : -1 + digitalArtworks.length)) %
+                        digitalArtworks.length
+                    ],
+                  );
+              }
+            }}
+            inspecting={!!inspect}
+            nDigital={nDigitalArtworks}
+            loopDigital={nDigitalArtworks * 3 + 3}
+          />
+
+          <Wall
+            height={3}
+            lights={2}
+            position={[0, 0, 0]}
+            canvas={introDisplay}
+            onLost={onLost}
+            onFound={onFound}
+          />
+          <Wall
+            height={3}
+            lights={2}
+            position={[-10, 0, 1]}
+            rotation={[0, Math.PI / 2, 0]}
+            canvas={digitalArtDisplay}
+            onLost={onLost}
+            onFound={onFound}
+          />
+          <Wall
+            height={3}
+            lights={2}
+            position={[10, 0, 1]}
+            rotation={[0, -Math.PI / 2, 0]}
+            canvas={traditionalArtDisplay}
+            onLost={onLost}
+            onFound={onFound}
+          />
+          {digitalArtworks.map((artwork, i) => (
+            <Fragment key={artwork.file}>
+              <Wall
+                position={[-10, 0, 1 - (i + 1) * 3]}
+                rotation={[0, Math.PI / 2, 0]}
+                artwork={artwork}
+                onClose={() => setClose(artwork)}
+                onFar={() => setClose(null)}
+                loop={nDigitalArtworks * 3 + 3}
+                onLost={onLost}
+                onFound={onFound}
+              />
+              <Wall
+                position={[-10, 0, 1 - (i - nDigitalArtworks) * 3]}
+                rotation={[0, Math.PI / 2, 0]}
+                artwork={artwork}
+                onClose={() => setClose(artwork)}
+                onFar={() => setClose(null)}
+                loop={nDigitalArtworks * 3 + 3}
+                onLost={onLost}
+                onFound={onFound}
+              />
+            </Fragment>
+          ))}
+        </Canvas>
+        <div className="absolute top-0 bottom-0 left-0 right-0 edge-blur"></div>
+        <div className="absolute bottom-0 left-1/2">
+          <AnimatePresence>
+            {!lost && !mobile && (
+              <>
+                {(tutorial === "LOCK" || tutorial === "RELOCK") && (
+                  <motion.div
+                    key="LOCK"
+                    initial={{ bottom: "-4rem", opacity: 0 }}
+                    animate={{
+                      bottom: "2rem",
+                      opacity: 1,
+                      transition: { duration: 0.5, ease: "easeOut" },
+                    }}
+                    exit={{
+                      bottom: "-4rem",
+                      opacity: 0,
+                      transition: { duration: 0.5, ease: "easeOut" },
+                    }}
+                    className="absolute left-1/2 -translate-x-1/2 font-black text-xl text-white flex flex-row items-center justify-center gap-4"
+                  >
+                    <GiArrowCursor size={100} />
+                  </motion.div>
+                )}
+                {tutorial === "LOOK" && (
+                  <motion.div
+                    key="LOOK"
+                    initial={{ bottom: "-4rem", opacity: 0 }}
+                    animate={{
+                      bottom: "2rem",
+                      opacity: 1,
+                      transition: { duration: 0.5, ease: "easeOut" },
+                    }}
+                    exit={{
+                      bottom: "-4rem",
+                      opacity: 0,
+                      transition: { duration: 0.5, ease: "easeOut" },
+                    }}
+                    className="absolute left-1/2 -translate-x-1/2 font-black text-xl text-white flex flex-row items-center justify-center gap-4"
+                  >
+                    <GiMove size={100} />
+                  </motion.div>
+                )}
+                {tutorial === "MOVE" && (
+                  <motion.div
+                    key="MOVE"
+                    initial={{ bottom: "-4rem", opacity: 0 }}
+                    animate={{
+                      bottom: "2rem",
+                      opacity: 1,
+                      transition: { duration: 0.5, ease: "easeOut" },
+                    }}
+                    exit={{
+                      bottom: "-4rem",
+                      opacity: 0,
+                      transition: { duration: 0.5, ease: "easeOut" },
+                    }}
+                    className="absolute left-1/2 -translate-x-1/2 font-black text-xl text-white flex flex-row items-center justify-center gap-4"
+                  >
+                    <div
+                      className="grid gap-2 text-3xl text-black"
+                      style={{
+                        gridTemplateRows: "repeat(2, 4rem)",
+                        gridTemplateColumns: "repeat(3, 4rem)",
+                      }}
+                    >
+                      <div className=""></div>
+                      <div className="bg-white rounded-xl flex flex-row items-center justify-center">
+                        W
+                      </div>
+                      <div className=""></div>
+                      <div className="bg-white rounded-xl flex flex-row items-center justify-center">
+                        A
+                      </div>
+                      <div className="bg-white rounded-xl flex flex-row items-center justify-center">
+                        S
+                      </div>
+                      <div className="bg-white rounded-xl flex flex-row items-center justify-center">
+                        D
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+                {tutorial === "DONE" && close && !inspect && (
+                  <motion.div
+                    key="inspect"
+                    initial={{ bottom: "-4rem", opacity: 0 }}
+                    animate={{
+                      bottom: "2rem",
+                      opacity: 1,
+                      transition: { duration: 0.5, ease: "easeOut" },
+                    }}
+                    exit={{
+                      bottom: "-4rem",
+                      opacity: 0,
+                      transition: { duration: 0.5, ease: "easeOut" },
+                    }}
+                    className="absolute left-1/2 -translate-x-1/2 font-black text-xl text-white flex flex-row items-center justify-center gap-4"
+                  >
+                    <div
+                      className="bg-white rounded-xl text-3xl text-black flex flex-row items-center justify-center"
+                      style={{ width: "4rem", height: "4rem" }}
+                    >
+                      E
+                    </div>
+                    <span className="text-3xl font-light">Inspect</span>
+                  </motion.div>
+                )}
+              </>
+            )}
+            {!mobile && lost && (
               <motion.div
                 key="lost"
                 initial={{ bottom: "-4rem", opacity: 0 }}
@@ -340,11 +376,39 @@ export default function Game({}: GameParams) {
                 </button>
               </motion.div>
             )}
+            {mobile && close && (
+              <motion.div
+                key="inspect"
+                initial={{ bottom: "-4rem", opacity: 0 }}
+                animate={{
+                  bottom: "2rem",
+                  opacity: 1,
+                  transition: { duration: 0.5, ease: "easeOut" },
+                }}
+                exit={{
+                  bottom: "-4rem",
+                  opacity: 0,
+                  transition: { duration: 0.5, ease: "easeOut" },
+                }}
+                className="absolute left-1/2 -translate-x-1/2 font-black text-xl text-white flex flex-row items-center justify-center gap-4 w-80"
+              >
+                <button
+                  className="bg-white rounded-xl text-3xl text-black flex flex-row items-center justify-center px-8 py-3"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setInspect(close);
+                  }}
+                >
+                  Inspect
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+        <AnimatePresence>
+          {inspect && <Inspect artwork={inspect} />}
         </AnimatePresence>
       </div>
-      <AnimatePresence>
-        {inspect && <Inspect artwork={inspect} />}
-      </AnimatePresence>
-    </div>
+    </context.Provider>
   );
 }

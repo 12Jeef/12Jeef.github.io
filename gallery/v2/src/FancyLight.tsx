@@ -11,7 +11,7 @@ export function createBloomCanvas(
   invert = false,
 ) {
   const ctx = createCanvas(size, size);
-  ctx.globalAlpha = alpha;
+  ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
   const gradient = ctx.createRadialGradient(
     size / 2,
     size / 2,
@@ -20,8 +20,14 @@ export function createBloomCanvas(
     size / 2,
     size / 2,
   );
-  gradient.addColorStop(invert ? 1 : 0, color);
-  gradient.addColorStop(invert ? 0 : 1, "rgba(0,0,0,0)");
+  let start = alpha > 1 ? alpha - 1 : 0,
+    end = 1;
+  if (invert) {
+    start = 1 - start;
+    end = 1 - end;
+  }
+  gradient.addColorStop(start, color);
+  gradient.addColorStop(end, "rgba(0,0,0,0)");
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, size, size);
   return ctx.canvas;
