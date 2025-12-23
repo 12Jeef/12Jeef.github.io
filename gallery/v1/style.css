@@ -1,0 +1,227 @@
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+@keyframes blur-in {
+  0% {
+    transform: scale(1.5);
+
+    filter: blur(60px);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(var(--scale));
+
+    filter: blur(0);
+    opacity: 1;
+  }
+}
+
+body {
+  --blur-px: 0px;
+  /* --scale: 1.25; */
+  --scale: 1;
+
+  background-color: #000;
+  color: var(--text-color);
+
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+}
+
+button {
+  border: none;
+  outline: none;
+
+  cursor: pointer;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin: 0;
+}
+
+* {
+  box-sizing: border-box;
+
+  color: inherit;
+
+  font-family: inherit;
+}
+
+body > canvas,
+body > div.css-overlay,
+body > div.hud,
+body > div.ui {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  transform: scale(var(--scale));
+
+  filter: blur(var(--blur-px));
+
+  animation: blur-in 3s ease-out;
+}
+
+/* body > div.css-overlay {
+  background: radial-gradient(
+    farthest-corner ellipse at center,
+    #fff0 50%,
+    #fff4 100%
+  );
+} */
+body > div.css-overlay .infobox {
+  display: block;
+
+  font-size: 12px;
+  font-weight: 400;
+}
+body > div.css-overlay h1.infobox {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+body > div.css-overlay h2.infobox {
+  font-size: 25px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+body > div.css-overlay h3.infobox {
+  font-size: 20px;
+  font-weight: 800;
+}
+body > div.css-overlay h4.infobox {
+  font-size: 15px;
+  font-weight: 800;
+}
+body > div.css-overlay h5.infobox,
+body > div.css-overlay h6.infobox {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+body > div.hud {
+  pointer-events: none;
+}
+body > div.hud > * {
+  pointer-events: all;
+}
+body > div.hud > div.inspect {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translate(-50%, 200px);
+
+  padding: 20px 30px;
+  padding-top: 15px;
+
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+  gap: 20px;
+
+  background-color: #fff4;
+  color: #fff;
+  border-radius: 20px;
+
+  transition: transform 0.25s;
+}
+body > div.hud.inspecting > div.inspect {
+  transform: translate(-50%, 0);
+}
+body > div.hud > div.inspect > button {
+  background-color: transparent;
+
+  font-size: 40px;
+  font-weight: 800;
+}
+body > div.hud > div.inspect > button > span {
+  transition: margin 0.25s;
+}
+body > div.hud > div.inspect > button > span:first-child {
+  margin-right: 10px;
+}
+body > div.hud > div.inspect > button:hover > span:first-child {
+  margin-right: 20px;
+}
+body > div.hud > div.inspect > button > span:last-child {
+  margin-left: 10px;
+}
+body > div.hud > div.inspect > button:hover > span:last-child {
+  margin-left: 20px;
+}
+body > div.hud > div.inspect > div {
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+body > div.ui {
+  background-color: #0008;
+  backdrop-filter: blur(10px);
+
+  opacity: 0;
+  visibility: hidden;
+
+  transition: opacity 0.25s, visibility 0.25s;
+}
+body > div.ui.this {
+  opacity: 1;
+  visibility: inherit;
+}
+body > div.ui > div.artwork {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+body > div.ui > div.artwork > img {
+  user-select: none;
+
+  cursor: zoom-in;
+}
+body > div.ui > div.placard {
+  position: absolute;
+  bottom: 40px;
+  right: 40px;
+  transform: translateY(500px);
+
+  min-width: 200px;
+  max-width: 400px;
+  padding: 20px;
+
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: stretch;
+  align-content: center;
+  gap: 10px;
+
+  background-color: #fff;
+  color: #000;
+
+  transition: transform 0.25s;
+}
+body > div.ui.this > div.placard {
+  transform: translateY(0);
+}
