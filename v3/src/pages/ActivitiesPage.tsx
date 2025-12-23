@@ -320,6 +320,17 @@ export default function ActivitiesPage({ pane: thePane }: ActivitiesPageProps) {
                       </i>
                     </Li>
                     <Li>
+                      Participated in a large research team in 2024 to study the
+                      relationship between certain protein buildups and
+                      restrictive cardiomyopathy. Focused on echocardiogram
+                      image analysis and processing, along with data processing
+                      with Python. Paper currently under review. Titled:{" "}
+                      <i>
+                        Too rigid to strike: Excess desmin at Z-discs underlies
+                        a restrictive cardiomyopathy in GAN mice
+                      </i>
+                    </Li>
+                    <Li>
                       First author of a{" "}
                       <a href="https://www.mdpi.com/2673-5601/5/4/52">
                         review paper

@@ -362,6 +362,20 @@ export default function ProjectsPage() {
       </motion.section>
       <section className="mt-16 flex flex-wrap justify-center items-center gap-8">
         <Project
+          title="Virtual Art Gallery V2"
+          tags={["TS", "Three.JS", "React Three Fiber", "UI"]}
+          urls={{
+            main: "https://12jeef.github.io/gallery/",
+            github:
+              "https://github.com/12Jeef/12Jeef.github.io/tree/main/gallery/v2",
+            open: "https://12jeef.github.io/gallery/",
+          }}
+        >
+          My second iteration of my virtual art gallery, with a strong focus on
+          light and immersion. I really enjoyed the super dynamic camera effect
+          I made. Check it out!
+        </Project>
+        <Project
           title="CellLuminex"
           tags={["TS", "Algorithm", "UI"]}
           urls={{
@@ -409,6 +423,19 @@ export default function ProjectsPage() {
         >
           My first iteration of my portfolio website. Built using basic HTML,
           JS, and CSS.
+        </Project>
+        <Project
+          title="Virtual Art Gallery V1"
+          tags={["TS", "Three.JS", "UI"]}
+          urls={{
+            main: "https://12jeef.github.io/gallery/v1/",
+            github:
+              "https://github.com/12Jeef/12Jeef.github.io/tree/main/gallery/v1",
+            open: "https://12jeef.github.io/gallery/v1/",
+          }}
+        >
+          My first iteration of my art gallery! It's totally broken right now,
+          but has some functional bits.
         </Project>
         <Project
           title="Biotech Sandboxes"
