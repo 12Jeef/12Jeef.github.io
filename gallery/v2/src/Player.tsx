@@ -1,14 +1,21 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import { Object3D } from "three";
+import { lerp } from "three/src/math/MathUtils.js";
+
+function easeInOutCubic(x: number): number {
+  return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+}
 
 export type PlayerProps = {
+  onIntroDone?: () => void;
   onMove?: () => void;
   onInspect?: () => void;
   loopDigital: number;
 };
 
 export default function Player({
+  onIntroDone,
   onMove,
   onInspect,
   loopDigital,
@@ -32,7 +39,19 @@ export default function Player({
     document.body.addEventListener("keyup", onKeyUp);
   }, []);
 
+  const introRef = useRef(true);
+  const introStartTime = useMemo(() => Date.now() / 1e3, []);
+
   useFrame(({ camera }, dt) => {
+    if (introRef.current) {
+      const t = Math.min(1, (Date.now() / 1e3 - introStartTime) / 3);
+      camera.rotation.set(lerp(Math.PI / 3, 0, easeInOutCubic(t)), 0, 0, "XZY");
+      if (t >= 1) {
+        introRef.current = false;
+        onIntroDone?.();
+      }
+    }
+
     const yaw = camera.rotation.reorder("XZY").y;
     const accel = 50;
     const forward =
@@ -71,7 +90,7 @@ export default function Player({
     keysUp.clear();
     const floor = floorRef.current;
     if (floor) floor.position.set(camera.position.x, -0.5, camera.position.z);
-  });
+  }, -2);
 
   return (
     <>

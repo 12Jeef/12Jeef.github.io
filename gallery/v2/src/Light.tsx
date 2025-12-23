@@ -1,4 +1,4 @@
-import type { ThreeElements } from "@react-three/fiber";
+import { useThree, type ThreeElements } from "@react-three/fiber";
 import { useEffect, useState } from "react";
 import { AdditiveBlending, Object3D, SpotLight } from "three";
 
@@ -25,9 +25,12 @@ export default function Light({
       spotLight.position.z,
     );
   }, [spotLight, target]);
+  const gl = useThree((state) => state.gl);
+  const beefy = gl.capabilities.maxTextures > 16;
+
   return (
     <object3D position={position} rotation={rotation} {...props}>
-      <spotLight ref={setSpotLight} {...props} castShadow />
+      <spotLight ref={setSpotLight} {...props} castShadow={beefy} />
       <object3D ref={setTarget} />
       <mesh>
         <sphereGeometry args={[radius * 0.75]} />

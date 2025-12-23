@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "rm -rf ./dist; tsc -b && vite build; rm -rf ../assets; rm -rf ../art; mv ./dist/* ../; git add -A;",
+    "build": "rm -rf ./dist; tsc -b && vite build; rm -rf ../assets; rm -rf ../art; mv ./dist/* ../; python3 process.py; git add -A;",
     "lint": "eslint .",
     "preview": "vite preview"
   },

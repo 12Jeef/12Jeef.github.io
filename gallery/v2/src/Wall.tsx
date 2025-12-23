@@ -3,7 +3,7 @@ import FancyLight from "./FancyLight";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LinearFilter, Mesh, Object3D, Texture, Vector3 } from "three";
 import { lerp } from "three/src/math/MathUtils.js";
-import type { Artwork } from "./Game";
+import { materialBackground, type Artwork } from "./Game";
 
 export type WallProps = ThreeElements["object3D"] & {
   width?: number;
@@ -14,6 +14,8 @@ export type WallProps = ThreeElements["object3D"] & {
   onClose?: () => void;
   onFar?: () => void;
   loop?: number;
+  onLost?: () => void;
+  onFound?: () => void;
 };
 
 export default function Wall({
@@ -25,6 +27,8 @@ export default function Wall({
   onClose,
   onFar,
   loop,
+  onLost,
+  onFound,
   children,
   ...props
 }: WallProps) {
@@ -37,6 +41,8 @@ export default function Wall({
   const loadChangeTimeRef = useRef(-1e9);
   const flickerRef = useRef(true);
   const flickerChangeTimeRef = useRef(-1e9);
+
+  const lostRef = useRef(true);
 
   const renderedRef = useRef(false);
   const [rendered, setRendered] = useState(false);
@@ -53,8 +59,8 @@ export default function Wall({
   const artworkMarginX = 0.1;
   const artworkMarginY = 0.25;
 
-  const renderer = useThree((state) => state.gl);
-  const beefy = renderer.capabilities.maxTextures > 16;
+  const gl = useThree((state) => state.gl);
+  const beefy = gl.capabilities.maxTextures > 16;
 
   const [artworkTexture, setArtworkTexture] = useState<Texture | null>(null);
   useEffect(() => {
@@ -62,7 +68,7 @@ export default function Wall({
     const texture = new Texture(
       canvas ? canvas : artwork ? artwork.canvas : null,
     );
-    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    texture.anisotropy = gl.capabilities.getMaxAnisotropy();
     texture.minFilter = LinearFilter;
     texture.needsUpdate = true;
     setArtworkTexture(texture);
@@ -100,8 +106,8 @@ export default function Wall({
         return Math.abs(diff);
       }),
     );
-    const maxAngleDeviation = (beefy ? 60 : 30) * (Math.PI / 180);
-    const minAngleDeviation = (beefy ? 45 : 15) * (Math.PI / 180);
+    const maxAngleDeviation = 60 * (Math.PI / 180);
+    const minAngleDeviation = 45 * (Math.PI / 180);
     const desiredDistance =
       angleDeviation > maxAngleDeviation
         ? 5
@@ -146,12 +152,19 @@ export default function Wall({
           })();
     obj.visible = show;
 
-    const render = load && (beefy || angleDeviation < Math.PI / 2);
+    const render = load;
     if (renderedRef.current != render) {
       renderedRef.current = render;
       setRendered(render);
     }
-  });
+
+    const lost = distance > 10;
+    if (lostRef.current != lost) {
+      lostRef.current = lost;
+      if (lost) onLost?.();
+      else onFound?.();
+    }
+  }, -1);
 
   const scale = artworkTexture
     ? Math.min(
@@ -167,12 +180,14 @@ export default function Wall({
         <boxGeometry args={[width, height, 0.1]} />
         <meshPhongMaterial color={0xffffff} />
       </mesh>
+      {!beefy && (
+        <mesh position={[0, -0.05 + 0.01, -height / 2]}>
+          <boxGeometry args={[width, 0.1, height]} />
+          <meshBasicMaterial color={materialBackground} />
+        </mesh>
+      )}
       {artworkTexture && (
-        <mesh
-          position={[0, height / 2, 0.01]}
-          receiveShadow={false}
-          castShadow={false}
-        >
+        <mesh position={[0, height / 2, 0.01]}>
           <planeGeometry
             args={[artworkTexture.width * scale, artworkTexture.height * scale]}
           />

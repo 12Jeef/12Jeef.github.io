@@ -4,9 +4,12 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { createCanvas } from "./displays";
 
-const color = "#ffddbb";
-
-function createBloomCanvas(size: number, color: string, alpha: number) {
+export function createBloomCanvas(
+  size: number,
+  color: string,
+  alpha: number,
+  invert = false,
+) {
   const ctx = createCanvas(size, size);
   ctx.globalAlpha = alpha;
   const gradient = ctx.createRadialGradient(
@@ -17,13 +20,14 @@ function createBloomCanvas(size: number, color: string, alpha: number) {
     size / 2,
     size / 2,
   );
-  gradient.addColorStop(0, color);
-  gradient.addColorStop(1, "rgba(0,0,0,0)");
+  gradient.addColorStop(invert ? 1 : 0, color);
+  gradient.addColorStop(invert ? 0 : 1, "rgba(0,0,0,0)");
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, size, size);
   return ctx.canvas;
 }
 
+const color = "#ffddbb";
 const bloomCanvas = createBloomCanvas(256, color, 0.65);
 
 const bloomTexture = new Texture(bloomCanvas);
@@ -64,7 +68,7 @@ export default function FancyLight({
     const actualScale = bloomScale;
     scale * Math.min(Math.max(1, Math.pow(distance, 2) / 20), 3);
     bloom.scale.set(actualScale, actualScale, 1);
-  });
+  }, -1);
 
   return (
     <object3D position={position} rotation={rotation}>
