@@ -163,12 +163,7 @@ export default function Wall({
   return (
     <object3D ref={ref} visible={false} {...props}>
       {children}
-      <mesh
-        ref={meshRef}
-        position={[0, height / 2, -0.05]}
-        receiveShadow
-        castShadow
-      >
+      <mesh ref={meshRef} position={[0, height / 2, -0.05]} castShadow>
         <boxGeometry args={[width, height, 0.1]} />
         <meshPhongMaterial color={0xffffff} />
       </mesh>
