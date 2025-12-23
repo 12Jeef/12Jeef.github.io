@@ -11,8 +11,10 @@
   <body>
     <div id="root"></div>
     <script>
-      if (!window.location.pathname.endsWith("/"))
+      if (!window.location.pathname.endsWith("/")) {
         window.location.pathname += "/";
+        window.location.reload();
+      }
     </script>
   </body>
 </html>
