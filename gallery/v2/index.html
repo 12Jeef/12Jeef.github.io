@@ -8,6 +8,10 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="./src/main.tsx"></script>
+    <script>
+      if (!window.location.pathname.endsWith("/"))
+        window.location.pathname += "/";
+    </script>
   </body>
 </html>
