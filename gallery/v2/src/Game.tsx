@@ -154,6 +154,7 @@ export default function Game({}: GameParams) {
               artwork={artwork}
               onClose={() => setClose(artwork)}
               onFar={() => setClose(null)}
+              loop={nDigitalArtworks * 3 + 3}
             />
             <Wall
               position={[-10, 0, 1 - (i - nDigitalArtworks) * 3]}
@@ -161,6 +162,7 @@ export default function Game({}: GameParams) {
               artwork={artwork}
               onClose={() => setClose(artwork)}
               onFar={() => setClose(null)}
+              loop={nDigitalArtworks * 3 + 3}
             />
           </Fragment>
         ))}

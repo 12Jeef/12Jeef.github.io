@@ -1,7 +1,7 @@
 import { useFrame, useThree, type ThreeElements } from "@react-three/fiber";
 import FancyLight from "./FancyLight";
-import { useMemo, useRef } from "react";
-import { LinearFilter, Object3D, Texture, Vector3 } from "three";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { LinearFilter, Mesh, Object3D, Texture, Vector3 } from "three";
 import { lerp } from "three/src/math/MathUtils.js";
 import type { Artwork } from "./Game";
 
@@ -13,6 +13,7 @@ export type WallProps = ThreeElements["object3D"] & {
   canvas?: HTMLCanvasElement;
   onClose?: () => void;
   onFar?: () => void;
+  loop?: number;
 };
 
 export default function Wall({
@@ -23,16 +24,22 @@ export default function Wall({
   canvas,
   onClose,
   onFar,
+  loop,
   children,
   ...props
 }: WallProps) {
   const ref = useRef<Object3D | null>(null);
+  const meshRef = useRef<Mesh | null>(null);
   const worldPosition = useMemo(() => new Vector3(), []);
+  const cameraAltPosition = useMemo(() => new Vector3(), []);
   const closeRef = useRef(false);
   const loadedRef = useRef(false);
   const loadChangeTimeRef = useRef(-1e9);
   const flickerRef = useRef(true);
   const flickerChangeTimeRef = useRef(-1e9);
+
+  const renderedRef = useRef(false);
+  const [rendered, setRendered] = useState(false);
 
   const margin = 0.25;
   const top = 0.25;
@@ -47,48 +54,68 @@ export default function Wall({
   const artworkMarginY = 0.25;
 
   const renderer = useThree((state) => state.gl);
+  const beefy = renderer.capabilities.maxTextures > 16;
 
-  const artworkTexture = useMemo(() => {
+  const [artworkTexture, setArtworkTexture] = useState<Texture | null>(null);
+  useEffect(() => {
+    if (!rendered) return setArtworkTexture(null);
     const texture = new Texture(
       canvas ? canvas : artwork ? artwork.canvas : null,
     );
     texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
     texture.minFilter = LinearFilter;
     texture.needsUpdate = true;
-    return texture;
-  }, [canvas, artwork?.canvas]);
+    setArtworkTexture(texture);
+    return () => texture.dispose();
+  }, [rendered, canvas, artwork?.canvas]);
 
   useFrame(({ camera }) => {
     const obj = ref.current;
     if (!obj) return;
+    const mesh = meshRef.current;
+    if (!mesh) return;
     obj.getWorldPosition(worldPosition);
+
+    if (loop) {
+      cameraAltPosition.copy(camera.position);
+      if (camera.position.z > obj.position.z) cameraAltPosition.z -= loop;
+      else cameraAltPosition.z += loop;
+    }
+    const positions = loop
+      ? [camera.position, cameraAltPosition]
+      : [camera.position];
 
     const now = Date.now() / 1e3;
 
     const yaw = camera.rotation.reorder("XZY").y;
-    const desiredYaw =
-      Math.atan2(
-        worldPosition.x - camera.position.x,
-        worldPosition.z - camera.position.z,
-      ) + Math.PI;
-    const angleDeviation = Math.abs(
-      (() => {
+    const desiredYaws = positions.map(
+      (position) =>
+        Math.atan2(worldPosition.x - position.x, worldPosition.z - position.z) +
+        Math.PI,
+    );
+    const angleDeviation = Math.min(
+      ...desiredYaws.map((desiredYaw) => {
         let diff = desiredYaw - yaw;
         if (diff > Math.PI) diff -= 2 * Math.PI;
-        return diff;
-      })(),
+        return Math.abs(diff);
+      }),
     );
+    const maxAngleDeviation = (beefy ? 60 : 30) * (Math.PI / 180);
+    const minAngleDeviation = (beefy ? 45 : 15) * (Math.PI / 180);
     const desiredDistance =
-      angleDeviation > Math.PI / 3
+      angleDeviation > maxAngleDeviation
         ? 5
-        : angleDeviation > Math.PI / 4
+        : angleDeviation > minAngleDeviation
         ? lerp(
             5,
             10,
-            (angleDeviation - Math.PI / 3) / (Math.PI / 4 - Math.PI / 3),
+            (angleDeviation - maxAngleDeviation) /
+              (minAngleDeviation - maxAngleDeviation),
           )
         : 10;
-    const distance = camera.position.distanceTo(worldPosition);
+    const distance = Math.min(
+      ...positions.map((position) => position.distanceTo(worldPosition)),
+    );
 
     const close = !!artwork && distance < (width / 2) * 1.5;
     if (closeRef.current != close) {
@@ -118,6 +145,12 @@ export default function Wall({
             return flickerRef.current ? load : !load;
           })();
     obj.visible = show;
+
+    const render = load && (beefy || angleDeviation < Math.PI / 2);
+    if (renderedRef.current != render) {
+      renderedRef.current = render;
+      setRendered(render);
+    }
   });
 
   const scale = artworkTexture
@@ -128,14 +161,23 @@ export default function Wall({
     : 0;
 
   return (
-    <object3D ref={ref} {...props}>
+    <object3D ref={ref} visible={false} {...props}>
       {children}
-      <mesh position={[0, height / 2, -0.05]} receiveShadow castShadow>
+      <mesh
+        ref={meshRef}
+        position={[0, height / 2, -0.05]}
+        receiveShadow
+        castShadow
+      >
         <boxGeometry args={[width, height, 0.1]} />
         <meshPhongMaterial color={0xffffff} />
       </mesh>
       {artworkTexture && (
-        <mesh position={[0, height / 2, 0.01]}>
+        <mesh
+          position={[0, height / 2, 0.01]}
+          receiveShadow={false}
+          castShadow={false}
+        >
           <planeGeometry
             args={[artworkTexture.width * scale, artworkTexture.height * scale]}
           />
@@ -146,25 +188,26 @@ export default function Wall({
           />
         </mesh>
       )}
-      {Array.from(new Array(lights).keys()).map((i) => (
-        <FancyLight
-          key={i}
-          position={[
-            (width / (lights + margin)) * (i + (1 + margin) / 2) - width / 2,
-            height - top,
-            out,
-          ]}
-          rotation={[
-            tilt,
-            0,
-            (+(i === 0) - +(i === lights - 1)) * (Math.PI / 24),
-          ]}
-          angle={Math.PI * 0.25}
-          intensity={3 * (height / 2)}
-          decay={2 / (height / 2)}
-          radius={radius}
-        />
-      ))}
+      {rendered &&
+        Array.from(new Array(lights).keys()).map((i) => (
+          <FancyLight
+            key={i}
+            position={[
+              (width / (lights + margin)) * (i + (1 + margin) / 2) - width / 2,
+              height - top,
+              out,
+            ]}
+            rotation={[
+              tilt,
+              0,
+              (+(i === 0) - +(i === lights - 1)) * (Math.PI / 24),
+            ]}
+            angle={Math.PI * 0.25}
+            intensity={3 * (height / 2)}
+            decay={2 / (height / 2)}
+            radius={radius}
+          />
+        ))}
       <mesh position={[0, barHeight, out]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry
           args={[

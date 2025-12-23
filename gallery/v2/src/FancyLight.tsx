@@ -29,7 +29,9 @@ const bloomCanvas = createBloomCanvas(256, color, 0.65);
 const bloomTexture = new Texture(bloomCanvas);
 bloomTexture.needsUpdate = true;
 
-export type FancyLightProps = LightProps & { factor?: number };
+export type FancyLightProps = LightProps & {
+  factor?: number;
+};
 
 export default function FancyLight({
   ref,
@@ -48,25 +50,20 @@ export default function FancyLight({
 
   const scale = radius / 0.05;
 
-  const bloom1Scale = 0.7;
-  const bloom2Scale = 1;
+  const bloomScale = 0.7;
 
-  const bloom1Ref = useRef<Object3D | null>(null);
-  const bloom2Ref = useRef<Object3D | null>(null);
+  const bloomRef = useRef<Object3D | null>(null);
 
   useFrame(({ camera }) => {
-    for (let i = 0; i < 2; i++) {
-      const bloom = [bloom1Ref, bloom2Ref][i].current;
-      if (!bloom) continue;
-      const distance = camera.position.distanceTo(
-        bloom.getWorldPosition(worldPosition),
-      );
-      const bloomScale =
-        [bloom1Scale, bloom2Scale][i] *
-        scale *
-        Math.max(1, Math.pow(distance, 2) / 20);
-      bloom.scale.set(bloomScale, bloomScale, 1);
-    }
+    const bloom = bloomRef.current;
+    if (!bloom) return;
+    const distance = camera.position.distanceTo(
+      bloom.getWorldPosition(worldPosition),
+    );
+    if (distance > 10) return;
+    const actualScale = bloomScale;
+    scale * Math.min(Math.max(1, Math.pow(distance, 2) / 20), 3);
+    bloom.scale.set(actualScale, actualScale, 1);
   });
 
   return (
@@ -82,7 +79,7 @@ export default function FancyLight({
         <coneGeometry args={[coneRadius, coneHeight, 16, 1, false]} />
         <meshPhongMaterial color={0x000000} />
       </mesh>
-      <sprite ref={bloom1Ref} position={[0, -radius, 0]} scale={[0, 0, 1]}>
+      <sprite ref={bloomRef} position={[0, -radius, 0]} scale={[0, 0, 1]}>
         <spriteMaterial
           map={bloomTexture}
           transparent
