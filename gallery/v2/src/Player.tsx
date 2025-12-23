@@ -20,7 +20,6 @@ export type Swipe = {
 
 type Waypoint =
   | "HOME"
-  | "NAV"
   | { type: "DIGITAL"; piece: number }
   | { type: "TRADITIONAL"; piece: number };
 
@@ -29,8 +28,7 @@ function getWaypoint(
   position: Vector3,
   loopDigital: number,
 ): [number, number, number, number] {
-  if (waypoint === "HOME") return [0, 1, 5, 0];
-  if (waypoint === "NAV") return [0, 1.5, 2, 0];
+  if (waypoint === "HOME") return [0, 1.5, 2, 0];
   if (typeof waypoint === "object") {
     let z =
       waypoint.type === "DIGITAL"
@@ -182,11 +180,6 @@ export default function Player({
       if (waypointRef.current === "HOME") {
         for (const swipe of swipes) {
           if (!swipe.significant) continue;
-          if (swipe.direction === "down") waypointRef.current = "NAV";
-        }
-      } else if (waypointRef.current === "NAV") {
-        for (const swipe of swipes) {
-          if (!swipe.significant) continue;
           if (swipe.direction === "up") waypointRef.current = "HOME";
           if (swipe.direction === "right")
             waypointRef.current = { type: "DIGITAL", piece: 0 };
@@ -208,7 +201,7 @@ export default function Player({
             (nDigital + 1);
           if (waypointRef.current.piece === 0)
             if (swipe.direction === "up") {
-              waypointRef.current = "NAV";
+              waypointRef.current = "HOME";
               break;
             }
         }

@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 
 import { context, type Artwork } from "./Game";
-import { useContext, useEffect, useRef } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { lerp } from "three/src/math/MathUtils.js";
 
 export type InspectProps = { artwork: Artwork };
@@ -55,6 +55,8 @@ export default function Inspect({ artwork }: InspectProps) {
     };
   }, []);
 
+  const [show, setShow] = useState(false);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -69,22 +71,23 @@ export default function Inspect({ artwork }: InspectProps) {
       className="absolute top-0 bottom-0 left-0 right-0 bg-black/50 backdrop-blur-md"
       onClick={(e) => e.stopPropagation()}
     >
-      <div
+      <motion.div
         className="w-full h-full p-4 flex flex-row items-center justify-center"
-        style={{ paddingBottom: mobile ? "10rem" : "" }}
+        animate={{ paddingBottom: mobile ? (show ? "10rem" : "5rem") : "" }}
       >
         <img
           ref={ref}
           src={`./art/${artwork.file}.png`}
           className="max-w-full max-h-full cursor-zoom-in"
         />
-      </div>
+      </motion.div>
       <div
         className={
           mobile
             ? "absolute bottom-4 left-4 right-4 p-4 bg-white leading-1.1 text-sm"
             : "absolute bottom-8 right-8 p-4 bg-white max-w-100 leading-1.1 text-sm"
         }
+        onClick={() => setShow(!show)}
       >
         <h1 className="mb-1 font-black">
           {artwork.name}
@@ -109,7 +112,18 @@ export default function Inspect({ artwork }: InspectProps) {
             {artwork.date[2]}
           </span>
         </h1>
-        <p>{artwork.info}</p>
+        {!mobile && <p>{artwork.info}</p>}
+        {mobile && (
+          <motion.p
+            animate={{
+              maxHeight: show ? "25vh" : "0vh",
+              marginBottom: show ? "0rem" : "-0.25rem",
+            }}
+            className="overflow-hidden"
+          >
+            {artwork.info}
+          </motion.p>
+        )}
       </div>
     </motion.div>
   );
