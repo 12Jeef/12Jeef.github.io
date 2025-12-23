@@ -1,15 +1,15 @@
 import { useFrame, useThree, type ThreeElements } from "@react-three/fiber";
 import FancyLight from "./FancyLight";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
 import { LinearFilter, Object3D, Texture, Vector3 } from "three";
 import { lerp } from "three/src/math/MathUtils.js";
-import type { ArtworkData } from "./Game";
+import type { Artwork } from "./Game";
 
 export type WallProps = ThreeElements["object3D"] & {
   width?: number;
   height?: number;
   lights?: number;
-  artwork?: ArtworkData;
+  artwork?: Artwork;
   canvas?: HTMLCanvasElement;
   onClose?: () => void;
   onFar?: () => void;
@@ -48,41 +48,15 @@ export default function Wall({
 
   const renderer = useThree((state) => state.gl);
 
-  const [artworkTexture, setArtworkTexture] = useState<Texture | null>(null);
-  useEffect(() => {
-    const file = artwork?.file;
-    if (!file && !canvas) return setArtworkTexture(null);
-    const interval = setInterval(async () => {
-      if (!ref.current?.visible) return;
-      clearInterval(interval);
-      const texture = new Texture(
-        canvas
-          ? canvas
-          : await (async () => {
-              const image = await new Promise<HTMLImageElement>((res, rej) => {
-                const image = new Image();
-                image.addEventListener("load", () => res(image));
-                image.addEventListener("error", rej);
-                image.src = "./art/" + file + ".png";
-              });
-              const canvas = document.createElement("canvas");
-              const ctx = canvas.getContext("2d")!;
-              canvas.width = Math.round(image.width * 0.25);
-              canvas.height = Math.round(image.height * 0.25);
-              ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-              return canvas;
-            })(),
-      );
-      texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-      texture.minFilter = LinearFilter;
-      texture.needsUpdate = true;
-      setArtworkTexture(texture);
-    }, 100);
-    return () => {
-      clearInterval(interval);
-      artworkTexture?.dispose();
-    };
-  }, [canvas, artwork?.file]);
+  const artworkTexture = useMemo(() => {
+    const texture = new Texture(
+      canvas ? canvas : artwork ? artwork.canvas : null,
+    );
+    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    texture.minFilter = LinearFilter;
+    texture.needsUpdate = true;
+    return texture;
+  }, [canvas, artwork?.canvas]);
 
   useFrame(({ camera }) => {
     const obj = ref.current;

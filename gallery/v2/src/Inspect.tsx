@@ -1,10 +1,10 @@
 import { motion } from "motion/react";
 
-import type { ArtworkData } from "./Game";
+import type { Artwork } from "./Game";
 import { useEffect, useRef } from "react";
 import { lerp } from "three/src/math/MathUtils.js";
 
-export type InspectProps = { artwork: ArtworkData };
+export type InspectProps = { artwork: Artwork };
 
 export default function Inspect({ artwork }: InspectProps) {
   const ref = useRef<HTMLImageElement | null>(null);

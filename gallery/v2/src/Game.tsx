@@ -16,14 +16,15 @@ import {
 const background = "#000011";
 const lightBackground = "#000044";
 
-export type ArtworkData = {
+export type Artwork = {
   name: string;
   file: string;
   date: [number, number, number];
   info: string;
+  canvas: HTMLCanvasElement;
 };
 
-export type ArtworkDatas = { [key: string]: ArtworkData };
+export type Artworks = { [key: string]: Artwork };
 
 const introDisplay = createIntroDisplay();
 const digitalArtDisplay = createDigitalArtDisplay();
@@ -32,24 +33,50 @@ const traditionalArtDisplay = createTraditionalArtDisplay();
 export type GameParams = {};
 
 export default function Game({}: GameParams) {
-  const [digitalArtworkDatas, setDigitalArtworkDatas] = useState<ArtworkDatas>(
-    {},
-  );
-  const nDigitalArtworks = Object.keys(digitalArtworkDatas).length;
+  const [digitalArtworks, setDigitalArtworks] = useState<Artworks>({});
+  const nDigitalArtworks = Object.keys(digitalArtworks).length;
 
   useEffect(() => {
     (async () => {
+      await new Promise((res) => setTimeout(res, 500));
       const result = await fetch("./art/info-digital.json");
       const json = await result.json();
-      setDigitalArtworkDatas(json);
+      let imageLoadTime = 0,
+        canvasTime = 0,
+        t0 = 0,
+        t1 = 0;
+      await Promise.all(
+        Object.keys(json).map(async (key) => {
+          t0 = Date.now();
+          const image = await new Promise<HTMLImageElement>((res, rej) => {
+            const image = new Image();
+            image.addEventListener("load", () => res(image));
+            image.addEventListener("error", rej);
+            image.src = "./art/" + json[key].file + "_tiny.png";
+          });
+          t1 = Date.now();
+          imageLoadTime += t1 - t0;
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d")!;
+          canvas.width = image.width;
+          canvas.height = image.height;
+          ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+          json[key].canvas = canvas;
+          t0 = Date.now();
+          canvasTime += t0 - t1;
+        }),
+      );
+      console.log("image load time", imageLoadTime);
+      console.log("canvas time", canvasTime);
+      setDigitalArtworks(json);
     })();
   }, []);
 
   const [tutorial, setTutorial] = useState<
     "LOCK" | "LOOK" | "MOVE" | "DONE" | "RELOCK"
   >("LOCK");
-  const [close, setClose] = useState<ArtworkData | null>(null);
-  const [inspect, setInspect] = useState<ArtworkData | null>(null);
+  const [close, setClose] = useState<Artwork | null>(null);
+  const [inspect, setInspect] = useState<Artwork | null>(null);
 
   const [controls, setControls] = useState<any>(null);
 
@@ -119,7 +146,7 @@ export default function Game({}: GameParams) {
           rotation={[0, -Math.PI / 2, 0]}
           canvas={traditionalArtDisplay}
         />
-        {Object.values(digitalArtworkDatas).map((artwork, i) => (
+        {Object.values(digitalArtworks).map((artwork, i) => (
           <Fragment key={artwork.file}>
             <Wall
               position={[-10, 0, 1 - (i + 1) * 3]}
