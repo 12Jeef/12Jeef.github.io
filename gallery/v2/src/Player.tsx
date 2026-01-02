@@ -2,7 +2,7 @@ import { useFrame } from "@react-three/fiber";
 import { useContext, useEffect, useMemo, useRef } from "react";
 import { Object3D, Vector3 } from "three";
 import { lerp } from "three/src/math/MathUtils.js";
-import { context } from "./Game";
+import { context, INTRO_TIME } from "./Game";
 
 function easeInOutCubic(x: number): number {
   return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
@@ -27,22 +27,23 @@ function getWaypoint(
   waypoint: Waypoint,
   position: Vector3,
   loopDigital: number,
+  loopTraditional: number,
 ): [number, number, number, number] {
   if (waypoint === "HOME") return [0, 1.5, 2, 0];
   if (typeof waypoint === "object") {
+    const loop = waypoint.type === "DIGITAL" ? loopDigital : loopTraditional;
     let z =
       waypoint.type === "DIGITAL"
         ? 1 + 3 * waypoint.piece
         : waypoint.type === "TRADITIONAL"
         ? 1 - 3 * waypoint.piece
         : 0;
-    const zI = Math.round(z / loopDigital);
-    const loopI = Math.round(position.z / loopDigital);
+    const zI = Math.round(z / loop);
+    const loopI = Math.round(position.z / loop);
     let minZ = z;
     let minDistance = Math.abs(minZ - position.z);
     for (let zIShift = -1; zIShift <= 1; zIShift++) {
-      const possibleZ =
-        z - zI * loopDigital + loopI * loopDigital + zIShift * loopDigital;
+      const possibleZ = z - zI * loop + loopI * loop + zIShift * loop;
       const distance = Math.abs(possibleZ - position.z);
       if (distance < minDistance) {
         minZ = possibleZ;
@@ -65,7 +66,9 @@ export type PlayerProps = {
   onSwipe?: (swipe: Swipe) => void;
   inspecting?: boolean;
   nDigital: number;
+  nTraditional: number;
   loopDigital: number;
+  loopTraditional: number;
 };
 
 export default function Player({
@@ -75,7 +78,9 @@ export default function Player({
   onSwipe,
   inspecting,
   nDigital,
+  nTraditional,
   loopDigital,
+  loopTraditional,
 }: PlayerProps) {
   const { mobile } = useContext(context);
 
@@ -157,7 +162,7 @@ export default function Player({
 
   useFrame(({ camera }, dt) => {
     if (introRef.current) {
-      const t = Math.min(1, (Date.now() / 1e3 - introStartTime) / 3);
+      const t = Math.min(1, (Date.now() / 1e3 - introStartTime) / INTRO_TIME);
       camera.rotation.set(lerp(Math.PI / 3, 0, easeInOutCubic(t)), 0, 0, "XZY");
       if (t >= 1) {
         introRef.current = false;
@@ -191,14 +196,15 @@ export default function Player({
         (waypointRef.current.type === "DIGITAL" ||
           waypointRef.current.type === "TRADITIONAL")
       ) {
+        const n =
+          waypointRef.current.type === "DIGITAL" ? nDigital : nTraditional;
         for (const swipe of swipes) {
           if (!swipe.significant) continue;
           if (swipe.direction === "left") waypointRef.current.piece--;
           if (swipe.direction === "right") waypointRef.current.piece++;
           waypointRef.current.piece =
-            (((waypointRef.current.piece + (nDigital + 1)) % (nDigital + 1)) +
-              (nDigital + 1)) %
-            (nDigital + 1);
+            (((waypointRef.current.piece + (n + 1)) % (n + 1)) + (n + 1)) %
+            (n + 1);
           if (waypointRef.current.piece === 0)
             if (swipe.direction === "up") {
               waypointRef.current = "HOME";
@@ -211,6 +217,7 @@ export default function Player({
         waypointRef.current,
         camera.position,
         loopDigital,
+        loopTraditional,
       );
       camera.position.set(
         lerp(camera.position.x, x, 0.1),
@@ -257,11 +264,15 @@ export default function Player({
       keysUp.clear();
     }
 
-    if (camera.position.x < 0) {
-      while (camera.position.z > loopDigital / 2)
-        camera.position.z -= loopDigital;
-      while (camera.position.z < -loopDigital / 2)
-        camera.position.z += loopDigital;
+    const loop =
+      camera.position.x < -1
+        ? loopDigital
+        : camera.position.x > 1
+        ? loopTraditional
+        : 0;
+    if (loop > 0) {
+      while (camera.position.z > loop / 2) camera.position.z -= loop;
+      while (camera.position.z < -loop / 2) camera.position.z += loop;
     }
 
     const floor = floorRef.current;

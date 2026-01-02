@@ -4,9 +4,9 @@ import { context, type Artwork } from "./Game";
 import { useContext, useEffect, useRef, useState } from "react";
 import { lerp } from "three/src/math/MathUtils.js";
 
-export type InspectProps = { artwork: Artwork };
+export type InspectProps = { artwork: Artwork; endpoint: string };
 
-export default function Inspect({ artwork }: InspectProps) {
+export default function Inspect({ artwork, endpoint }: InspectProps) {
   const { mobile } = useContext(context);
 
   const ref = useRef<HTMLImageElement | null>(null);
@@ -77,7 +77,7 @@ export default function Inspect({ artwork }: InspectProps) {
       >
         <img
           ref={ref}
-          src={`./art/${artwork.file}.png`}
+          src={`./art/${endpoint}/${artwork.file}.png`}
           className="max-w-full max-h-full cursor-zoom-in"
         />
       </motion.div>
@@ -93,23 +93,23 @@ export default function Inspect({ artwork }: InspectProps) {
           {artwork.name}
           <span className="float-right ml-1 mb-1 font-light italic opacity-50">
             {artwork.date[0]}{" "}
-            {
-              [
-                "Jan",
-                "Feb",
-                "Mar",
-                "Apr",
-                "May",
-                "Jun",
-                "Jul",
-                "Aug",
-                "Sep",
-                "Oct",
-                "Nov",
-                "Dec",
-              ][artwork.date[1] - 1]
-            }{" "}
-            {artwork.date[2]}
+            {artwork.date[1]
+              ? [
+                  "Jan",
+                  "Feb",
+                  "Mar",
+                  "Apr",
+                  "May",
+                  "Jun",
+                  "Jul",
+                  "Aug",
+                  "Sep",
+                  "Oct",
+                  "Nov",
+                  "Dec",
+                ][artwork.date[1] - 1]
+              : ""}
+            {artwork.date[2] ? String(artwork.date[2]) : ""}
           </span>
         </h1>
         {!mobile && <p>{artwork.info}</p>}

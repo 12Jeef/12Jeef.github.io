@@ -14,6 +14,8 @@ import {
 } from "./displays";
 import Sky from "./Sky";
 
+export const INTRO_TIME = 0.1;
+
 export const cssBackground = "#000022"; // "#000011";
 export const materialBackground = "#000033"; // "#000022";
 export const lightBackground = "#000066"; // "#000044";
@@ -21,7 +23,7 @@ export const lightBackground = "#000066"; // "#000044";
 export type Artwork = {
   name: string;
   file: string;
-  date: [number, number, number];
+  date: [number, number | null, number | null];
   info: string;
   canvas: HTMLCanvasElement;
 };
@@ -43,40 +45,53 @@ export type GameParams = {};
 export default function Game({}: GameParams) {
   const [digitalArtworks, setDigitalArtworks] = useState<Artworks>([]);
   const nDigitalArtworks = digitalArtworks.length;
+  const [traditionalArtworks, setTraditionalArtworks] = useState<Artworks>([]);
+  const nTraditionalArtworks = traditionalArtworks.length;
 
   useEffect(() => {
     (async () => {
+      const sets = [
+        ["digital", setDigitalArtworks],
+        ["traditional", setTraditionalArtworks],
+      ] as const;
       await new Promise((res) => setTimeout(res, 500));
-      const result = await fetch("./art/info-digital.json");
-      const json = await result.json();
-      let imageLoadTime = 0,
-        canvasTime = 0,
-        t0 = 0,
-        t1 = 0;
-      await Promise.all(
-        Object.keys(json).map(async (key) => {
-          t0 = Date.now();
-          const image = await new Promise<HTMLImageElement>((res, rej) => {
-            const image = new Image();
-            image.addEventListener("load", () => res(image));
-            image.addEventListener("error", rej);
-            image.src = "./art/" + json[key].file + "_tiny.png";
-          });
-          t1 = Date.now();
-          imageLoadTime += t1 - t0;
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d")!;
-          canvas.width = image.width;
-          canvas.height = image.height;
-          ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-          json[key].canvas = canvas;
-          t0 = Date.now();
-          canvasTime += t0 - t1;
-        }),
-      );
-      console.log("image load time", imageLoadTime);
-      console.log("canvas time", canvasTime);
-      setDigitalArtworks(json);
+      for (const [endpoint, setter] of sets) {
+        const result = await fetch(`./art/${endpoint}/info.json`);
+        const json = await result.json();
+        let imageLoadTime = 0,
+          canvasTime = 0,
+          t0 = 0,
+          t1 = 0;
+        await Promise.all(
+          Object.keys(json).map(async (key) => {
+            t0 = Date.now();
+            const image = await new Promise<HTMLImageElement>((res, rej) => {
+              const image = new Image();
+              image.addEventListener("load", () => res(image));
+              image.addEventListener("error", (e) => {
+                console.error(
+                  `Could not load piece ${endpoint}/${json[key].file}_tiny.png`,
+                );
+                rej(e);
+              });
+              image.src = `./art/${endpoint}/${json[key].file}_tiny.png`;
+            });
+            t1 = Date.now();
+            imageLoadTime += t1 - t0;
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d")!;
+            canvas.width = image.width;
+            canvas.height = image.height;
+            ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+            json[key].canvas = canvas;
+            t0 = Date.now();
+            canvasTime += t0 - t1;
+          }),
+        );
+        console.log("image load time", imageLoadTime);
+        console.log("canvas time", canvasTime);
+        setter(json);
+      }
     })();
   }, []);
 
@@ -181,7 +196,9 @@ export default function Game({}: GameParams) {
             }}
             inspecting={!!inspect}
             nDigital={nDigitalArtworks}
+            nTraditional={nTraditionalArtworks}
             loopDigital={nDigitalArtworks * 3 + 3}
+            loopTraditional={nTraditionalArtworks * 3 + 3}
           />
 
           <Wall
@@ -229,6 +246,30 @@ export default function Game({}: GameParams) {
                 onClose={() => setClose(artwork)}
                 onFar={() => setClose(null)}
                 loop={nDigitalArtworks * 3 + 3}
+                onLost={onLost}
+                onFound={onFound}
+              />
+            </Fragment>
+          ))}
+          {traditionalArtworks.map((artwork, i) => (
+            <Fragment key={artwork.file}>
+              <Wall
+                position={[10, 0, 1 + (i + 1) * 3]}
+                rotation={[0, -Math.PI / 2, 0]}
+                artwork={artwork}
+                onClose={() => setClose(artwork)}
+                onFar={() => setClose(null)}
+                loop={nTraditionalArtworks * 3 + 3}
+                onLost={onLost}
+                onFound={onFound}
+              />
+              <Wall
+                position={[10, 0, 1 + (i - nTraditionalArtworks) * 3]}
+                rotation={[0, -Math.PI / 2, 0]}
+                artwork={artwork}
+                onClose={() => setClose(artwork)}
+                onFar={() => setClose(null)}
+                loop={nTraditionalArtworks * 3 + 3}
                 onLost={onLost}
                 onFound={onFound}
               />
@@ -406,7 +447,18 @@ export default function Game({}: GameParams) {
           </AnimatePresence>
         </div>
         <AnimatePresence>
-          {inspect && <Inspect artwork={inspect} />}
+          {inspect && (
+            <Inspect
+              artwork={inspect}
+              endpoint={
+                digitalArtworks.includes(inspect)
+                  ? "digital"
+                  : traditionalArtworks.includes(inspect)
+                  ? "traditional"
+                  : ""
+              }
+            />
+          )}
         </AnimatePresence>
       </div>
     </context.Provider>

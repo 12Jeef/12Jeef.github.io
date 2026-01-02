@@ -11,7 +11,7 @@ import {
 } from "three";
 import { createBloomCanvas } from "./FancyLight";
 import { lerp } from "three/src/math/MathUtils.js";
-import { materialBackground } from "./Game";
+import { INTRO_TIME, materialBackground } from "./Game";
 
 const skyBlooms = ["#ffffff", "#aaaaff", "#aaccff", "#88ddff"].map((color) =>
   createBloomCanvas(256, color, 1),
@@ -43,7 +43,10 @@ export default function Sky() {
       camera.position.z,
     );
 
-    const globalAlpha = Math.min(1, (Date.now() / 1e3 - introStartTime) / 3);
+    const globalAlpha = Math.min(
+      1,
+      (Date.now() / 1e3 - introStartTime) / INTRO_TIME,
+    );
 
     const galaxy = galaxyRef.current;
     if (!galaxy) return;

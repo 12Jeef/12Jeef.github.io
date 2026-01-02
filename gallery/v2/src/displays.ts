@@ -135,9 +135,6 @@ export function createDigitalArtDisplay() {
 export function createTraditionalArtDisplay() {
   const ctx = createCanvas(800, 1200);
 
-  ctx.globalAlpha = 0.5;
-  ctx.filter = "blur(5px)";
-
   ctx.lineJoin = "miter";
   ctx.lineCap = "square";
 
@@ -184,16 +181,6 @@ export function createTraditionalArtDisplay() {
   ctx.lineTo(ctx.canvas.width - x, y);
   ctx.lineTo(ctx.canvas.width - x - 10, y - 10);
   ctx.stroke();
-
-  ctx.globalAlpha = 1;
-  ctx.filter = "none";
-
-  ctx.font = "96px Arial Black";
-  ctx.textAlign = "center";
-  ctx.translate(ctx.canvas.width / 2, (ctx.canvas.height / 2) * 1.1);
-  ctx.rotate(-0.25);
-  ctx.fillText("WORK IN", 0, -48);
-  ctx.fillText("PROGRESS", 0, 48);
 
   return ctx.canvas;
 }
