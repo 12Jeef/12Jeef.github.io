@@ -91,6 +91,7 @@ export default function Game({}: GameParams) {
         console.log("image load time", imageLoadTime);
         console.log("canvas time", canvasTime);
         setter(json);
+        console.log(`${json.length} images for ${endpoint}`);
       }
     })();
   }, []);
