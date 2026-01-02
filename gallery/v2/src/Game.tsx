@@ -14,7 +14,7 @@ import {
 } from "./displays";
 import Sky from "./Sky";
 
-export const INTRO_TIME = 0.1;
+export const INTRO_TIME = 3;
 
 export const cssBackground = "#000022"; // "#000011";
 export const materialBackground = "#000033"; // "#000022";
