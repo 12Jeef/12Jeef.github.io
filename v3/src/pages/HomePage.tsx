@@ -59,7 +59,7 @@ export default function HomePage() {
       animate={{ opacity: 1, transition: { duration: 0.3 } }}
     >
       <div className="absolute bottom-3 text-fg2aa pointer-events-none">
-        © 2025 Jeffrey Fan. All rights reserved.
+        © 2026 Jeffrey Fan. All rights reserved.
       </div>
       <Title className="mb-10" />
       <motion.p

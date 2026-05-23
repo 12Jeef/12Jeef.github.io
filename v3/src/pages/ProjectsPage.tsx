@@ -11,9 +11,20 @@ import { useMemo } from "react";
 import { LuGithub } from "react-icons/lu";
 import { MdOpenInNew } from "react-icons/md";
 import { FiDownload } from "react-icons/fi";
-import peninsulaportal from "../assets/projects/peninsulaportal.png";
-import noteblast from "../assets/projects/noteblast.png";
+import artgalleryv1 from "../assets/projects/artgalleryv1.png";
+import artgalleryv2 from "../assets/projects/artgalleryv2.png";
+import biotech from "../assets/projects/biotech.png";
+import blobblast from "../assets/projects/blobblast.png";
+import celestialjs from "../assets/projects/celestialjs.png";
+import cellluminex from "../assets/projects/cellluminex.png";
 import mergegame from "../assets/projects/mergegame.png";
+import noteblast from "../assets/projects/noteblast.png";
+import peninsulaportal from "../assets/projects/peninsulaportal.png";
+import portfoliov1 from "../assets/projects/portfoliov1.png";
+import portfoliov2 from "../assets/projects/portfoliov2.png";
+import portfoliov3 from "../assets/projects/portfoliov3.png";
+import ppatrol from "../assets/projects/ppatrol.png";
+import refraction from "../assets/projects/refraction.png";
 import { FaRegFolder } from "react-icons/fa6";
 
 type ProjectURLs =
@@ -29,6 +40,7 @@ type ProjectSide = "left" | "right";
 
 type ProjectProps = {
   title: string;
+  img?: string;
   urls?: ProjectURLs;
   tags?: string[];
   children?: string;
@@ -103,36 +115,36 @@ function ProjectURLs({
         side === "left" ? [...buttons].reverse() : buttons)([
         github && (
           <motion.a
-            className="group"
+            className="group/btn"
             href={github}
             variants={defaultChildVariants({})}
             style={{ transformOrigin: side === "left" ? "100% 0" : "0 0" }}
           >
-            <button className="group-hover:text-fg1 transition-color duration-300">
+            <button className="group/btn-hover:text-fg1 transition-color duration-300">
               <LuGithub />
             </button>
           </motion.a>
         ),
         open && (
           <motion.a
-            className="group"
+            className="group/btn"
             href={open}
             variants={defaultChildVariants({})}
             style={{ transformOrigin: side === "left" ? "100% 0" : "0 0" }}
           >
-            <button className="group-hover:text-fg1 transition-color duration-300">
+            <button className="group/btn-hover:text-fg1 transition-color duration-300">
               <MdOpenInNew />
             </button>
           </motion.a>
         ),
         download && (
           <motion.a
-            className="group"
+            className="group/btn"
             href={download}
             variants={defaultChildVariants({})}
             style={{ transformOrigin: side === "left" ? "100% 0" : "0 0" }}
           >
-            <button className="group-hover:text-fg1 transition-color duration-300">
+            <button className="group/btn-hover:text-fg1 transition-color duration-300">
               <FiDownload />
             </button>
           </motion.a>
@@ -271,12 +283,12 @@ function FeaturedProject({
   );
 }
 
-function Project({ title, urls = "", tags = [], children }: ProjectProps) {
+function Project({ title, img, urls = "", tags = [], children }: ProjectProps) {
   const { main } = getURLs(urls);
 
   return (
     <motion.div
-      className="w-[20rem] max-w-[20rem] h-[25rem] max-h-[25rem] bg-bg1 p-8 rounded-[2rem] flex flex-col gap-4"
+      className="group relative w-[20rem] max-w-[20rem] h-[25rem] max-h-[25rem] bg-bg1 rounded-[2rem] overflow-hidden"
       initial={{ scale: 0.75, opacity: 0, y: "-25%" }}
       whileInView={{
         scale: 1,
@@ -288,20 +300,30 @@ function Project({ title, urls = "", tags = [], children }: ProjectProps) {
         filter: "drop-shadow(0 0 1rem #0008)",
       }}
     >
-      <div className="text-3xl flex flex-row items-center justify-start">
-        <div className="flex-1">
-          <FaRegFolder className="text-a1" />
+      {img && (
+        <img
+          src={img}
+          className="absolute inset-0 h-full w-full object-cover object-center opacity-0 group-hover:opacity-35 blur-xs group-hover:blur-[1px] duration-300"
+        />
+      )}
+      <div className="absolute top-0 left-0 bottom-0 right-0 p-8 flex flex-col gap-4">
+        <div className="text-3xl flex flex-row items-center justify-start">
+          <div className="flex-1">
+            <FaRegFolder className="text-a1" />
+          </div>
+          <ProjectURLs urls={urls} />
         </div>
-        <ProjectURLs urls={urls} />
+        <a
+          className="text-2xl font-bold !text-fg1 hover:!text-a1 transition-color duration-300 self-start"
+          href={main}
+        >
+          <h1>{title}</h1>
+        </a>
+        <p className="text-fg2 group-hover:text-fg1 flex-1 duration-300">
+          {children}
+        </p>
+        <ProjectTags tags={tags} />
       </div>
-      <a
-        className="text-2xl font-bold !text-fg1 hover:!text-a1 transition-color duration-300 self-start"
-        href={main}
-      >
-        <h1>{title}</h1>
-      </a>
-      <p className="text-fg2 flex-1">{children}</p>
-      <ProjectTags tags={tags} />
     </motion.div>
   );
 }
@@ -310,11 +332,11 @@ export default function ProjectsPage() {
   return (
     <Page key="ProjectsPage">
       <PageTitle>My Stuff</PageTitle>
-      <motion.section>
+      {/* <motion.section>
         <FeaturedProject
-          img={peninsulaportal}
           side="left"
           title="PeninsulaPortal"
+          img={peninsulaportal}
           urls={{
             main: "https://github.com/team6036/peninsulaportal",
             github: "https://github.com/team6036/peninsulaportal",
@@ -329,9 +351,9 @@ export default function ProjectsPage() {
           front-end applications.
         </FeaturedProject>
         <FeaturedProject
-          img={noteblast}
           side="right"
           title="NoteBlast"
+          img={noteblast}
           urls={{
             main: "https://www.noteblast.org/",
             github: "https://github.com/Noteblast/noteblast",
@@ -344,9 +366,9 @@ export default function ProjectsPage() {
           instrument
         </FeaturedProject>
         <FeaturedProject
-          img={mergegame}
           side="left"
           title="Merge Game"
+          img={mergegame}
           urls={{
             main: "https://chromewebstore.google.com/detail/merge-game/neemdnfmagdkajnbljpccdechakhfgeb",
             github: "https://github.com/12Jeef/MergeGame",
@@ -359,10 +381,25 @@ export default function ProjectsPage() {
           tiers. A good offline way to enjoy some down time. Boasting over 3.6K
           installations in total and over 700 monthly users.
         </FeaturedProject>
-      </motion.section>
+      </motion.section> */}
       <section className="mt-16 flex flex-wrap justify-center items-center gap-8">
         <Project
+          title="Refraction"
+          img={refraction}
+          tags={["TS", "UI"]}
+          urls={{
+            main: "https://re-fraction.vercel.app/",
+            github: "https://github.com/12Jeef/refraction",
+            open: "https://re-fraction.vercel.app/",
+          }}
+        >
+          An ray optics simulator with refraction, reflection, material
+          customization, spectrogram customization, and more! Still a work in
+          progress.
+        </Project>
+        <Project
           title="Virtual Art Gallery V2"
+          img={artgalleryv2}
           tags={["TS", "Three.JS", "React Three Fiber", "UI"]}
           urls={{
             main: "https://12jeef.github.io/gallery/",
@@ -377,6 +414,7 @@ export default function ProjectsPage() {
         </Project>
         <Project
           title="CellLuminex"
+          img={cellluminex}
           tags={["TS", "Algorithm", "UI"]}
           urls={{
             main: "https://cell-luminex.vercel.app/",
@@ -389,6 +427,7 @@ export default function ProjectsPage() {
         </Project>
         <Project
           title="Portfolio V3"
+          img={portfoliov3}
           tags={["TS", "React", "Tailwind", "Motion", "UI"]}
           urls={{
             main: "https://12jeef.github.io/",
@@ -401,7 +440,37 @@ export default function ProjectsPage() {
           Vite, TailwindCSS, and Framer-Motion.
         </Project>
         <Project
+          title="NoteBlast"
+          img={noteblast}
+          urls={{
+            main: "https://www.noteblast.org/",
+            github: "https://github.com/Noteblast/noteblast",
+            open: "https://play.noteblast.org/",
+          }}
+          tags={["JS", "Algorithm", "Game", "UI"]}
+        >
+          A sight-reading rhythm game to help musicians practice! Comes with a
+          built-in free tuner to provide feedback on the accuracy of your
+          instrument
+        </Project>
+        <Project
+          title="Merge Game"
+          img={mergegame}
+          urls={{
+            main: "https://chromewebstore.google.com/detail/merge-game/neemdnfmagdkajnbljpccdechakhfgeb",
+            github: "https://github.com/12Jeef/MergeGame",
+            download:
+              "https://chromewebstore.google.com/detail/merge-game/neemdnfmagdkajnbljpccdechakhfgeb",
+          }}
+          tags={["JS", "Game", "UI"]}
+        >
+          A fun 2048-like Chrome extension about merging shapes to create higher
+          tiers. A good offline way to enjoy some down time. Boasting over 3.6K
+          installations in total and over 700 monthly users.
+        </Project>
+        <Project
           title="Portfolio V2"
+          img={portfoliov2}
           tags={["TS", "UI"]}
           urls={{
             main: "https://12jeef.github.io/v2/build",
@@ -414,6 +483,7 @@ export default function ProjectsPage() {
         </Project>
         <Project
           title="Portfolio V1"
+          img={portfoliov1}
           tags={["JS", "UI"]}
           urls={{
             main: "https://12jeef.github.io/v1/",
@@ -426,6 +496,7 @@ export default function ProjectsPage() {
         </Project>
         <Project
           title="Virtual Art Gallery V1"
+          img={artgalleryv1}
           tags={["TS", "Three.JS", "UI"]}
           urls={{
             main: "https://12jeef.github.io/gallery/v1/",
@@ -439,6 +510,7 @@ export default function ProjectsPage() {
         </Project>
         <Project
           title="Biotech Sandboxes"
+          img={biotech}
           tags={["JS", "Algorithm", "Biology"]}
           urls={{
             main: "https://jbiotech.vercel.app/",
@@ -452,6 +524,7 @@ export default function ProjectsPage() {
         </Project>
         <Project
           title="pPatrol"
+          img={ppatrol}
           tags={["JS", "FRC", "UI"]}
           urls={{
             main: "https://ppatrol.vercel.app/",
@@ -461,6 +534,21 @@ export default function ProjectsPage() {
         >
           2024 FRC Crescendo web scouting application linked with PythonAnywhere
           simple Flask backend.
+        </Project>
+        <Project
+          title="PeninsulaPortal"
+          img={peninsulaportal}
+          tags={["JS", "Node.js", "Electron.js", "UI"]}
+          urls={{
+            main: "https://github.com/team6036/peninsulaportal",
+            github: "https://github.com/team6036/peninsulaportal",
+            download:
+              "https://github.com/team6036/peninsulaportal/releases/latest",
+          }}
+        >
+          Complete FRC robot diagnostic app, path generator, and competition pit
+          display. UI/UX focus. Full-stack application, including backend
+          servers and frontend displays/graphics.
         </Project>
         <Project
           title="Celestial.py"
@@ -475,6 +563,7 @@ export default function ProjectsPage() {
         </Project>
         <Project
           title="Celestial.js"
+          img={celestialjs}
           tags={["JS", "Canvas", "Game", "WIP"]}
           urls={{
             main: "https://github.com/12Jeef/CelestialJS",
@@ -487,6 +576,7 @@ export default function ProjectsPage() {
         </Project>
         <Project
           title="BlobBlast"
+          img={blobblast}
           tags={["PY", "PyGame", "Game"]}
           urls={{
             main: "https://github.com/12Jeef/BlobBlast",
