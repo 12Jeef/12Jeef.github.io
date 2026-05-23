@@ -1,6 +1,6 @@
 import PageTitle from "../components/PageTitle";
 import Page from "../components/Page";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   defaultChildVariants,
   defaultMotionSpring,
@@ -24,8 +24,24 @@ import portfoliov1 from "../assets/projects/portfoliov1.png";
 import portfoliov2 from "../assets/projects/portfoliov2.png";
 import portfoliov3 from "../assets/projects/portfoliov3.png";
 import ppatrol from "../assets/projects/ppatrol.png";
+import reactiontrajfinder from "../assets/projects/reactiontrajfinder.png";
 import refraction from "../assets/projects/refraction.png";
 import { FaRegFolder } from "react-icons/fa6";
+import { createContext, useContext, useEffect, useState } from "react";
+
+type Context = {
+  tags: { [key: string]: string[] };
+  setTags: (tags: { [key: string]: string[] }) => void;
+  wantedTags: null | string[];
+  setWantedTags: (tags: null | string[]) => void;
+};
+
+const context = createContext<Context>({
+  tags: {},
+  setTags: () => {},
+  wantedTags: null,
+  setWantedTags: () => {},
+});
 
 type ProjectURLs =
   | string
@@ -72,7 +88,7 @@ function ProjectTags({
     <motion.p
       className={`flex ${
         side === "left" ? "flex-row-reverse" : "flex-row"
-      } gap-4 text-a1 italic lowercase`}
+      } gap-4 text-a1 text-sm italic lowercase`}
       {...defaultParentProps({ delay, type: "in-view" })}
     >
       {(side === "left" ? [...tags].reverse() : tags).map((tag) => (
@@ -115,6 +131,7 @@ function ProjectURLs({
         side === "left" ? [...buttons].reverse() : buttons)([
         github && (
           <motion.a
+            key="github"
             className="group/btn"
             href={github}
             variants={defaultChildVariants({})}
@@ -127,6 +144,7 @@ function ProjectURLs({
         ),
         open && (
           <motion.a
+            key="open"
             className="group/btn"
             href={open}
             variants={defaultChildVariants({})}
@@ -139,6 +157,7 @@ function ProjectURLs({
         ),
         download && (
           <motion.a
+            key="download"
             className="group/btn"
             href={download}
             variants={defaultChildVariants({})}
@@ -286,6 +305,27 @@ function ProjectURLs({
 function Project({ title, img, urls = "", tags = [], children }: ProjectProps) {
   const { main } = getURLs(urls);
 
+  const {
+    tags: allTags,
+    setTags: setAllTags,
+    wantedTags,
+  } = useContext(context);
+  useEffect(() => {
+    let changed = false;
+    for (const tag of tags) {
+      const titles = allTags[tag] ?? [];
+      if (titles.includes(title)) continue;
+      changed = true;
+      allTags[tag] = [...titles, title];
+    }
+    if (changed) setAllTags({ ...allTags });
+  }, [tags, allTags, setAllTags]);
+
+  const isAllowed =
+    wantedTags == null ||
+    tags.filter((tag) => wantedTags.includes(tag)).length === wantedTags.length;
+  if (!isAllowed) return null;
+
   return (
     <motion.div
       className="group relative w-[20rem] max-w-[20rem] h-[25rem] max-h-[25rem] bg-bg1 rounded-[2rem] overflow-hidden"
@@ -296,9 +336,11 @@ function Project({ title, img, urls = "", tags = [], children }: ProjectProps) {
         y: "0%",
         transition: defaultMotionSpring({}),
       }}
+      exit={{ scale: 0.75, opacity: 0, y: "-25%" }}
       style={{
         filter: "drop-shadow(0 0 1rem #0008)",
       }}
+      layout="position"
     >
       {img && (
         <img
@@ -328,11 +370,106 @@ function Project({ title, img, urls = "", tags = [], children }: ProjectProps) {
   );
 }
 
-export default function ProjectsPage() {
+function WantedTags() {
+  const { tags, wantedTags, setWantedTags } = useContext(context);
+
+  const [shown, setShown] = useState(false);
+
   return (
-    <Page key="ProjectsPage">
-      <PageTitle>My Stuff</PageTitle>
-      {/* <motion.section>
+    <div
+      className="relative flex flex-row items-center justify-center"
+      onMouseEnter={() => {
+        if (wantedTags != null) setShown(true);
+      }}
+      onMouseLeave={() => setShown(false)}
+    >
+      <button
+        className="text-a1 font-bold min-w-30 min-h-[1.5em] max-h-[1.5em]"
+        onClick={() => {
+          setWantedTags(wantedTags == null ? [] : null);
+          setShown(wantedTags == null);
+        }}
+      >
+        <div
+          className={`${wantedTags == null ? "max-h-[1.5em] opacity-100" : "max-h-[0em] opacity-0"} overflow-hidden flex flex-col-reverse duration-200`}
+        >
+          I'm good.
+        </div>
+        <div
+          className={`${wantedTags != null ? "max-h-[1.5em] opacity-100" : "max-h-[0em] opacity-0"} overflow-hidden flex flex-col duration-200`}
+        >
+          Yes!
+        </div>
+      </button>
+      <AnimatePresence>
+        {shown && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.75 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.75, transition: { delay: 0.1 } }}
+            className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-10 rounded-[1rem] backdrop-blur-sm"
+            style={{
+              transformOrigin: "50% 0%",
+            }}
+          >
+            <div
+              className="px-8 py-4 bg-a1aa rounded-[1rem] flex flex-wrap justify-start items-center gap-2 w-120"
+              style={{
+                filter: "drop-shadow(0 0 1rem #0008)",
+                boxShadow: "inset 0 0 1rem var(--color-a1a)",
+              }}
+            >
+              {Object.keys(tags)
+                .sort((a, b) => tags[b].length - tags[a].length)
+                .map((tag) => (
+                  <motion.button
+                    key={tag}
+                    className="min-w-30 text-sm lowercase flex flex-row items-center justify-start gap-2"
+                    onClick={() => {
+                      if (wantedTags == null) return;
+                      if (wantedTags.includes(tag))
+                        setWantedTags(wantedTags.filter((t) => t !== tag));
+                      else setWantedTags([...wantedTags, tag]);
+                    }}
+                  >
+                    <div
+                      className={`w-2 h-2 ${wantedTags?.includes(tag) ? "bg-a1" : "bg-a1aa"} rounded-full duration-200`}
+                    ></div>
+                    <div
+                      className={`${wantedTags?.includes(tag) ? "text-a1" : "text-a1a"} duration-200`}
+                    >
+                      {tag} ({tags[tag].length})
+                    </div>
+                  </motion.button>
+                ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+export default function ProjectsPage() {
+  const [tags, setTags] = useState<{ [key: string]: string[] }>({});
+  const [wantedTags, setWantedTags] = useState<null | string[]>(null);
+
+  return (
+    <context.Provider
+      value={{
+        tags,
+        setTags,
+        wantedTags,
+        setWantedTags,
+      }}
+    >
+      <Page key="ProjectsPage">
+        <PageTitle>My Stuff</PageTitle>
+        <motion.section className="mt-4 text-fg2 text-[1.25rem] flex flex-row items-center justify-center gap-2">
+          <div>Want to find something specific?</div>
+          <WantedTags />
+        </motion.section>
+        {/* <motion.section>
         <FeaturedProject
           side="left"
           title="PeninsulaPortal"
@@ -382,211 +519,230 @@ export default function ProjectsPage() {
           installations in total and over 700 monthly users.
         </FeaturedProject>
       </motion.section> */}
-      <section className="mt-16 flex flex-wrap justify-center items-center gap-8">
-        <Project
-          title="Refraction"
-          img={refraction}
-          tags={["TS", "UI"]}
-          urls={{
-            main: "https://re-fraction.vercel.app/",
-            github: "https://github.com/12Jeef/refraction",
-            open: "https://re-fraction.vercel.app/",
-          }}
-        >
-          An ray optics simulator with refraction, reflection, material
-          customization, spectrogram customization, and more! Still a work in
-          progress.
-        </Project>
-        <Project
-          title="Virtual Art Gallery V2"
-          img={artgalleryv2}
-          tags={["TS", "Three.JS", "React Three Fiber", "UI"]}
-          urls={{
-            main: "https://12jeef.github.io/gallery/",
-            github:
-              "https://github.com/12Jeef/12Jeef.github.io/tree/main/gallery/v2",
-            open: "https://12jeef.github.io/gallery/",
-          }}
-        >
-          My second iteration of my virtual art gallery, with a strong focus on
-          light and immersion. I really enjoyed the super dynamic camera effect
-          I made. Check it out!
-        </Project>
-        <Project
-          title="CellLuminex"
-          img={cellluminex}
-          tags={["TS", "Algorithm", "UI"]}
-          urls={{
-            main: "https://cell-luminex.vercel.app/",
-            github: "https://github.com/12Jeef/CellLuminex",
-            open: "https://cell-luminex.vercel.app/",
-          }}
-        >
-          A fluorescent cell counter and calculator, able to distinguish
-          immunofluorescently-stained cell images.
-        </Project>
-        <Project
-          title="Portfolio V3"
-          img={portfoliov3}
-          tags={["TS", "React", "Tailwind", "Motion", "UI"]}
-          urls={{
-            main: "https://12jeef.github.io/",
-            github: "https://github.com/12Jeef/12Jeef.github.io/tree/main/v3",
-            open: "https://12jeef.github.io/",
-          }}
-        >
-          My third iteration of my portfolio website which is the very website
-          you see now! Built using a variety of frameworks, including React,
-          Vite, TailwindCSS, and Framer-Motion.
-        </Project>
-        <Project
-          title="NoteBlast"
-          img={noteblast}
-          urls={{
-            main: "https://www.noteblast.org/",
-            github: "https://github.com/Noteblast/noteblast",
-            open: "https://play.noteblast.org/",
-          }}
-          tags={["JS", "Algorithm", "Game", "UI"]}
-        >
-          A sight-reading rhythm game to help musicians practice! Comes with a
-          built-in free tuner to provide feedback on the accuracy of your
-          instrument
-        </Project>
-        <Project
-          title="Merge Game"
-          img={mergegame}
-          urls={{
-            main: "https://chromewebstore.google.com/detail/merge-game/neemdnfmagdkajnbljpccdechakhfgeb",
-            github: "https://github.com/12Jeef/MergeGame",
-            download:
-              "https://chromewebstore.google.com/detail/merge-game/neemdnfmagdkajnbljpccdechakhfgeb",
-          }}
-          tags={["JS", "Game", "UI"]}
-        >
-          A fun 2048-like Chrome extension about merging shapes to create higher
-          tiers. A good offline way to enjoy some down time. Boasting over 3.6K
-          installations in total and over 700 monthly users.
-        </Project>
-        <Project
-          title="Portfolio V2"
-          img={portfoliov2}
-          tags={["TS", "UI"]}
-          urls={{
-            main: "https://12jeef.github.io/v2/build",
-            github: "https://github.com/12Jeef/12Jeef.github.io/tree/main/v2",
-            open: "https://12jeef.github.io/v2/build",
-          }}
-        >
-          My second iteration of my portfolio website. Built using TS, HTML, and
-          CSS, but no other frameworks.
-        </Project>
-        <Project
-          title="Portfolio V1"
-          img={portfoliov1}
-          tags={["JS", "UI"]}
-          urls={{
-            main: "https://12jeef.github.io/v1/",
-            github: "https://github.com/12Jeef/12Jeef.github.io/tree/main/v1",
-            open: "https://12jeef.github.io/v1/",
-          }}
-        >
-          My first iteration of my portfolio website. Built using basic HTML,
-          JS, and CSS.
-        </Project>
-        <Project
-          title="Virtual Art Gallery V1"
-          img={artgalleryv1}
-          tags={["TS", "Three.JS", "UI"]}
-          urls={{
-            main: "https://12jeef.github.io/gallery/v1/",
-            github:
-              "https://github.com/12Jeef/12Jeef.github.io/tree/main/gallery/v1",
-            open: "https://12jeef.github.io/gallery/v1/",
-          }}
-        >
-          My first iteration of my art gallery! It's totally broken right now,
-          but has some functional bits.
-        </Project>
-        <Project
-          title="Biotech Sandboxes"
-          img={biotech}
-          tags={["JS", "Algorithm", "Biology"]}
-          urls={{
-            main: "https://jbiotech.vercel.app/",
-            github: "https://github.com/12Jeef/biotech",
-            open: "https://jbiotech.vercel.app/",
-          }}
-        >
-          A sandbox environment where I simulated some mathematical models of
-          biological systems! Notable models include Gierer-Meinhardt and
-          FitzHugh-Nagumo.
-        </Project>
-        <Project
-          title="pPatrol"
-          img={ppatrol}
-          tags={["JS", "FRC", "UI"]}
-          urls={{
-            main: "https://ppatrol.vercel.app/",
-            github: "https://github.com/12Jeef/pPatrol",
-            open: "https://ppatrol.vercel.app/",
-          }}
-        >
-          2024 FRC Crescendo web scouting application linked with PythonAnywhere
-          simple Flask backend.
-        </Project>
-        <Project
-          title="PeninsulaPortal"
-          img={peninsulaportal}
-          tags={["JS", "Node.js", "Electron.js", "UI"]}
-          urls={{
-            main: "https://github.com/team6036/peninsulaportal",
-            github: "https://github.com/team6036/peninsulaportal",
-            download:
-              "https://github.com/team6036/peninsulaportal/releases/latest",
-          }}
-        >
-          Complete FRC robot diagnostic app, path generator, and competition pit
-          display. UI/UX focus. Full-stack application, including backend
-          servers and frontend displays/graphics.
-        </Project>
-        <Project
-          title="Celestial.py"
-          tags={["PY", "PyGame", "Game", "WIP"]}
-          urls={{
-            main: "https://github.com/12Jeef/CelestialPY",
-            github: "https://github.com/12Jeef/CelestialPY",
-          }}
-        >
-          A top down space shooter game where you defeat asteroids and enemies.
-          Includes in-house self-developed PyGame game engine.
-        </Project>
-        <Project
-          title="Celestial.js"
-          img={celestialjs}
-          tags={["JS", "Canvas", "Game", "WIP"]}
-          urls={{
-            main: "https://github.com/12Jeef/CelestialJS",
-            github: "https://github.com/12Jeef/CelestialJS",
-            open: "https://12jeef.github.io/CelestialJS/",
-          }}
-        >
-          A top down space shooter game where you defeat asteroids and enemies.
-          Includes in-house self-developed Javascript game engine.
-        </Project>
-        <Project
-          title="BlobBlast"
-          img={blobblast}
-          tags={["PY", "PyGame", "Game"]}
-          urls={{
-            main: "https://github.com/12Jeef/BlobBlast",
-            github: "https://github.com/12Jeef/BlobBlast",
-          }}
-        >
-          A unique pixel shooter game with interesting movement mechanics.
-          Includes in-house self-developed PyGame game engine.
-        </Project>
-      </section>
-    </Page>
+        <section className="mt-16 flex flex-wrap justify-center items-center gap-8">
+          <AnimatePresence>
+            <Project
+              title="Refraction"
+              img={refraction}
+              tags={["TS", "React", "UI", "Algorithm", "Physics", "WIP"]}
+              urls={{
+                main: "https://re-fraction.vercel.app/",
+                github: "https://github.com/12Jeef/refraction",
+                open: "https://re-fraction.vercel.app/",
+              }}
+            >
+              An ray optics simulator with refraction, reflection, material
+              customization, spectrogram customization, and more! Still a work
+              in progress.
+            </Project>
+            <Project
+              title="Reaction TrajFinder"
+              img={reactiontrajfinder}
+              tags={["TS", "React", "UI", "Algorithm", "Biotech"]}
+              urls={{
+                main: "https://reaction-trajfinder.vercel.app/",
+                github: "https://github.com/12Jeef/ReactionTrajFinder",
+                open: "https://reaction-trajfinder.vercel.app/",
+              }}
+            >
+              An ORCA software output file parser to understand reaction
+              dynamics and energy wells through data processing.
+            </Project>
+            <Project
+              title="Virtual Art Gallery V2"
+              img={artgalleryv2}
+              tags={["TS", "React", "Three.JS", "R3F", "UI"]}
+              urls={{
+                main: "https://12jeef.github.io/gallery/",
+                github:
+                  "https://github.com/12Jeef/12Jeef.github.io/tree/main/gallery/v2",
+                open: "https://12jeef.github.io/gallery/",
+              }}
+            >
+              My second iteration of my virtual art gallery, with a strong focus
+              on light and immersion. I really enjoyed the super dynamic camera
+              effect I made. Check it out!
+            </Project>
+            <Project
+              title="CellLuminex"
+              img={cellluminex}
+              tags={["TS", "React", "UI", "Algorithm", "Biotech"]}
+              urls={{
+                main: "https://cell-luminex.vercel.app/",
+                github: "https://github.com/12Jeef/CellLuminex",
+                open: "https://cell-luminex.vercel.app/",
+              }}
+            >
+              A fluorescent cell counter and calculator, able to distinguish
+              immunofluorescently-stained cell images.
+            </Project>
+            <Project
+              title="Portfolio V3"
+              img={portfoliov3}
+              tags={["TS", "React", "UI"]}
+              urls={{
+                main: "https://12jeef.github.io/",
+                github:
+                  "https://github.com/12Jeef/12Jeef.github.io/tree/main/v3",
+                open: "https://12jeef.github.io/",
+              }}
+            >
+              My third iteration of my portfolio website which is the very
+              website you see now! Built using a variety of frameworks,
+              including React, Vite, TailwindCSS, and Framer-Motion.
+            </Project>
+            <Project
+              title="NoteBlast"
+              img={noteblast}
+              urls={{
+                main: "https://www.noteblast.org/",
+                github: "https://github.com/Noteblast/noteblast",
+                open: "https://play.noteblast.org/",
+              }}
+              tags={["JS", "UI", "Algorithm", "Game"]}
+            >
+              A sight-reading rhythm game to help musicians practice! Comes with
+              a built-in free tuner to provide feedback on the accuracy of your
+              instrument
+            </Project>
+            <Project
+              title="Merge Game"
+              img={mergegame}
+              urls={{
+                main: "https://chromewebstore.google.com/detail/merge-game/neemdnfmagdkajnbljpccdechakhfgeb",
+                github: "https://github.com/12Jeef/MergeGame",
+                download:
+                  "https://chromewebstore.google.com/detail/merge-game/neemdnfmagdkajnbljpccdechakhfgeb",
+              }}
+              tags={["JS", "UI", "Game"]}
+            >
+              A fun 2048-like Chrome extension about merging shapes to create
+              higher tiers. A good offline way to enjoy some down time. Boasting
+              over 3.6K installations in total and over 700 monthly users.
+            </Project>
+            <Project
+              title="Portfolio V2"
+              img={portfoliov2}
+              tags={["TS", "UI"]}
+              urls={{
+                main: "https://12jeef.github.io/v2/build",
+                github:
+                  "https://github.com/12Jeef/12Jeef.github.io/tree/main/v2",
+                open: "https://12jeef.github.io/v2/build",
+              }}
+            >
+              My second iteration of my portfolio website. Built using TS, HTML,
+              and CSS, but no other frameworks.
+            </Project>
+            <Project
+              title="Portfolio V1"
+              img={portfoliov1}
+              tags={["JS", "UI"]}
+              urls={{
+                main: "https://12jeef.github.io/v1/",
+                github:
+                  "https://github.com/12Jeef/12Jeef.github.io/tree/main/v1",
+                open: "https://12jeef.github.io/v1/",
+              }}
+            >
+              My first iteration of my portfolio website. Built using basic
+              HTML, JS, and CSS.
+            </Project>
+            <Project
+              title="Virtual Art Gallery V1"
+              img={artgalleryv1}
+              tags={["TS", "Three.JS", "UI"]}
+              urls={{
+                main: "https://12jeef.github.io/gallery/v1/",
+                github:
+                  "https://github.com/12Jeef/12Jeef.github.io/tree/main/gallery/v1",
+                open: "https://12jeef.github.io/gallery/v1/",
+              }}
+            >
+              My first iteration of my art gallery! It's totally broken right
+              now, but has some functional bits.
+            </Project>
+            <Project
+              title="Biotech Sandboxes"
+              img={biotech}
+              tags={["JS", "Algorithm", "Biotech"]}
+              urls={{
+                main: "https://jbiotech.vercel.app/",
+                github: "https://github.com/12Jeef/biotech",
+                open: "https://jbiotech.vercel.app/",
+              }}
+            >
+              A sandbox environment where I simulated some mathematical models
+              of biological systems! Notable models include Gierer-Meinhardt and
+              FitzHugh-Nagumo.
+            </Project>
+            <Project
+              title="pPatrol"
+              img={ppatrol}
+              tags={["JS", "FRC", "UI"]}
+              urls={{
+                main: "https://ppatrol.vercel.app/",
+                github: "https://github.com/12Jeef/pPatrol",
+                open: "https://ppatrol.vercel.app/",
+              }}
+            >
+              2024 FRC Crescendo web scouting application linked with
+              PythonAnywhere simple Flask backend.
+            </Project>
+            <Project
+              title="PeninsulaPortal"
+              img={peninsulaportal}
+              tags={["JS", "FRC", "Electron.JS", "Three.JS", "UI"]}
+              urls={{
+                main: "https://github.com/team6036/peninsulaportal",
+                github: "https://github.com/team6036/peninsulaportal",
+                download:
+                  "https://github.com/team6036/peninsulaportal/releases/latest",
+              }}
+            >
+              Complete FRC robot diagnostic app, path generator, and competition
+              pit display. UI/UX focus. Full-stack application, including
+              backend servers and frontend displays/graphics.
+            </Project>
+            <Project
+              title="Celestial.py"
+              tags={["PY", "PyGame", "Game", "WIP"]}
+              urls={{
+                main: "https://github.com/12Jeef/CelestialPY",
+                github: "https://github.com/12Jeef/CelestialPY",
+              }}
+            >
+              A top down space shooter game where you defeat asteroids and
+              enemies. Includes in-house self-developed PyGame game engine.
+            </Project>
+            <Project
+              title="Celestial.js"
+              img={celestialjs}
+              tags={["JS", "Game", "WIP"]}
+              urls={{
+                main: "https://github.com/12Jeef/CelestialJS",
+                github: "https://github.com/12Jeef/CelestialJS",
+                open: "https://12jeef.github.io/CelestialJS/",
+              }}
+            >
+              A top down space shooter game where you defeat asteroids and
+              enemies. Includes in-house self-developed Javascript game engine.
+            </Project>
+            <Project
+              title="BlobBlast"
+              img={blobblast}
+              tags={["PY", "PyGame", "Game"]}
+              urls={{
+                main: "https://github.com/12Jeef/BlobBlast",
+                github: "https://github.com/12Jeef/BlobBlast",
+              }}
+            >
+              A unique pixel shooter game with interesting movement mechanics.
+              Includes in-house self-developed PyGame game engine.
+            </Project>
+          </AnimatePresence>
+        </section>
+      </Page>
+    </context.Provider>
   );
 }
