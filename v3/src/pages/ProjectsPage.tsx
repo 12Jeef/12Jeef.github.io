@@ -5,9 +5,9 @@ import {
   defaultChildVariants,
   defaultMotionSpring,
   defaultParentProps,
-  useJiggle,
+  // useJiggle,
 } from "../features/jiggle";
-import { useMemo } from "react";
+// import { useMemo } from "react";
 import { LuGithub } from "react-icons/lu";
 import { MdOpenInNew } from "react-icons/md";
 import { FiDownload } from "react-icons/fi";
@@ -46,10 +46,10 @@ type ProjectProps = {
   children?: string;
 };
 
-type FeaturedProjectProps = {
-  img: string;
-  side: ProjectSide;
-} & ProjectProps;
+// type FeaturedProjectProps = {
+//   img: string;
+//   side: ProjectSide;
+// } & ProjectProps;
 
 const getURLs = (urls: ProjectURLs) => {
   const main = typeof urls === "string" ? urls : urls.main;
@@ -154,134 +154,134 @@ function ProjectURLs({
   );
 }
 
-function FeaturedProject({
-  img,
-  side,
-  title,
-  urls = "",
-  tags = [],
-  children,
-}: FeaturedProjectProps) {
-  const angle = useMemo(() => (Math.random() * 2 - 1) * 5, []);
+// function FeaturedProject({
+//   img,
+//   side,
+//   title,
+//   urls = "",
+//   tags = [],
+//   children,
+// }: FeaturedProjectProps) {
+//   const angle = useMemo(() => (Math.random() * 2 - 1) * 5, []);
 
-  const [jiggleX, jiggleY, setScale, _] = useJiggle({ initial: 0 });
+//   const [jiggleX, jiggleY, setScale, _] = useJiggle({ initial: 0 });
 
-  const overlapPercent = 15;
-  const sidePercent = 50 + overlapPercent / 2;
+//   const overlapPercent = 15;
+//   const sidePercent = 50 + overlapPercent / 2;
 
-  const { main } = getURLs(urls);
+//   const { main } = getURLs(urls);
 
-  return (
-    <motion.section
-      className={`max-w-[60rem] mt-8 flex ${
-        side === "left" ? "flex-row" : "flex-row-reverse"
-      }`}
-    >
-      <motion.div
-        className="max-h-full"
-        style={{ width: sidePercent + "%", maxWidth: sidePercent + "%" }}
-        initial={{
-          scale: 0.75,
-          opacity: 0,
-          x: side === "left" ? "-25%" : "25%",
-        }}
-        whileInView={{
-          scale: 1,
-          opacity: 1,
-          x: "0%",
-          transition: defaultMotionSpring({}),
-        }}
-      >
-        <motion.div
-          className="group relative max-w-full max-h-full rounded-[3rem] overflow-hidden bg-a1 cursor-pointer"
-          onHoverStart={() => setScale(1.05)}
-          onHoverEnd={() => setScale(1)}
-          style={{
-            transform: `scale(${jiggleX}, ${jiggleY}) rotate(${angle}deg)`,
-          }}
-        >
-          <img
-            src={img}
-            className="w-full h-full opacity-75 group-hover:opacity-0 transition-opacity duration-300"
-            style={{
-              mixBlendMode: "multiply",
-              filter: "grayscale(1)",
-            }}
-          />
-          <img
-            src={img}
-            className="absolute top-0 left-0 bottom-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-          />
-          <div
-            className="absolute top-0 left-0 bottom-0 right-0"
-            style={{
-              boxShadow: "inset 0 0 5rem var(--color-a1aa)",
-            }}
-          ></div>
-        </motion.div>
-      </motion.div>
-      <motion.div
-        className={`max-h-full z-10 flex flex-col ${
-          side === "left" ? "items-end" : "items-start"
-        } justify-center gap-4`}
-        style={{
-          marginLeft: side === "left" ? -overlapPercent + "%" : "0%",
-          marginRight: side === "right" ? -overlapPercent + "%" : "0%",
-          width: sidePercent + "%",
-          maxWidth: sidePercent + "%",
-        }}
-        {...defaultParentProps({ type: "in-view" })}
-      >
-        <motion.h1
-          className="text-3xl font-black"
-          variants={{
-            hidden: {
-              scale: 0.75,
-              opacity: 0,
-              x: side === "left" ? "50%" : "-50%",
-            },
-            visible: {
-              scale: 1,
-              opacity: 1,
-              x: "0%",
-            },
-          }}
-        >
-          <a
-            className="!text-fg1 hover:!text-a1 transition-color duration-300"
-            href={main}
-          >
-            {title}
-          </a>
-        </motion.h1>
-        <motion.p
-          className={`text-fg2 bg-bg1 p-6 rounded-lg self-stretch ${
-            side === "left" ? "text-right" : "text-left"
-          }`}
-          style={{
-            filter: "drop-shadow(0 0 1rem #0008)",
-          }}
-          variants={{
-            hidden: {
-              scale: 0.75,
-              opacity: 0,
-              x: side === "left" ? "50%" : "-50%",
-            },
-            visible: {
-              scale: 1,
-              opacity: 1,
-              x: "0%",
-            },
-          }}
-        >
-          {children}
-        </motion.p>
-        <ProjectTags tags={tags} side={side} />
-        <ProjectURLs urls={urls} side={side} className="text-[1.25rem]" />
-      </motion.div>
-    </motion.section>
-  );
-}
+//   return (
+//     <motion.section
+//       className={`max-w-[60rem] mt-8 flex ${
+//         side === "left" ? "flex-row" : "flex-row-reverse"
+//       }`}
+//     >
+//       <motion.div
+//         className="max-h-full"
+//         style={{ width: sidePercent + "%", maxWidth: sidePercent + "%" }}
+//         initial={{
+//           scale: 0.75,
+//           opacity: 0,
+//           x: side === "left" ? "-25%" : "25%",
+//         }}
+//         whileInView={{
+//           scale: 1,
+//           opacity: 1,
+//           x: "0%",
+//           transition: defaultMotionSpring({}),
+//         }}
+//       >
+//         <motion.div
+//           className="group relative max-w-full max-h-full rounded-[3rem] overflow-hidden bg-a1 cursor-pointer"
+//           onHoverStart={() => setScale(1.05)}
+//           onHoverEnd={() => setScale(1)}
+//           style={{
+//             transform: `scale(${jiggleX}, ${jiggleY}) rotate(${angle}deg)`,
+//           }}
+//         >
+//           <img
+//             src={img}
+//             className="w-full h-full opacity-75 group-hover:opacity-0 transition-opacity duration-300"
+//             style={{
+//               mixBlendMode: "multiply",
+//               filter: "grayscale(1)",
+//             }}
+//           />
+//           <img
+//             src={img}
+//             className="absolute top-0 left-0 bottom-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+//           />
+//           <div
+//             className="absolute top-0 left-0 bottom-0 right-0"
+//             style={{
+//               boxShadow: "inset 0 0 5rem var(--color-a1aa)",
+//             }}
+//           ></div>
+//         </motion.div>
+//       </motion.div>
+//       <motion.div
+//         className={`max-h-full z-10 flex flex-col ${
+//           side === "left" ? "items-end" : "items-start"
+//         } justify-center gap-4`}
+//         style={{
+//           marginLeft: side === "left" ? -overlapPercent + "%" : "0%",
+//           marginRight: side === "right" ? -overlapPercent + "%" : "0%",
+//           width: sidePercent + "%",
+//           maxWidth: sidePercent + "%",
+//         }}
+//         {...defaultParentProps({ type: "in-view" })}
+//       >
+//         <motion.h1
+//           className="text-3xl font-black"
+//           variants={{
+//             hidden: {
+//               scale: 0.75,
+//               opacity: 0,
+//               x: side === "left" ? "50%" : "-50%",
+//             },
+//             visible: {
+//               scale: 1,
+//               opacity: 1,
+//               x: "0%",
+//             },
+//           }}
+//         >
+//           <a
+//             className="!text-fg1 hover:!text-a1 transition-color duration-300"
+//             href={main}
+//           >
+//             {title}
+//           </a>
+//         </motion.h1>
+//         <motion.p
+//           className={`text-fg2 bg-bg1 p-6 rounded-lg self-stretch ${
+//             side === "left" ? "text-right" : "text-left"
+//           }`}
+//           style={{
+//             filter: "drop-shadow(0 0 1rem #0008)",
+//           }}
+//           variants={{
+//             hidden: {
+//               scale: 0.75,
+//               opacity: 0,
+//               x: side === "left" ? "50%" : "-50%",
+//             },
+//             visible: {
+//               scale: 1,
+//               opacity: 1,
+//               x: "0%",
+//             },
+//           }}
+//         >
+//           {children}
+//         </motion.p>
+//         <ProjectTags tags={tags} side={side} />
+//         <ProjectURLs urls={urls} side={side} className="text-[1.25rem]" />
+//       </motion.div>
+//     </motion.section>
+//   );
+// }
 
 function Project({ title, img, urls = "", tags = [], children }: ProjectProps) {
   const { main } = getURLs(urls);
