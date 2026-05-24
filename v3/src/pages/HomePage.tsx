@@ -129,7 +129,7 @@ export default function HomePage() {
                     <IoDocumentTextOutline />
                     Robotics Resume
                   </a>
-                </div>{" "}
+                </div>
                 <div className="min-w-max w-full">
                   <a
                     href="./resume_art.pdf"
