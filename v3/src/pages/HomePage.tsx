@@ -9,14 +9,19 @@ import JiggleButtonLink from "../components/JiggleButtonLink";
 
 function IconButton({
   children,
+  additionalChildren,
   delay = 0,
-  href = "",
+  href,
   className = "",
   ...props
-}: { delay?: number; href?: string } & HTMLAttributes<HTMLButtonElement> &
+}: {
+  delay?: number;
+  href?: string;
+  additionalChildren?: any;
+} & HTMLAttributes<HTMLButtonElement> &
   MotionNodeOptions) {
   return (
-    <a href={href}>
+    <a href={href} className="group relative">
       <motion.button
         initial={{ scale: 0.75, opacity: 0, x: "-50%", y: "-50%" }}
         animate={{
@@ -34,6 +39,7 @@ function IconButton({
       >
         {children}
       </motion.button>
+      {additionalChildren}
     </a>
   );
 }
@@ -98,7 +104,45 @@ export default function HomePage() {
         >
           <RiLinkedinLine />
         </IconButton>
-        <IconButton delay={1.3} href="https://12jeef.github.io/resume.pdf">
+        <IconButton
+          delay={1.3}
+          additionalChildren={
+            <>
+              <div
+                className="absolute top-0 left-full scale-75 group-hover:scale-100 opacity-0 group-hover:opacity-100 invisible group-hover:visible px-2 text-a1 flex flex-col items-center justify-start gap-1 z-10 transition-all duration-200"
+                style={{ transformOrigin: "0% 0%" }}
+              >
+                <div className="min-w-max w-full">
+                  <a
+                    href="./resume_whole.pdf"
+                    className="flex flex-row items-center justify-start gap-2 text-sm max-w-max"
+                  >
+                    <IoDocumentTextOutline />
+                    Whole Resume
+                  </a>
+                </div>
+                <div className="min-w-max w-full">
+                  <a
+                    href="./resume_robotics.pdf"
+                    className="flex flex-row items-center justify-start gap-2 text-sm max-w-max"
+                  >
+                    <IoDocumentTextOutline />
+                    Robotics Resume
+                  </a>
+                </div>{" "}
+                <div className="min-w-max w-full">
+                  <a
+                    href="./resume_art.pdf"
+                    className="flex flex-row items-center justify-start gap-2 text-sm max-w-max"
+                  >
+                    <IoDocumentTextOutline />
+                    Art Resume
+                  </a>
+                </div>
+              </div>
+            </>
+          }
+        >
           <IoDocumentTextOutline />
         </IconButton>
       </motion.p>
