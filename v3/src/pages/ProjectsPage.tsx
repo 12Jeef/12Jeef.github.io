@@ -531,7 +531,7 @@ export default function ProjectsPage() {
                 open: "https://re-fraction.vercel.app/",
               }}
             >
-              An ray optics simulator with refraction, reflection, material
+              A ray optics simulator with refraction, reflection, material
               customization, spectrogram customization, and more! Still a work
               in progress.
             </Project>
