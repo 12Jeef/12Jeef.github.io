@@ -9,7 +9,7 @@ import {
 } from "../features/jiggle";
 // import { useMemo } from "react";
 import { LuGithub } from "react-icons/lu";
-import { MdOpenInNew } from "react-icons/md";
+import { MdOndemandVideo, MdOpenInNew } from "react-icons/md";
 import { FiDownload } from "react-icons/fi";
 import artgalleryv1 from "../assets/projects/artgalleryv1.png";
 import artgalleryv2 from "../assets/projects/artgalleryv2.png";
@@ -17,6 +17,7 @@ import biotech from "../assets/projects/biotech.png";
 import blobblast from "../assets/projects/blobblast.png";
 import celestialjs from "../assets/projects/celestialjs.png";
 import cellluminex from "../assets/projects/cellluminex.png";
+import luxcm5 from "../assets/projects/luxcm5.png";
 import mergegame from "../assets/projects/mergegame.png";
 import noteblast from "../assets/projects/noteblast.png";
 import peninsulaportal from "../assets/projects/peninsulaportal.png";
@@ -50,6 +51,7 @@ type ProjectURLs =
       github?: string;
       open?: string;
       download?: string;
+      demo?: string;
     };
 
 type ProjectSide = "left" | "right";
@@ -68,11 +70,15 @@ type ProjectProps = {
 // } & ProjectProps;
 
 const getURLs = (urls: ProjectURLs) => {
-  const main = typeof urls === "string" ? urls : urls.main;
-  const github = typeof urls === "string" ? undefined : urls.github;
-  const open = typeof urls === "string" ? undefined : urls.open;
-  const download = typeof urls === "string" ? undefined : urls.download;
-  return { main, github, open, download };
+  if (typeof urls === "string")
+    return {
+      main: urls,
+      github: undefined,
+      open: undefined,
+      download: undefined,
+      demo: undefined,
+    };
+  return urls;
 };
 
 function ProjectTags({
@@ -88,7 +94,7 @@ function ProjectTags({
     <motion.p
       className={`flex ${
         side === "left" ? "flex-row-reverse" : "flex-row"
-      } gap-4 text-a1 text-sm italic lowercase`}
+      } flex-wrap gap-4 text-a1 text-sm italic lowercase max-w-full`}
       {...defaultParentProps({ delay, type: "in-view" })}
     >
       {(side === "left" ? [...tags].reverse() : tags).map((tag) => (
@@ -115,13 +121,13 @@ function ProjectURLs({
   delay?: number;
   className?: string;
 }) {
-  const { github, open, download } = getURLs(urls);
+  const { github, open, download, demo } = getURLs(urls);
 
   return (
     <motion.p
       className={`mt-4 flex ${
         side === "left" ? "flex-row-reverse" : "flex-row"
-      } gap-4 text-a1 italic lowercase ${className}`}
+      } gap-4 text-a1 italic lowercase min-h-[1em] ${className}`}
       {...defaultParentProps({
         delay,
         type: "in-view",
@@ -165,6 +171,19 @@ function ProjectURLs({
           >
             <button className="group/btn-hover:text-fg1 transition-color duration-300">
               <FiDownload />
+            </button>
+          </motion.a>
+        ),
+        demo && (
+          <motion.a
+            key="demo"
+            className="group/btn"
+            href={demo}
+            variants={defaultChildVariants({})}
+            style={{ transformOrigin: side === "left" ? "100% 0" : "0 0" }}
+          >
+            <button className="group/btn-hover:text-fg1 transition-color duration-300">
+              <MdOndemandVideo />
             </button>
           </motion.a>
         ),
@@ -538,7 +557,15 @@ export default function ProjectsPage() {
             <Project
               title="Reaction TrajFinder"
               img={reactiontrajfinder}
-              tags={["TS", "React", "UI", "Algorithm", "Biotech"]}
+              tags={[
+                "TS",
+                "React",
+                "Three.JS",
+                "R3F",
+                "UI",
+                "Algorithm",
+                "Biotech",
+              ]}
               urls={{
                 main: "https://reaction-trajfinder.vercel.app/",
                 github: "https://github.com/12Jeef/ReactionTrajFinder",
@@ -547,6 +574,29 @@ export default function ProjectsPage() {
             >
               An ORCA software output file parser to understand reaction
               dynamics and energy wells through data processing.
+            </Project>
+            <Project
+              title="LuxCM5"
+              img={luxcm5}
+              tags={[
+                "PY",
+                "Vision",
+                "TS",
+                "FRC",
+                "React",
+                "Three.JS",
+                "R3F",
+                "UI",
+                "Algorithm",
+              ]}
+              urls={{
+                main: "https://docs.google.com/document/d/1E66U3NYCPizaUqDCihqypKPuY7Lb1D6UqKZuJsY2DtA/edit?usp=sharing",
+                demo: "https://drive.google.com/drive/folders/1xXJhVPovAGrjThJhUAaO-xbbWitbRN_u?usp=drive_link",
+              }}
+            >
+              Custom software for custom circuit cameras. Features UMich
+              AprilTag detector optimizations and full frontend application.
+              Beats open source solutions by 8x FPS.
             </Project>
             <Project
               title="Virtual Art Gallery V2"
@@ -566,7 +616,7 @@ export default function ProjectsPage() {
             <Project
               title="CellLuminex"
               img={cellluminex}
-              tags={["TS", "React", "UI", "Algorithm", "Biotech"]}
+              tags={["TS", "React", "UI", "Algorithm", "Biotech", "Vision"]}
               urls={{
                 main: "https://cell-luminex.vercel.app/",
                 github: "https://github.com/12Jeef/CellLuminex",
@@ -698,6 +748,7 @@ export default function ProjectsPage() {
                 github: "https://github.com/team6036/peninsulaportal",
                 download:
                   "https://github.com/team6036/peninsulaportal/releases/latest",
+                demo: "https://www.youtube.com/watch?v=rIackMhyDeg",
               }}
             >
               Complete FRC robot diagnostic app, path generator, and competition
