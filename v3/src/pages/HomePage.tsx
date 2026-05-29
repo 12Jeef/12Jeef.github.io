@@ -132,6 +132,15 @@ export default function HomePage() {
                 </div>
                 <div className="min-w-max w-full">
                   <a
+                    href="./resume_tech.pdf"
+                    className="flex flex-row items-center justify-start gap-2 text-sm max-w-max"
+                  >
+                    <IoDocumentTextOutline />
+                    Tech Resume
+                  </a>
+                </div>
+                <div className="min-w-max w-full">
+                  <a
                     href="./resume_art.pdf"
                     className="flex flex-row items-center justify-start gap-2 text-sm max-w-max"
                   >

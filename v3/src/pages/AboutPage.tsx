@@ -48,21 +48,31 @@ export default function AboutPage() {
   });
 
   const programmingRepertoire = [
-    { name: "Python", href: "https://www.python.org/" },
     {
-      name: "Javascript",
-      href: "https://developer.mozilla.org/en-US/docs/Web/JavaScript",
+      name: "Linux",
+      href: "https://ubuntu.com/tutorials/command-line-for-beginners#1-overview",
     },
+    { name: "Typescript", href: "https://www.typescriptlang.org/" },
     { name: "Node.js", href: "https://nodejs.org/" },
     { name: "Electron.js", href: "https://www.electronjs.org/" },
     { name: "Three.js", href: "https://threejs.org/" },
-    { name: "Typescript", href: "https://www.typescriptlang.org/" },
     { name: "React", href: "https://react.dev/" },
     { name: "Redux", href: "https://redux.js.org/" },
     { name: "RTKQ", href: "https://redux-toolkit.js.org/rtk-query/overview" },
     { name: "Tailwind", href: "https://tailwindcss.com/" },
     { name: "Framer-Motion", href: "https://motion.dev/" },
+    {
+      name: "R3F",
+      href: "https://r3f.docs.pmnd.rs/getting-started/introduction",
+    },
+    {
+      name: "Javascript",
+      href: "https://developer.mozilla.org/en-US/docs/Web/JavaScript",
+    },
+    { name: "Python", href: "https://www.python.org/" },
+    { name: "PyGame", href: "https://www.pygame.org/news" },
     { name: "Java", href: "https://www.java.com/" },
+    { name: "Gradle", href: "https://gradle.org/" },
     {
       name: "GLSL",
       href: "https://en.wikipedia.org/wiki/OpenGL_Shading_Language",
@@ -70,6 +80,16 @@ export default function AboutPage() {
   ];
 
   const awards = [
+    {
+      name: "National Merit Finalist",
+      href: "https://www.nationalmerit.org/s/1758/start.aspx?gid=2&pgid=61",
+      suffix: "2026",
+    },
+    {
+      name: "Paly High AP Biology Award",
+      href: "",
+      suffix: "2026",
+    },
     {
       name: "AP Scholar with Distinction",
       href: "https://apstudents.collegeboard.org/awards-recognitions/ap-scholar-award",
@@ -81,8 +101,37 @@ export default function AboutPage() {
       suffix: "2025",
     },
     {
-      name: "FRC Auto Award",
-      href: "https://www.firstinspires.org/resource-library/frc/awards-based-on-machine-creativity-innovation",
+      name: "Paly High Chemistry H Award",
+      href: "",
+      suffix: "2025",
+    },
+    {
+      name: "Paly High AP Physics C Award",
+      href: "",
+      suffix: "2025",
+    },
+    {
+      name: "FRC Autonomous Award",
+      href: "https://www.firstinspires.org/resources/library/frc/machine-awards?hsLang=en#autonomous",
+    },
+    {
+      name: "FRC Innovation In Control Award",
+      href: "https://www.firstinspires.org/resources/library/frc/machine-awards?hsLang=en#innovation-control",
+    },
+    {
+      name: "Scholastic Art Gold Key",
+      href: "https://www.artandwriting.org/",
+      suffix: "x4",
+    },
+    {
+      name: "Scholastic Art Silver Key",
+      href: "https://www.artandwriting.org/",
+      suffix: "x2",
+    },
+    {
+      name: "COSMOS",
+      href: "https://cosmos-ucop.ucdavis.edu/app/main",
+      suffix: "2024",
     },
     { name: "USACO Silver", href: "https://usaco.org/" },
     {
@@ -101,39 +150,14 @@ export default function AboutPage() {
       suffix: "2023",
     },
     {
-      name: "Scholastic Art Gold Key",
-      href: "https://www.artandwriting.org/",
-      suffix: "x4",
-    },
-    {
-      name: "Scholastic Art Silver Key",
-      href: "https://www.artandwriting.org/",
-      suffix: "x2",
-    },
-    {
       name: "PVSA",
       href: "https://presidentialserviceawards.gov/",
       suffix: "2023",
     },
     {
-      name: "COSMOS",
-      href: "https://cosmos-ucop.ucdavis.edu/app/main",
-      suffix: "2024",
-    },
-    {
       name: "Paly High Biology H Award",
       href: "",
       suffix: "2023",
-    },
-    {
-      name: "Paly High Chemistry H Award",
-      href: "",
-      suffix: "2025",
-    },
-    {
-      name: "Paly High AP Physics C Award",
-      href: "",
-      suffix: "2025",
     },
   ];
 
@@ -281,7 +305,7 @@ export default function AboutPage() {
             Boy don't we love awards! I got a few too!
           </motion.p>
           <motion.section
-            className="flex flex-row items-center justify-center gap-4 flex-wrap"
+            className="-mx-10 flex flex-row items-center justify-center gap-4 flex-wrap"
             {...defaultParentProps({
               delay: 0.1,
               stagger: 0.5 / awards.length,
