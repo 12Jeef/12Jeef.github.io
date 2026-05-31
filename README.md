@@ -1,4 +1,4 @@
-<h1 style="text-align: center"><a href="https://12jeef.github.io/">12Jeef.github.io</a></h1>
+<h1 align="center"><a href="https://12jeef.github.io/">12Jeef.github.io</a></h1>
 
 Heyo! This is the repo for my website, containing anything and all the files that I'm hosting statically online.
 Here's a comprehensive index of what's on it and how to run each part:
