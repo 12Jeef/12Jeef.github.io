@@ -4,7 +4,7 @@
   "description": "Jeef's gallery V3",
   "main": "build/app.js",
   "scripts": {
-    "start": "npx serve ..",
+    "start": "npx serve .",
     "build": "rollup -c",
     "run": "npm run build && npm start"
   },

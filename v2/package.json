@@ -4,7 +4,7 @@
   "description": "Jeef's website V2",
   "main": "../app.js",
   "scripts": {
-    "start": "npx serve .",
+    "start": "npx serve ./build/",
     "build": "rollup -c",
     "run": "npm run build && npm start"
   },
