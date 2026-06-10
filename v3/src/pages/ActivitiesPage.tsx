@@ -54,7 +54,7 @@ function Pane({
       }}
       {...props}
     >
-      <span className="sticky top-0 bg-bg1 pb-2">
+      <span className="z-1 sticky top-0 bg-bg1 pb-2">
         <h1 className={`text-2xl ${mobile ? "" : "flex flex-row gap-3"}`}>
           <span className="font-black text-fg1">{title}</span>
           {location && (

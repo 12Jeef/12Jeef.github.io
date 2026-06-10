@@ -43,7 +43,7 @@ function Root() {
 
   useEffect(() => {
     const onResize = () => {
-      setMobile(window.innerWidth < window.innerHeight * 0.875);
+      setMobile(window.innerWidth < window.innerHeight * 1.25);
     };
     onResize();
     window.addEventListener("resize", onResize);

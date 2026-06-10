@@ -502,7 +502,9 @@ export default function ProjectsPage() {
     >
       <Page key="ProjectsPage">
         <PageTitle>My Stuff</PageTitle>
-        <motion.section className="mt-4 text-fg2 text-[1.25rem] flex flex-row items-center justify-center gap-2">
+        <motion.section
+          className={`mt-4 text-fg2 text-[1.25rem] flex ${mobile ? "flex-col" : "flex-row"} items-center justify-center gap-2`}
+        >
           <div>Want to find something specific?</div>
           <WantedTags />
         </motion.section>
