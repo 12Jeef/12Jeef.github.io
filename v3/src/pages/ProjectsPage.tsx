@@ -28,7 +28,7 @@ import ppatrol from "../assets/projects/ppatrol.png";
 import reactiontrajfinder from "../assets/projects/reactiontrajfinder.png";
 import refraction from "../assets/projects/refraction.png";
 import { FaRegFolder } from "react-icons/fa6";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { context } from "../main";
 
 type FilterContext = {
@@ -323,6 +323,8 @@ function ProjectURLs({
 // }
 
 function Project({ title, img, urls = "", tags = [], children }: ProjectProps) {
+  const { mobile } = useContext(context);
+
   const { main } = getURLs(urls);
 
   const {
@@ -340,6 +342,26 @@ function Project({ title, img, urls = "", tags = [], children }: ProjectProps) {
     }
     if (changed) setAllTags({ ...allTags });
   }, [tags, allTags, setAllTags]);
+
+  const ref = useRef<HTMLDivElement>(null);
+  const [imageShow, setImageShow] = useState(false);
+  useEffect(() => {
+    const elem = ref.current;
+    if (!elem) return;
+    if (!mobile) return;
+    const interval = setInterval(
+      () => {
+        const rect = elem.getBoundingClientRect();
+        const show =
+          Math.abs(rect.top + rect.height / 2 - window.innerHeight / 2) <
+          rect.height / 2;
+        if (imageShow === show) return;
+        setImageShow(show);
+      },
+      (1 / 10) * 1e3,
+    );
+    return () => clearInterval(interval);
+  }, [mobile, ref, imageShow]);
 
   const isAllowed =
     wantedTags == null ||
@@ -361,11 +383,12 @@ function Project({ title, img, urls = "", tags = [], children }: ProjectProps) {
         filter: "drop-shadow(0 0 1rem #0008)",
       }}
       layout="position"
+      ref={ref}
     >
       {img && (
         <img
           src={img}
-          className="absolute inset-0 h-full w-full object-cover object-center opacity-0 group-hover:opacity-35 blur-xs group-hover:blur-[1px] duration-300"
+          className={`absolute inset-0 h-full w-full object-cover object-center ${mobile ? (imageShow ? "opacity-35 blur-[1px]" : "opacity-0 blur-xs") : "opacity-0 blur-xs group-hover:opacity-35 group-hover:blur-[1px]"} duration-300`}
         />
       )}
       <div className="absolute top-0 left-0 bottom-0 right-0 p-8 flex flex-col gap-4">
