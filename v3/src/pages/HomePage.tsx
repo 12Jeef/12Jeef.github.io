@@ -1,11 +1,12 @@
 import Title from "../components/Title";
 import { motion, type MotionNodeOptions } from "framer-motion";
 import { defaultMotionSpring } from "../features/jiggle";
-import type { HTMLAttributes } from "react";
+import { useContext, useEffect, useState, type HTMLAttributes } from "react";
 import { LuGithub } from "react-icons/lu";
 import { IoDocumentTextOutline } from "react-icons/io5";
 import { RiLinkedinLine } from "react-icons/ri";
 import JiggleButtonLink from "../components/JiggleButtonLink";
+import { context } from "../main";
 
 function IconButton({
   children,
@@ -20,31 +21,50 @@ function IconButton({
   additionalChildren?: any;
 } & HTMLAttributes<HTMLButtonElement> &
   MotionNodeOptions) {
+  const body = (
+    <motion.button
+      initial={{ scale: 0.75, opacity: 0, x: "-50%", y: "-50%" }}
+      animate={{
+        scale: 1,
+        opacity: 1,
+        x: "0%",
+        y: "0%",
+        transition: defaultMotionSpring({ delay }),
+      }}
+      className={`text-[1.25rem] text-a1 hover:text-fg1 ${className}`}
+      style={{
+        transition: "color 0.3s",
+      }}
+      {...props}
+    >
+      {children}
+    </motion.button>
+  );
+  if (!href) {
+    return (
+      <span className="group relative">
+        {body}
+        {additionalChildren}
+      </span>
+    );
+  }
   return (
     <a href={href} className="group relative">
-      <motion.button
-        initial={{ scale: 0.75, opacity: 0, x: "-50%", y: "-50%" }}
-        animate={{
-          scale: 1,
-          opacity: 1,
-          x: "0%",
-          y: "0%",
-          transition: defaultMotionSpring({ delay }),
-        }}
-        className={`text-[1.25rem] text-a1 hover:text-fg1 ${className}`}
-        style={{
-          transition: "color 0.3s",
-        }}
-        {...props}
-      >
-        {children}
-      </motion.button>
+      {body}
       {additionalChildren}
     </a>
   );
 }
 
 export default function HomePage() {
+  const { mobile } = useContext(context);
+
+  const [resumeToggle, setResumeToggle] = useState(false);
+  useEffect(() => {
+    if (!mobile) return;
+    setResumeToggle(false);
+  }, [mobile]);
+
   const makeProps = (x: number, delay: number) => ({
     initial: { scale: 0.75, opacity: 0, x: x * -50 + "%", y: "-50%" },
     animate: {
@@ -56,6 +76,50 @@ export default function HomePage() {
     },
     exit: { scale: 0, x: x * 100 + "%", y: "100%" },
   });
+
+  const resumes = (
+    <div
+      className={`${mobile ? "mt-4" : "absolute top-0 left-full"} ${mobile ? (resumeToggle ? "scale-100 opacity-100 visible h-20" : "scale-75 opacity-0 invisible h-0") : "scale-75 opacity-0 invisible group-hover:scale-100 group-hover:opacity-100 group-hover:visible"} px-2 text-a1 flex flex-col items-center justify-start gap-1 z-10 transition-all duration-200`}
+      style={{ transformOrigin: mobile ? "50% 0%" : "0% 0%" }}
+    >
+      <div className="min-w-max w-full">
+        <a
+          href="./resume_whole.pdf"
+          className="flex flex-row items-center justify-start gap-2 text-sm max-w-max"
+        >
+          <IoDocumentTextOutline />
+          Whole Resume
+        </a>
+      </div>
+      <div className="min-w-max w-full">
+        <a
+          href="./resume_robotics.pdf"
+          className="flex flex-row items-center justify-start gap-2 text-sm max-w-max"
+        >
+          <IoDocumentTextOutline />
+          Robotics Resume
+        </a>
+      </div>
+      <div className="min-w-max w-full">
+        <a
+          href="./resume_tech.pdf"
+          className="flex flex-row items-center justify-start gap-2 text-sm max-w-max"
+        >
+          <IoDocumentTextOutline />
+          Tech Resume
+        </a>
+      </div>
+      <div className="min-w-max w-full">
+        <a
+          href="./resume_art.pdf"
+          className="flex flex-row items-center justify-start gap-2 text-sm max-w-max"
+        >
+          <IoDocumentTextOutline />
+          Art Resume
+        </a>
+      </div>
+    </div>
+  );
 
   return (
     <motion.article
@@ -94,7 +158,7 @@ export default function HomePage() {
       >
         I make apps, art, robots, and more
       </motion.p>
-      <motion.p className="mt-5 flex flex-row items-center justify-center gap-4">
+      <motion.div className="mt-5 flex flex-row items-center justify-center gap-4">
         <IconButton delay={1.1} href="https://github.com/12Jeef">
           <LuGithub />
         </IconButton>
@@ -106,55 +170,16 @@ export default function HomePage() {
         </IconButton>
         <IconButton
           delay={1.3}
-          additionalChildren={
-            <>
-              <div
-                className="absolute top-0 left-full scale-75 group-hover:scale-100 opacity-0 group-hover:opacity-100 invisible group-hover:visible px-2 text-a1 flex flex-col items-center justify-start gap-1 z-10 transition-all duration-200"
-                style={{ transformOrigin: "0% 0%" }}
-              >
-                <div className="min-w-max w-full">
-                  <a
-                    href="./resume_whole.pdf"
-                    className="flex flex-row items-center justify-start gap-2 text-sm max-w-max"
-                  >
-                    <IoDocumentTextOutline />
-                    Whole Resume
-                  </a>
-                </div>
-                <div className="min-w-max w-full">
-                  <a
-                    href="./resume_robotics.pdf"
-                    className="flex flex-row items-center justify-start gap-2 text-sm max-w-max"
-                  >
-                    <IoDocumentTextOutline />
-                    Robotics Resume
-                  </a>
-                </div>
-                <div className="min-w-max w-full">
-                  <a
-                    href="./resume_tech.pdf"
-                    className="flex flex-row items-center justify-start gap-2 text-sm max-w-max"
-                  >
-                    <IoDocumentTextOutline />
-                    Tech Resume
-                  </a>
-                </div>
-                <div className="min-w-max w-full">
-                  <a
-                    href="./resume_art.pdf"
-                    className="flex flex-row items-center justify-start gap-2 text-sm max-w-max"
-                  >
-                    <IoDocumentTextOutline />
-                    Art Resume
-                  </a>
-                </div>
-              </div>
-            </>
-          }
+          onClick={() => {
+            if (!mobile) return;
+            setResumeToggle(!resumeToggle);
+          }}
+          additionalChildren={mobile ? null : resumes}
         >
           <IoDocumentTextOutline />
         </IconButton>
-      </motion.p>
+      </motion.div>
+      {mobile ? resumes : null}
       <motion.p
         className="mt-[5rem] flex flex-col lg:flex-row items-center justify-center gap-4"
         initial={{ maxHeight: "0rem" }}

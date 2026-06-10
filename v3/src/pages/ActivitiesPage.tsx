@@ -1,6 +1,6 @@
 import PageTitle from "../components/PageTitle";
 import Page from "../components/Page";
-import { type HTMLAttributes } from "react";
+import { useContext, type HTMLAttributes } from "react";
 import JiggleButton from "../components/JiggleButton";
 import { AnimatePresence, motion, type MotionNodeOptions } from "motion/react";
 import {
@@ -10,6 +10,7 @@ import {
   defaultParentProps,
 } from "../features/jiggle";
 import { useNavigate } from "react-router-dom";
+import { context } from "../main";
 
 type PaneName = "frc" | "sssip" | "cosmos" | "acf" | "lbl" | "pub";
 const paneNames: PaneName[] = ["lbl", "cosmos", "sssip", "frc", "acf", "pub"];
@@ -40,9 +41,11 @@ function Pane({
   time: string;
 } & HTMLAttributes<HTMLElement> &
   MotionNodeOptions) {
+  const { mobile } = useContext(context);
+
   return (
     <motion.section
-      className={`absolute top-0 left-0 right-0 flex flex-col gap-2 ${className}`}
+      className={`absolute top-0 left-0 right-0 flex flex-col gap-2 pb-40 ${className}`}
       initial={{ scale: 0.75, opacity: 0 }}
       animate={{ scale: 1, opacity: 1, transition: defaultMotionSpring({}) }}
       exit={{ scale: 0.75, opacity: 0 }}
@@ -51,14 +54,23 @@ function Pane({
       }}
       {...props}
     >
-      <h1 className="text-2xl flex flex-row gap-3">
-        <span className="font-black text-fg1">{title}</span>
-        <span className="font-light text-fg2a">@</span>
-        <span className="font-bold">
-          <a href={locationUrl}>{location}</a>
-        </span>
-      </h1>
-      <h3 className="text-2xl font-light text-fg2a italic">{time}</h3>
+      <span className="sticky top-0 bg-bg1 pb-2">
+        <h1 className={`text-2xl ${mobile ? "" : "flex flex-row gap-3"}`}>
+          <span className="font-black text-fg1">{title}</span>
+          {location && (
+            <>
+              {mobile && <br />}
+              <span className="flex flex-row gap-3">
+                <span className="font-light text-fg2a">@</span>
+                <span className="font-bold">
+                  <a href={locationUrl}>{location}</a>
+                </span>
+              </span>
+            </>
+          )}
+        </h1>
+        <h3 className="text-2xl font-light text-fg2a italic">{time}</h3>
+      </span>
       {children}
     </motion.section>
   );
@@ -67,6 +79,8 @@ function Pane({
 export type ActivitiesPageProps = { pane?: string };
 
 export default function ActivitiesPage({ pane: thePane }: ActivitiesPageProps) {
+  const { mobile } = useContext(context);
+
   const navigate = useNavigate();
 
   const pane = (thePane ?? "lbl") as PaneName;
@@ -74,16 +88,20 @@ export default function ActivitiesPage({ pane: thePane }: ActivitiesPageProps) {
   return (
     <Page key="ActivitiesPage" className="h-full">
       <PageTitle>Activities</PageTitle>
-      <section className="w-full max-w-[60rem] h-full max-h-full mt-10 flex flex-row">
-        <section className="relative w-[12.5rem] h-full">
+      <section
+        className={`w-full max-w-[60rem] h-full max-h-full mt-10 flex ${mobile ? "flex-col" : "flex-row"}`}
+      >
+        <section
+          className={`${mobile ? "w-full" : "relative w-[12.5rem] h-full"}`}
+        >
           <motion.nav
-            className="absolute top-0 left-0 bottom-0 right-0 overflow-auto p-4 flex flex-col items-stretch justify-start gap-2"
+            className={`${mobile ? "-mx-8 mb-4" : "absolute top-0 left-0 bottom-0 right-0"} overflow-auto p-4 flex ${mobile ? "flex-row flex-wrap" : "flex-col"} items-stretch justify-start ${mobile ? "gap-0" : "gap-2"}`}
             {...defaultParentProps({})}
           >
             {paneNames.map((name) => (
               <motion.div
                 key={name}
-                className="relative w-full"
+                className={`relative ${mobile ? "" : "w-full"}`}
                 variants={defaultChildVariants({})}
               >
                 <JiggleButton

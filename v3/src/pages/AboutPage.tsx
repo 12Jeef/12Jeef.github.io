@@ -8,11 +8,12 @@ import {
   defaultParentProps,
   useJiggle,
 } from "../features/jiggle";
-import type { HTMLAttributes } from "react";
+import { useContext, type HTMLAttributes } from "react";
 import { Link } from "react-router-dom";
 import JiggleButtonLink from "../components/JiggleButtonLink";
 import art from "../assets/art/art.png";
 import Page from "../components/Page";
+import { context } from "../main";
 
 function Section({
   header,
@@ -43,6 +44,8 @@ function Section({
 }
 
 export default function AboutPage() {
+  const { mobile } = useContext(context);
+
   const [imgJiggleX, imgJiggleY, imgSetScale, _] = useJiggle({
     initial: 0,
   });
@@ -310,7 +313,7 @@ export default function AboutPage() {
             Boy don't we love awards! I got a few too!
           </motion.p>
           <motion.section
-            className="-mx-10 flex flex-row items-center justify-center gap-4 flex-wrap"
+            className={`${mobile ? "" : "-mx-10"} flex flex-row items-center justify-center gap-4 flex-wrap`}
             {...defaultParentProps({
               delay: 0.1,
               stagger: 0.5 / awards.length,
@@ -328,6 +331,7 @@ export default function AboutPage() {
           </motion.section>
         </motion.section>
       </Section>
+      <div className="min-h-80"></div>
     </Page>
   );
 }

@@ -57,6 +57,10 @@ body,
   background-color: var(--color-bg1);
 }
 
+html:has(body.mobile) {
+  font-size: 12px;
+}
+
 button {
   cursor: pointer;
 }

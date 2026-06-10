@@ -14,7 +14,7 @@ export default function PageTitle({
 
   return (
     <h1
-      className={`relative text-[4rem] lg:text-[5rem] text-1xl lowercase flex flex-row gap-0 text-a1 font-blob2 opacity-100 select-none ${className} min-h-[1em]`}
+      className={`z-10 relative text-[4rem] lg:text-[5rem] text-1xl lowercase flex flex-row gap-0 text-a1 font-blob2 opacity-100 select-none ${className} min-h-[1em]`}
       style={{
         filter: "drop-shadow(0 0 5rem var(--color-a1a))",
         transform: `scale(${jiggleX}, ${jiggleY})`,

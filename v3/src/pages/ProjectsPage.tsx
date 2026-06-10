@@ -29,15 +29,16 @@ import reactiontrajfinder from "../assets/projects/reactiontrajfinder.png";
 import refraction from "../assets/projects/refraction.png";
 import { FaRegFolder } from "react-icons/fa6";
 import { createContext, useContext, useEffect, useState } from "react";
+import { context } from "../main";
 
-type Context = {
+type FilterContext = {
   tags: { [key: string]: string[] };
   setTags: (tags: { [key: string]: string[] }) => void;
   wantedTags: null | string[];
   setWantedTags: (tags: null | string[]) => void;
 };
 
-const context = createContext<Context>({
+const filterContext = createContext<FilterContext>({
   tags: {},
   setTags: () => {},
   wantedTags: null,
@@ -328,7 +329,7 @@ function Project({ title, img, urls = "", tags = [], children }: ProjectProps) {
     tags: allTags,
     setTags: setAllTags,
     wantedTags,
-  } = useContext(context);
+  } = useContext(filterContext);
   useEffect(() => {
     let changed = false;
     for (const tag of tags) {
@@ -389,8 +390,65 @@ function Project({ title, img, urls = "", tags = [], children }: ProjectProps) {
   );
 }
 
+function WantedTagsMenu() {
+  const { mobile } = useContext(context);
+
+  const { tags, wantedTags, setWantedTags } = useContext(filterContext);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.75, height: "0rem" }}
+      animate={{ opacity: 1, scale: 1, height: "10rem" }}
+      exit={{
+        opacity: 0,
+        scale: 0.75,
+        transition: { delay: 0.1 },
+        height: "0rem",
+      }}
+      className={`${mobile ? "" : "absolute top-full left-1/2 -translate-x-1/2"} mt-1 z-10 rounded-[1rem] backdrop-blur-sm`}
+      style={{
+        transformOrigin: "50% 0%",
+      }}
+    >
+      <div
+        className="px-8 py-4 bg-a1aa rounded-[1rem] flex flex-wrap justify-start items-center gap-2 w-120"
+        style={{
+          filter: "drop-shadow(0 0 1rem #0008)",
+          boxShadow: "inset 0 0 1rem var(--color-a1a)",
+        }}
+      >
+        {Object.keys(tags)
+          .sort((a, b) => tags[b].length - tags[a].length)
+          .map((tag) => (
+            <motion.button
+              key={tag}
+              className="min-w-30 text-sm lowercase flex flex-row items-center justify-start gap-2"
+              onClick={() => {
+                if (wantedTags == null) return;
+                if (wantedTags.includes(tag))
+                  setWantedTags(wantedTags.filter((t) => t !== tag));
+                else setWantedTags([...wantedTags, tag]);
+              }}
+            >
+              <div
+                className={`w-2 h-2 ${wantedTags?.includes(tag) ? "bg-a1" : "bg-a1aa"} rounded-full duration-200`}
+              ></div>
+              <div
+                className={`${wantedTags?.includes(tag) ? "text-a1" : "text-a1a"} duration-200`}
+              >
+                {tag} ({tags[tag].length})
+              </div>
+            </motion.button>
+          ))}
+      </div>
+    </motion.div>
+  );
+}
+
 function WantedTags() {
-  const { tags, wantedTags, setWantedTags } = useContext(context);
+  const { mobile } = useContext(context);
+
+  const { wantedTags, setWantedTags } = useContext(filterContext);
 
   const [shown, setShown] = useState(false);
 
@@ -420,61 +478,21 @@ function WantedTags() {
           Yes!
         </div>
       </button>
-      <AnimatePresence>
-        {shown && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.75 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.75, transition: { delay: 0.1 } }}
-            className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-10 rounded-[1rem] backdrop-blur-sm"
-            style={{
-              transformOrigin: "50% 0%",
-            }}
-          >
-            <div
-              className="px-8 py-4 bg-a1aa rounded-[1rem] flex flex-wrap justify-start items-center gap-2 w-120"
-              style={{
-                filter: "drop-shadow(0 0 1rem #0008)",
-                boxShadow: "inset 0 0 1rem var(--color-a1a)",
-              }}
-            >
-              {Object.keys(tags)
-                .sort((a, b) => tags[b].length - tags[a].length)
-                .map((tag) => (
-                  <motion.button
-                    key={tag}
-                    className="min-w-30 text-sm lowercase flex flex-row items-center justify-start gap-2"
-                    onClick={() => {
-                      if (wantedTags == null) return;
-                      if (wantedTags.includes(tag))
-                        setWantedTags(wantedTags.filter((t) => t !== tag));
-                      else setWantedTags([...wantedTags, tag]);
-                    }}
-                  >
-                    <div
-                      className={`w-2 h-2 ${wantedTags?.includes(tag) ? "bg-a1" : "bg-a1aa"} rounded-full duration-200`}
-                    ></div>
-                    <div
-                      className={`${wantedTags?.includes(tag) ? "text-a1" : "text-a1a"} duration-200`}
-                    >
-                      {tag} ({tags[tag].length})
-                    </div>
-                  </motion.button>
-                ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {!mobile && (
+        <AnimatePresence>{shown && <WantedTagsMenu />}</AnimatePresence>
+      )}
     </div>
   );
 }
 
 export default function ProjectsPage() {
+  const { mobile } = useContext(context);
+
   const [tags, setTags] = useState<{ [key: string]: string[] }>({});
   const [wantedTags, setWantedTags] = useState<null | string[]>(null);
 
   return (
-    <context.Provider
+    <filterContext.Provider
       value={{
         tags,
         setTags,
@@ -488,6 +506,9 @@ export default function ProjectsPage() {
           <div>Want to find something specific?</div>
           <WantedTags />
         </motion.section>
+        <AnimatePresence>
+          {mobile && wantedTags != null && <WantedTagsMenu />}
+        </AnimatePresence>
         {/* <motion.section>
         <FeaturedProject
           side="left"
@@ -538,7 +559,7 @@ export default function ProjectsPage() {
           installations in total and over 700 monthly users.
         </FeaturedProject>
       </motion.section> */}
-        <section className="mt-16 flex flex-wrap justify-center items-center gap-8">
+        <section className="mt-16 mb-80 flex flex-wrap justify-center items-center gap-8">
           <AnimatePresence>
             <Project
               title="Refraction"
@@ -794,6 +815,6 @@ export default function ProjectsPage() {
           </AnimatePresence>
         </section>
       </Page>
-    </context.Provider>
+    </filterContext.Provider>
   );
 }
