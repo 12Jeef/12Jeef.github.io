@@ -85,6 +85,18 @@ export default function AboutPage() {
       name: "GLSL",
       href: "https://en.wikipedia.org/wiki/OpenGL_Shading_Language",
     },
+    {
+      name: "OpenAI SDK",
+      href: "https://developers.openai.com/api/docs/libraries",
+    },
+    {
+      name: "Anthropic SDK",
+      href: "https://platform.claude.com/docs/en/cli-sdks-libraries/overview",
+    },
+    {
+      name: "Gemini SDK",
+      href: "https://ai.google.dev/gemini-api/docs/libraries",
+    },
   ];
 
   const awards = [
