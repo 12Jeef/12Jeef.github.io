@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useContext, useEffect, useRef } from "react";
+import { context } from "../main";
 
 type Ball = {
   x: number;
@@ -12,6 +13,8 @@ type Ball = {
 };
 
 function BackgroundContent() {
+  const { mobile } = useContext(context);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -46,21 +49,22 @@ function BackgroundContent() {
     const logoRadii = [
       100, 100, 75, 75, 50, 50, 50, 35, 35, 35, 35, 25, 25, 25, 25, 25,
     ];
-    for (const r of mouseRadii)
-      balls.push({
-        x: 0,
-        y: 0,
-        vx: 0,
-        vy: 0,
-        radius: r,
-        following: balls.length - 2 >= 0 ? balls.length - 2 : "mouse",
-        a:
-          (0.75 +
-            (0.5 - 0.75) *
-              Math.pow(balls.length / (mouseRadii.length - 1), 1 / 1e3)) *
-          (balls.length % 2 === 0 ? 1 : 0.75),
-        t: Math.random(),
-      });
+    if (!mobile)
+      for (const r of mouseRadii)
+        balls.push({
+          x: 0,
+          y: 0,
+          vx: 0,
+          vy: 0,
+          radius: r,
+          following: balls.length - 2 >= 0 ? balls.length - 2 : "mouse",
+          a:
+            (0.75 +
+              (0.5 - 0.75) *
+                Math.pow(balls.length / (mouseRadii.length - 1), 1 / 1e3)) *
+            (balls.length % 2 === 0 ? 1 : 0.75),
+          t: Math.random(),
+        });
     for (const r of logoRadii)
       balls.push({
         x: 0,
@@ -72,13 +76,15 @@ function BackgroundContent() {
         a: 0.25,
         t: Math.random(),
       });
+    const scale = mobile ? 0.75 : 1;
+    for (const ball of balls) ball.radius *= scale;
 
     let frameId: number;
     let t0 = Date.now();
     let t = 0;
     const update = () => {
       const t1 = Date.now();
-      const dt = (t1 - t0) / 1e3;
+      const dt = Math.min(0.1, (t1 - t0) / 1e3);
       t0 = t1;
       t += dt;
 
@@ -98,7 +104,8 @@ function BackgroundContent() {
           if (r <= 0) continue;
           const thresh = (ball.radius + ball2.radius) * 0.75;
           if (r > thresh) continue;
-          const a = (-0.5 * Math.pow(thresh - r, 2)) / (0.02 * ball.radius);
+          const a =
+            (-0.5 * Math.pow(thresh - r, 2)) / (0.02 * (ball.radius / scale));
           ball.vx -= (dx / r) * a * dt;
           ball.vy -= (dy / r) * a * dt;
         }
@@ -109,9 +116,12 @@ function BackgroundContent() {
                 mouse: mouseX,
                 logo:
                   logoX +
-                  75 *
+                  (300 - 2 * (ball.radius / scale)) *
+                    scale *
                     Math.sin(
-                      (Date.now() / 1e3) * 1 + 5.67 + 2 * Math.PI * ball.t,
+                      (Date.now() / 1e3) * 1 +
+                        (5.67 + 8.91 * ball.t) +
+                        2 * Math.PI * ball.t,
                     ),
               }[ball.following];
         const goalY =
@@ -121,9 +131,12 @@ function BackgroundContent() {
                 mouse: mouseY,
                 logo:
                   logoY +
-                  35 *
+                  (300 - 2 * (ball.radius / scale)) *
+                    scale *
                     Math.cos(
-                      (Date.now() / 1e3) * 1.5 + 8.91 + 2 * Math.PI * ball.t,
+                      (Date.now() / 1e3) * 1.5 +
+                        (8.91 + 5.67 * ball.t) +
+                        2 * Math.PI * ball.t,
                     ),
               }[ball.following];
         const dx = ball.x - goalX;
@@ -140,16 +153,20 @@ function BackgroundContent() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       for (const ball of balls) {
         ctx.beginPath();
-        ctx.arc(
-          ball.x,
-          ball.y,
-          ball.radius *
-            (1 +
-              0.1 * Math.sin((Date.now() / 1e3) * 1 + 2 * Math.PI * ball.t)) *
-            (t < 1 ? 0 : t > 3 ? 1 : (t - 1) / 2),
-          0,
-          Math.PI * 2,
-        );
+        const v = Math.hypot(ball.vx, ball.vy) / scale;
+        const r = ball.radius * (t < 1 ? 0 : t > 3 ? 1 : (t - 1) / 2);
+        const rx =
+          r *
+          (1 + 0.1 * Math.sin((Date.now() / 1e3) * 1 + 2 * Math.PI * ball.t)) *
+          Math.pow(2, v / 5e3);
+        const ry =
+          r *
+          (1 +
+            0.1 *
+              Math.cos((Date.now() / 1e3) * 2 + 2 * Math.PI * (ball.t * 3))) *
+          Math.pow(0.5, v / 5e3);
+        const angle = Math.atan2(ball.vy, ball.vx);
+        ctx.ellipse(ball.x, ball.y, rx, ry, angle, 0, Math.PI * 2);
         ctx.fill();
       }
       frameId = requestAnimationFrame(update);
@@ -160,7 +177,7 @@ function BackgroundContent() {
       observer.unobserve(parent);
       cancelAnimationFrame(frameId);
     };
-  }, [canvasRef]);
+  }, [canvasRef, mobile]);
 
   return <canvas ref={canvasRef}></canvas>;
 }
