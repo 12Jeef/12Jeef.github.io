@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef } from "react";
+import { useContext, useEffect, useRef, type HTMLAttributes } from "react";
 import { context } from "../main";
 
 type Ball = {
@@ -90,7 +90,7 @@ function BackgroundContent() {
       const mouseY = mouseClientY - rect.top;
 
       const logoX = canvas.width / 2;
-      const logoY = window.innerHeight / 2 + 50;
+      const logoY = window.innerHeight / 2;
 
       for (const ball of balls) {
         ball.x += ball.vx * dt;
@@ -120,7 +120,7 @@ function BackgroundContent() {
                   (300 - 2 * (ball.radius / scale)) *
                     scale *
                     Math.sin(
-                      (Date.now() / 1e3) * 1 +
+                      (Date.now() / 1e3) * 0.25 +
                         (5.67 + 8.91 * ball.t) +
                         2 * Math.PI * ball.t,
                     ),
@@ -135,7 +135,7 @@ function BackgroundContent() {
                   (300 - 2 * (ball.radius / scale)) *
                     scale *
                     Math.cos(
-                      (Date.now() / 1e3) * 1.5 +
+                      (Date.now() / 1e3) * 0.375 +
                         (8.91 + 5.67 * ball.t) +
                         2 * Math.PI * ball.t,
                     ),
@@ -184,15 +184,25 @@ function BackgroundContent() {
   return <canvas ref={canvasRef}></canvas>;
 }
 
-export type BackgroundProps = {};
+export type BackgroundProps = {
+  background: string;
+} & HTMLAttributes<HTMLDivElement>;
 
-export default function Background({}: BackgroundProps) {
+export default function Background({
+  background,
+  className = "",
+  ...props
+}: BackgroundProps) {
   return (
     <div
-      className="absolute top-0 bottom-0 left-0 right-0 overflow-hidden opacity-20 -z-1"
+      className={`absolute top-0 bottom-0 left-0 right-0 overflow-hidden ${className}`}
       style={{ mixBlendMode: "lighten" }}
+      {...props}
     >
-      <div className="absolute top-[-100px] bottom-[-100px] left-[-100px] right-[-100px] bg-a1">
+      <div
+        className="absolute top-[-100px] bottom-[-100px] left-[-100px] right-[-100px]"
+        style={{ background }}
+      >
         <div
           className="absolute top-0 bottom-0 left-0 right-0"
           style={{ mixBlendMode: "multiply" }}

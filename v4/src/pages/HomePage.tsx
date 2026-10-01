@@ -8,13 +8,17 @@ import { HiOutlineDocumentText } from "react-icons/hi";
 import Page from "../components/Page";
 import IconButton from "../components/IconButton";
 import Background from "../components/Background";
+import { FaArrowDown } from "react-icons/fa";
 
 export type HomePageProps = {};
 
 export default function HomePage({}: HomePageProps) {
   return (
-    <Page innerClassName="bg-bg1 z-1">
-      <Background />
+    <Page innerClassName="bg-bg1">
+      <Background
+        background="radial-gradient(ellipse 50vw 50vh at 50vw 50vh, var(--color-a1) 0%, var(--color-mg) 100%)"
+        className="z-100 opacity-20"
+      />
       <div className="h-dvh flex flex-col items-center justify-center">
         <Title className="mb-10" />
         <motion.p
@@ -43,7 +47,7 @@ export default function HomePage({}: HomePageProps) {
         >
           I make things.
         </motion.p>
-        <motion.div className="mt-5 flex flex-row items-center justify-center gap-4">
+        <div className="mt-5 flex flex-row items-center justify-center gap-4">
           <IconButton delay={0.75} href="mailto:jeffrey.fanjf@gmail.com">
             <FiMail />
           </IconButton>
@@ -59,6 +63,28 @@ export default function HomePage({}: HomePageProps) {
           <IconButton delay={1.05} href="./portfolio.pdf">
             <HiOutlineDocumentText />
           </IconButton>
+        </div>
+        <motion.div
+          className="mt-16 -mb-16 text-mg text-4xl"
+          initial={{ scale: 0.75, opacity: 0, y: "-50%" }}
+          animate={{
+            scale: 1,
+            opacity: 1,
+            y: "0",
+            transition: defaultMotionSpring({ delay: 1.25 }),
+          }}
+        >
+          <motion.div
+            animate={{
+              y: ["-25%", "25%", "-25%"],
+              transition: {
+                repeat: Infinity,
+                duration: 3,
+              },
+            }}
+          >
+            <FaArrowDown />
+          </motion.div>
         </motion.div>
       </div>
       <p>hello</p>
