@@ -15,7 +15,7 @@ export default function HomePage({}: HomePageProps) {
   return (
     <Page innerClassName="bg-bg1 z-1">
       <Background />
-      <div className="flex flex-col items-center justify-center">
+      <div className="h-dvh flex flex-col items-center justify-center">
         <Title className="mb-10" />
         <motion.p
           className="text-[1.25rem] text-fg2"
@@ -61,7 +61,6 @@ export default function HomePage({}: HomePageProps) {
           </IconButton>
         </motion.div>
       </div>
-      {/* <p>hello</p>
       <p>hello</p>
       <p>hello</p>
       <p>hello</p>
@@ -92,7 +91,8 @@ export default function HomePage({}: HomePageProps) {
       <p>hello</p>
       <p>hello</p>
       <p>hello</p>
-      <p>hello</p> */}
+      <p>hello</p>
+      <p>hello</p>
     </Page>
   );
 }

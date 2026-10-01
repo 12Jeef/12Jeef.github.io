@@ -33,14 +33,11 @@ function BackgroundContent() {
     const observer = new ResizeObserver(onResize);
     observer.observe(parent);
 
-    let mouseX = 0;
-    let mouseY = 0;
+    let mouseClientX = 0;
+    let mouseClientY = 0;
     const onMouseMove = (e: MouseEvent) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-      const rect = canvas.getBoundingClientRect();
-      mouseX -= rect.left;
-      mouseY -= rect.top;
+      mouseClientX = e.clientX;
+      mouseClientY = e.clientY;
     };
     window.addEventListener("mousemove", onMouseMove);
 
@@ -87,6 +84,10 @@ function BackgroundContent() {
       const dt = Math.min(0.1, (t1 - t0) / 1e3);
       t0 = t1;
       t += dt;
+
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = mouseClientX - rect.left;
+      const mouseY = mouseClientY - rect.top;
 
       const logoX = canvas.width / 2;
       const logoY = window.innerHeight / 2 + 50;
@@ -175,6 +176,7 @@ function BackgroundContent() {
 
     return () => {
       observer.unobserve(parent);
+      window.removeEventListener("mousemove", onMouseMove);
       cancelAnimationFrame(frameId);
     };
   }, [canvasRef, mobile]);
