@@ -37,10 +37,10 @@ export default function HomeProject({
   return (
     <projectContext.Provider value={{ description, setDescription }}>
       <div
-        className={`${mobile ? "" : "h-dvh"} w-full max-w-[90rem] ${mobile ? "px-4" : "px-20"} flex ${mobile ? "flex-col" : "flex-row"} items-center justify-center gap-8`}
+        className={`${mobile ? "mb-24" : "h-dvh"} w-full max-w-[90rem] ${mobile ? "px-4" : "px-20"} flex ${mobile ? "flex-col" : "flex-row"} items-center justify-center gap-8`}
       >
         <div
-          className={`${mobile ? "" : "flex-1"} flex flex-col items-stretch justify-stretch gap-2`}
+          className={`${mobile ? "w-full max-w-full" : "flex-1"} flex flex-col items-stretch justify-stretch gap-2`}
         >
           <div>{children}</div>
           <div className="relative">
