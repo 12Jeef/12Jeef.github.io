@@ -79,8 +79,8 @@ function easeOutElastic(x: number): number {
   return x === 0
     ? 0
     : x === 1
-    ? 1
-    : Math.pow(2, -10 * x) * Math.sin((x * 10 - 0.75) * c4) + 1;
+      ? 1
+      : Math.pow(2, -10 * x) * Math.sin((x * 10 - 0.75) * c4) + 1;
 }
 
 export type JiggleArgs = {
@@ -106,7 +106,7 @@ export function useJiggle({
     const id = setInterval(() => {
       const time = (Date.now() - startTime) / 1e3;
       setScale(start + (stop - start) * easeOutElastic(Math.min(1, time / 1)));
-    }, 1000 / 120);
+    }, 1e3 / 120);
     return () => clearInterval(id);
   }, [scaleGoal]);
 

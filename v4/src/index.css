@@ -16,6 +16,11 @@
   src: url("./assets/fonts/SuperFrog.ttf");
 }
 
+@font-face {
+  font-family: "BreeSerif";
+  src: url("./assets/fonts/BreeSerif.ttf");
+}
+
 @theme {
   --color-bg1: #070d38;
   --color-bg1a: #070d3888;
@@ -40,6 +45,7 @@
   --font-blob1: "Blob1";
   --font-blob2: "Blob2";
   --font-blob3: "Blob3";
+  --font-breeserif: "BreeSerif";
 }
 
 html,
@@ -57,7 +63,8 @@ body,
   background-color: var(--color-bg1);
 }
 
-html:has(body.mobile) {
+html:has(body.mobile),
+html:has(body.touch) {
   font-size: 12px;
 }
 
@@ -100,10 +107,4 @@ a:not(:has(button))::before {
 }
 a:not(:has(button)):hover::before {
   right: 0%;
-}
-
-ul {
-  list-style-type: disc;
-  padding-left: 2rem;
-  line-height: 2em;
 }

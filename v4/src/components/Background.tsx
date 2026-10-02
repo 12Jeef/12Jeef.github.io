@@ -195,7 +195,7 @@ export default function Background({
 }: BackgroundProps) {
   return (
     <div
-      className={`absolute top-0 bottom-0 left-0 right-0 overflow-hidden ${className}`}
+      className={`absolute top-0 bottom-0 left-0 right-0 overflow-hidden pointer-events-none ${className}`}
       style={{ mixBlendMode: "lighten" }}
       {...props}
     >

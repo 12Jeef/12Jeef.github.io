@@ -26,7 +26,7 @@ export default function Page({
           {children}
         </div>
       </div>
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-mg pointer-events-none z-100">
+      <div className="absolute bottom-3 w-full text-center text-xs text-mg pointer-events-none z-100">
         © 2026 Jeffrey Fan. All rights reserved.
       </div>
     </motion.div>
