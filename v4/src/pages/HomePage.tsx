@@ -39,7 +39,12 @@ export default function HomePage({}: HomePageProps) {
         background="radial-gradient(ellipse 50vw 50vh at 50vw 50vh, var(--color-a1) 0%, var(--color-mg) 100%)"
         className="-z-1 opacity-20"
       />
-      <HomeBanner />
+      <HomeBanner
+        onNext={() => {
+          if (!elem) return;
+          elem.scrollTo({ top: window.innerHeight, behavior: "smooth" });
+        }}
+      />
       <LuxCM5 />
       <EEG />
       <ReactionTrajFinder />

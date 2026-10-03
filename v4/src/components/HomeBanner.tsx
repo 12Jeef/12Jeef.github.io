@@ -9,9 +9,9 @@ import HomeBannerIconButton from "./HomeBannerIconButton";
 import HomeNext from "../components/HomeNext";
 import HomeBannerCarousel from "./HomeBannerCarousel";
 
-export type HomeBannerProps = {};
+export type HomeBannerProps = { onNext?: () => void };
 
-export default function HomeBanner({}: HomeBannerProps) {
+export default function HomeBanner({ onNext }: HomeBannerProps) {
   return (
     <div className="h-dvh flex flex-col items-center justify-center">
       <Title className="mb-10" />
@@ -74,7 +74,7 @@ export default function HomeBanner({}: HomeBannerProps) {
           <HiOutlineDocumentText />
         </HomeBannerIconButton>
       </div>
-      <HomeNext className="mt-16 -mb-16" onClick={() => {}} />
+      <HomeNext className="mt-16 -mb-16" onClick={onNext} />
     </div>
   );
 }
