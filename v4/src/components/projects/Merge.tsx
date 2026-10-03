@@ -14,6 +14,13 @@ export default function Merge() {
         "Custom animations, user feedback, and intuitive interfaces",
         "Features dark mode detection and theme switching, a leaderboard hosted on Replit, and a built-in tutorial",
       ]}
+      links={[
+        { name: "GitHub", href: "https://github.com/12Jeef/MergeGame" },
+        {
+          name: "Install",
+          href: "https://chromewebstore.google.com/detail/merge-game/neemdnfmagdkajnbljpccdechakhfgeb",
+        },
+      ]}
       stats={[{ amount: "900+", description: "weekly users" }]}
     >
       <div className="w-full max-w-full flex flex-row gap-2">

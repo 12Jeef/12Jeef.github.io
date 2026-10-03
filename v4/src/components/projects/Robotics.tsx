@@ -16,6 +16,12 @@ export default function Robotics() {
         "Designed a concise power logging system to track energy, current usage across motors, and diagnose power overconsumption and decrease energy usage 30% per battery",
         "Engineered full-auto positional alignment and ergonomic semi-auto driver assistance algorithms to enhance gameplay, scoring 50% more points per match",
       ]}
+      links={[
+        {
+          name: "Demos",
+          href: "https://drive.google.com/drive/folders/1AM3q5iBx9T5Yx94GC_K0bVVpUGYRpBqq?usp=drive_link",
+        },
+      ]}
       stats={[
         { amount: "30", description: "engineers" },
         { amount: "5", description: "robots" },

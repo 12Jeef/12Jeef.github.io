@@ -12,6 +12,10 @@ export default function BiotechSB() {
         "Fitz-Nagumo neuron and heart action potential, Gierer-Meinhardt animal coat pattern, and Boid/Viseck flocking models are all included and simulated in discrete space",
         "Leverages modern web worker technology and multithreading to maximize efficiency while maintaining ease of use",
       ]}
+      links={[
+        { name: "GitHub", href: "https://github.com/12Jeef/biotech" },
+        { name: "Website", href: "https://jbiotech.vercel.app/" },
+      ]}
       stats={[
         { amount: "5", description: "models" },
         { amount: "RT", description: "rendering" },

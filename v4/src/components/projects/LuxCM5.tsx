@@ -15,6 +15,12 @@ export default function LuxCM5() {
         "Combines vision-model-inspired ROI algorithms with procedural AprilTag detection into a custom temporal algorithm capable of reducing pixel computation by 10x",
         "Supports YOLO object detection and high-performing threshold and contour shape detection",
       ]}
+      links={[
+        {
+          name: "Demo",
+          href: "https://drive.google.com/drive/folders/1xXJhVPovAGrjThJhUAaO-xbbWitbRN_u?usp=drive_link",
+        },
+      ]}
       stats={[
         { amount: "8x", description: "performance" },
         { amount: "4x", description: "less latency" },

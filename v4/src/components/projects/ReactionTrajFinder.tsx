@@ -12,6 +12,13 @@ export default function ReactionTrajFinder() {
         "Created 2D reaction coordinate/trajectory analyzer and extractor from gigabyte-sized ORCA output files for geometric optimization",
         "Provides detailed viewing and post-processing tooling such as trajectory extraction and exporting, activation energy analysis, etc",
       ]}
+      links={[
+        {
+          name: "GitHub",
+          href: "https://github.com/12Jeef/ReactionTrajFinder",
+        },
+        { name: "Website", href: "https://reaction-trajfinder.vercel.app/" },
+      ]}
       stats={[
         { amount: "1gb+", description: "files" },
         { amount: "100x", description: "workload reduction" },

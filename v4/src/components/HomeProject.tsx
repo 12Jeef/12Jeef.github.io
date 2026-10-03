@@ -12,12 +12,15 @@ export const projectContext = createContext<ProjectContext>({
   setDescription: () => {},
 });
 
+export type Link = { name: string; href: string };
+
 export type Stat = { amount: string; description: string };
 
 export type HomeProjectProps = {
   title: string;
   role?: string | string[];
   bullets?: string[];
+  links?: Link[];
   stats?: Stat[];
   children?: any;
 };
@@ -26,6 +29,7 @@ export default function HomeProject({
   title,
   role = [],
   bullets = [],
+  links = [],
   stats = [],
   children,
 }: HomeProjectProps) {
@@ -69,16 +73,16 @@ export default function HomeProject({
             <span className="text-a1">.</span>
           </h1>
           <h2 className="text-md text-a1">
-            {role.map((r, i) => (
+            {role.map((r, index) => (
               <>
-                {i > 0 && <span className="inline-block mx-2">|</span>}
-                <span key={i} className="italic">
+                {index > 0 && <span className="inline-block mx-2">|</span>}
+                <span key={index} className="italic">
                   {r}
                 </span>
               </>
             ))}
           </h2>
-          {bullets.length && (
+          {bullets.length > 0 && (
             <ul className="text-sm text-fg2">
               {bullets.map((bullet, index) => (
                 <motion.li
@@ -100,7 +104,31 @@ export default function HomeProject({
               ))}
             </ul>
           )}
-          {stats.length && bullets.length && (
+          {links.length > 0 && (
+            <motion.h2
+              className="mt-4 text-xs text-a1 flex flex-row items-center justify-start gap-2"
+              initial={{ scale: 0.75, opacity: 0, x: "-12.5%", y: "-50%" }}
+              whileInView={{
+                scale: 1,
+                opacity: 1,
+                x: "0%",
+                y: "0%",
+                transition: defaultMotionSpring({
+                  delay: 0.25 + bullets.length * 0.1,
+                }),
+              }}
+            >
+              {links.map((link, index) => (
+                <>
+                  {index > 0 && <span className="inline-block">|</span>}
+                  <a key={index} href={link.href}>
+                    {link.name}
+                  </a>
+                </>
+              ))}
+            </motion.h2>
+          )}
+          {stats.length > 0 && bullets.length > 0 && (
             <motion.div
               className="h-[1px] my-8 bg-mg"
               initial={{ width: "0%" }}
@@ -112,7 +140,7 @@ export default function HomeProject({
               }}
             ></motion.div>
           )}
-          {stats.length && (
+          {stats.length > 0 && (
             <div className="mt-8 flex flex-row items-center justify-start">
               {stats.map((stat, index) => (
                 <motion.div

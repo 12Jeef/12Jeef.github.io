@@ -13,6 +13,9 @@ export default function EEG() {
         "Evaluated LDA models with both spectral binning and channel covariance + Riemannian geometry project against brute-force CNN models",
         "Evaluated for overfitting, confounding factors, and other model parameters",
       ]}
+      links={[
+        { name: "GitHub", href: "https://github.com/12Jeef/NTatB_FA2026" },
+      ]}
       stats={[
         { amount: "1wk", description: "dev time" },
         { amount: "80%", description: "gen accuracy" },
