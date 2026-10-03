@@ -1,12 +1,14 @@
 import { motion, type MotionNodeOptions } from "framer-motion";
-import type { HTMLAttributes } from "react";
+import { type HTMLAttributes } from "react";
 
 export type PageProps = {
+  setElem?: (elem: HTMLDivElement) => void;
   innerClassName?: string;
 } & HTMLAttributes<HTMLElement> &
   MotionNodeOptions;
 
 export default function Page({
+  setElem,
   className = "",
   innerClassName = "",
   children,
@@ -19,7 +21,10 @@ export default function Page({
       animate={{ opacity: 1, transition: { duration: 0.3 } }}
       {...props}
     >
-      <div className="absolute top-0 bottom-0 left-0 right-0 overflow-auto">
+      <div
+        ref={setElem}
+        className="absolute top-0 bottom-0 left-0 right-0 overflow-auto"
+      >
         <div
           className={`relative w-full max-w-full min-h-full flex flex-col items-center justify-center ${innerClassName}`}
         >
