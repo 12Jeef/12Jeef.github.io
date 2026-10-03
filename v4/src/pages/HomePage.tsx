@@ -23,6 +23,7 @@ export default function HomePage({}: HomePageProps) {
     const onScroll = () => {
       clearTimeout(timeout);
       const screen = Math.round(elem.scrollTop / window.innerHeight);
+      if (screen <= 0) return;
       const y = screen * window.innerHeight;
       if (Math.abs(elem.scrollTop - y) > 200) return;
       timeout = setTimeout(() => {
