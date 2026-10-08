@@ -29,7 +29,7 @@ export default function TitleLetter({
     <motion.span
       className={`relative mx-[-0.25rem] text-a1 ${
         ["font-blob1", "font-blob2", "font-blob3"][font - 1]
-      } lowercase select-none ${className}`}
+      } select-none ${className}`}
       style={{ transform: `scale(${jiggle?.x ?? 1}, ${jiggle?.y ?? 1})` }}
       onHoverStart={jiggle?.onHover}
       onHoverEnd={jiggle?.onUnhover}

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import Page from "../components/Page";
+import Title from "../components/Title";
 
 export type ErrorPageProps = {};
 
@@ -7,11 +8,7 @@ export default function ErrorPage({}: ErrorPageProps) {
   return (
     <Page>
       <div>
-        <h1 className="text-[5rem] text-a1 font-blob1">
-          Hmm<span className="text-a1">.</span>
-          <span className="text-a1a">.</span>
-          <span className="text-a1aa">.</span>
-        </h1>
+        <Title title="HMM" fontOrder={[2, 1]} bgFontOrder={[1, 2]} />
         <p className="text-[1.25rem] text-fg2">
           Didn't expect you to end up here!
         </p>

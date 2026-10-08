@@ -4,19 +4,21 @@ import TitleLetter from "./TitleLetter";
 import { useJiggle } from "../features/jiggle";
 
 export type TitleProps = {
+  title: string;
   fontOrder?: TitleLetterFont[];
   bgFontOrder?: TitleLetterFont[];
 } & HTMLAttributes<HTMLElement>;
 
 export default function Title({
-  fontOrder = [2, 1, 3, 2],
-  bgFontOrder = [3, 2, 1, 3],
+  title,
+  fontOrder = [2, 1, 3],
+  bgFontOrder = [3, 2, 1],
   className = "",
   ...props
 }: TitleProps) {
   const delay = 0.1;
 
-  const word = Array.from("JEEF");
+  const word = Array.from(title);
   const jiggles = new Array(word.length).fill(null).map((_) => {
     const [jiggleX, jiggleY, setScale, jiggle] = useJiggle({
       initial: 0,
@@ -69,9 +71,9 @@ export default function Title({
       {word.map((letter, i) => (
         <TitleLetter
           key={i}
-          font={fontOrder[i]}
+          font={fontOrder[i % fontOrder.length]}
           jiggle={jiggles[i].fg}
-          delayPercent={[0, 0.5, 0.2, 0.7][i]}
+          delayPercent={[0, 0.5, 0.2, 0.7][i % 4]}
         >
           {letter}
         </TitleLetter>
@@ -80,9 +82,9 @@ export default function Title({
         {word.map((letter, i) => (
           <TitleLetter
             key={i}
-            font={bgFontOrder[i]}
+            font={bgFontOrder[i % bgFontOrder.length]}
             jiggle={jiggles[i].bg}
-            delayPercent={[1, 0.3, 0.7, 0.1][i]}
+            delayPercent={[1, 0.3, 0.7, 0.1][i % 4]}
           >
             {letter}
           </TitleLetter>

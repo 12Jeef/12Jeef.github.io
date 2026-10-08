@@ -14,7 +14,7 @@ export type HomeBannerProps = { onNext?: () => void };
 export default function HomeBanner({ onNext }: HomeBannerProps) {
   return (
     <div className="h-dvh flex flex-col items-center justify-center">
-      <Title className="mb-10" />
+      <Title title="jeef" className="mb-10" />
       <motion.p
         className="text-[1.25rem] text-fg2"
         initial={{ scale: 0.75, opacity: 0, y: "-50%", height: "0em" }}
