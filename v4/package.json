@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "sync": "cp ~/Downloads/Resume\\ -\\ Portfolio.pdf ./public/portfolio.pdf; cp ~/projects/pfp.png ./src/assets/picture.png",
+    "sync": "cp ~/Downloads/Resume\\ -\\ Portfolio.pdf ./public/portfolio.pdf; cp ~/projects/pfp_cropped.png ./src/assets/picture.png",
     "build": "rm -rf ./dist; tsc -b && vite build; rm -rf ../assets; mv ./dist/* ../; git add -A;",
     "lint": "eslint .",
     "preview": "vite preview"
