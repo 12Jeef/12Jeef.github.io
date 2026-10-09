@@ -8,6 +8,7 @@ import { HiOutlineDocumentText } from "react-icons/hi";
 import HomeBannerIconButton from "./HomeBannerIconButton";
 import HomeNext from "../components/HomeNext";
 import HomeBannerCarousel from "./HomeBannerCarousel";
+import { PiPencilSimpleBold } from "react-icons/pi";
 
 export type HomeBannerProps = { onNext?: () => void };
 
@@ -72,6 +73,9 @@ export default function HomeBanner({ onNext }: HomeBannerProps) {
         </HomeBannerIconButton>
         <HomeBannerIconButton delay={1.05} href="./portfolio.pdf">
           <HiOutlineDocumentText />
+        </HomeBannerIconButton>
+        <HomeBannerIconButton delay={1.15} href="./#/blog">
+          <PiPencilSimpleBold />
         </HomeBannerIconButton>
       </div>
       <HomeNext className="mt-16 -mb-16" onClick={onNext} />

@@ -12,7 +12,7 @@ type Ball = {
   t: number;
 };
 
-function BackgroundContent() {
+function BackgroundContent({ logo }: { logo: boolean }) {
   const { mobile } = useContext(context);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -62,17 +62,18 @@ function BackgroundContent() {
             (balls.length % 2 === 0 ? 1 : 0.75),
           t: Math.random(),
         });
-    for (const r of logoRadii)
-      balls.push({
-        x: 0,
-        y: 0,
-        vx: 0,
-        vy: 0,
-        radius: r,
-        following: "logo",
-        a: 0.25,
-        t: Math.random(),
-      });
+    if (logo)
+      for (const r of logoRadii)
+        balls.push({
+          x: 0,
+          y: 0,
+          vx: 0,
+          vy: 0,
+          radius: r,
+          following: "logo",
+          a: 0.25,
+          t: Math.random(),
+        });
     const scale = mobile ? 0.75 : 1;
     for (const ball of balls) ball.radius *= scale;
 
@@ -179,17 +180,19 @@ function BackgroundContent() {
       window.removeEventListener("mousemove", onMouseMove);
       cancelAnimationFrame(frameId);
     };
-  }, [canvasRef, mobile]);
+  }, [logo, canvasRef, mobile]);
 
   return <canvas ref={canvasRef}></canvas>;
 }
 
 export type BackgroundProps = {
   background: string;
+  logo?: boolean;
 } & HTMLAttributes<HTMLDivElement>;
 
 export default function Background({
   background,
+  logo = true,
   className = "",
   ...props
 }: BackgroundProps) {
@@ -214,7 +217,7 @@ export default function Background({
             }}
           >
             <div className="absolute top-0 bottom-0 left-0 right-0 blur-[15px] bg-black">
-              <BackgroundContent />
+              <BackgroundContent logo={logo} />
             </div>
           </div>
         </div>

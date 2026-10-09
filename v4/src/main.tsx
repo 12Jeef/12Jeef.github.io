@@ -4,6 +4,7 @@ import "./index.css";
 import { createHashRouter, RouterProvider } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import ErrorPage from "./pages/ErrorPage";
+import BlogPage from "./pages/BlogPage";
 
 export type Context = { mobile: boolean; touch: boolean };
 export const context = createContext<Context>({ mobile: false, touch: false });
@@ -12,6 +13,11 @@ const router = createHashRouter([
   {
     path: "/",
     element: <HomePage />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/blog/:postName?",
+    element: <BlogPage />,
     errorElement: <ErrorPage />,
   },
 ]);
