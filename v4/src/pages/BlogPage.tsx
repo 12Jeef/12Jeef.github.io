@@ -1,10 +1,11 @@
 import { useNavigate, useParams } from "react-router-dom";
 import Page from "../components/Page";
 import type { FullPost } from "../features/post";
-import OnWriting from "../components/posts/OnWriting";
 import PostCard from "../components/PostCard";
 import { useEffect } from "react";
 import Background from "../components/Background";
+import OnWriting from "../components/posts/OnWriting";
+import OnArt from "../components/posts/OnArt";
 
 export type BlogPageProps = {};
 
@@ -29,11 +30,13 @@ export default function BlogPage({}: BlogPageProps) {
       />
       <div className="max-w-[40rem] w-full flex flex-col items-stretch justify-start gap-2">
         {postName == null &&
-          posts.map((post, i) => <PostCard key={i} post={post} />)}
+          [...posts]
+            .reverse()
+            .map((post, i) => <PostCard key={i} post={post} />)}
         {post && <post.post post={post} />}
       </div>
     </Page>
   );
 }
 
-const posts: FullPost[] = [OnWriting];
+const posts: FullPost[] = [OnWriting, OnArt];
